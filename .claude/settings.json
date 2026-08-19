@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(npm run typecheck)",
+      "Bash(npm run typecheck *)",
+      "Bash(npm run test:unit)",
+      "Bash(npm run test:unit *)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint *)",
+      "Bash(npx vitest run *)",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(specify)",
+      "Bash(specify *)",
+      "Bash(python3 .specify/extensions/companion/scripts/*)"
+    ]
+  }
+}
