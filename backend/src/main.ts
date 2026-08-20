@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { assertApplicationRoleIsSafe } from './common/db/client';
+import { ensureUpcomingPartitions } from './modules/audit/partition-maintenance';
 
 function loadEnvFile(path: string): void {
   if (!existsSync(path)) return;
@@ -24,6 +25,15 @@ async function bootstrap(): Promise<void> {
   // policy in place, every isolation test green, and no isolation whatsoever — so the
   // process refuses to start rather than starting unsafely.
   await assertApplicationRoleIsSafe();
+
+  // Best-effort. A month with no partition waiting causes inserts into it to fail
+  // later; it does not mean isolation is broken now, so unlike the role check above
+  // this warns rather than refusing to boot (T092).
+  try {
+    await ensureUpcomingPartitions();
+  } catch (error) {
+    console.warn('failed to ensure upcoming audit_event partitions:', error);
+  }
 
   const app = await NestFactory.create(AppModule);
 

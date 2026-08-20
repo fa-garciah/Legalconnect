@@ -44,11 +44,25 @@ export const IDENTITY_OUTSIDER: Identity = {
   subject: 'idp|no-membership',
 };
 
+/**
+ * Deterministic and merely UUID-SHAPED — there is no real membership table behind
+ * this (slice 002), but `actor_membership_id` is a real `uuid` column, and any
+ * fixture membership that flows through an `@Audited` HTTP request ends up written
+ * there. A non-UUID default here would only surface the moment such a request was
+ * first exercised, which is exactly what happened writing US4's audit-query tests.
+ */
+function derivedMembershipId(identityId: string, tenantId: string): string {
+  const hex = (identityId + tenantId).replace(/-/g, '');
+  return [hex.slice(0, 8), hex.slice(8, 12), `4${hex.slice(12, 15)}`, `8${hex.slice(15, 18)}`, hex.slice(18, 30)].join(
+    '-',
+  );
+}
+
 export function membership(
   overrides: Partial<Membership> & Pick<Membership, 'identityId' | 'tenantId'>,
 ): Membership {
   return {
-    id: `mm-${overrides.identityId.slice(0, 8)}-${overrides.tenantId.slice(0, 8)}`,
+    id: derivedMembershipId(overrides.identityId, overrides.tenantId),
     archetype: 'SA',
     status: 'live',
     ...overrides,

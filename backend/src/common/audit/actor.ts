@@ -43,14 +43,3 @@ export const PLATFORM_ACTOR: AuditActor = {
   actorIdentityId: null,
   actorMembershipId: null,
 };
-
-/**
- * The actor of a cross-tenant attempt, as seen by the TARGETED firm.
- *
- * Identity only, never the membership. The membership would name the tenant the actor
- * belongs to, and the targeted firm must not learn which other firm reached for its
- * matter (FR-023).
- */
-export function actorForCrossTenantAttempt(identityId: string | null): AuditActor {
-  return { actorIdentityId: identityId, actorMembershipId: null };
-}

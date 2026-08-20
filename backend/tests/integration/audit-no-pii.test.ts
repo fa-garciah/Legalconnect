@@ -86,6 +86,21 @@ describe('audit metadata sanitiser', () => {
     expect(() => assertNoSensitiveData({ a: null, b: undefined })).not.toThrow();
   });
 
+  it.each(['addresscount', 'emailsent', 'tokenCount'])(
+    'accepts %s — it contains a forbidden substring but is a reference, not data',
+    (key) => {
+      expect(() => assertNoSensitiveData({ [key]: 3 })).not.toThrow();
+    },
+  );
+
+  it('stops descending past a bounded depth rather than recursing without limit', () => {
+    // 13 levels — one past the walk's own limit. A malicious or accidental cycle-free
+    // but very deep structure must not make this scan unbounded.
+    let deep: unknown = { password: 'buried' };
+    for (let i = 0; i < 13; i += 1) deep = { nested: deep };
+    expect(() => assertNoSensitiveData(deep as Record<string, unknown>)).not.toThrow();
+  });
+
   // Regression guard. The first phone shape matched any run of ten or more digits, so
   // a timestamp or a byte count refused the write — and because the sanitiser refuses
   // rather than strips, that rolled back the mutation too. An over-broad value shape

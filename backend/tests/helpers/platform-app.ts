@@ -10,11 +10,13 @@ import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
 import { TenantModule } from '../../src/modules/tenant/tenant.module';
+import { AuditModule } from '../../src/modules/audit/audit.module';
+import { PlanModule } from '../../src/modules/plan/plan.module';
 import { PlatformContextInterceptor } from '../../src/common/db/platform-context';
 import { AuditInterceptor } from '../../src/common/audit/interceptor';
 
 @Module({
-  imports: [TenantModule],
+  imports: [TenantModule, AuditModule, PlanModule],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: PlatformContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
