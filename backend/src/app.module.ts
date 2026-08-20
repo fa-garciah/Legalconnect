@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { PermissionGuard } from './common/permissions/guard';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantContextInterceptor } from './common/tenant/middleware';
 import { PlatformContextInterceptor } from './common/db/platform-context';
 import { AuditInterceptor } from './common/audit/interceptor';
 import { InMemoryMembershipPort, MEMBERSHIP_PORT } from './common/tenant/membership';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { PlanModule } from './modules/plan/plan.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -13,7 +14,9 @@ import { TenantModule } from './modules/tenant/tenant.module';
  * The constitution requires these to be GLOBAL, never per endpoint: an endpoint that
  * has to apply one by hand is a design violation, because the mechanism must apply by
  * default and omitting it must be an explicit, reviewable act rather than a possible
- * oversight. Hence APP_GUARD and APP_INTERCEPTOR rather than controller decorators.
+ * oversight. Hence APP_INTERCEPTOR rather than controller decorators. There is no
+ * APP_GUARD here — see common/permissions/guard.ts for why archetype enforcement
+ * lives in TenantContextInterceptor instead of a Guard.
  *
  * ORDER IS LOAD-BEARING. Nest runs interceptors outermost-first in registration order:
  *
@@ -32,13 +35,12 @@ import { TenantModule } from './modules/tenant/tenant.module';
  * request is refused, which fails closed rather than open.
  */
 @Module({
-  imports: [TenantModule],
+  imports: [TenantModule, AuditModule, PlanModule],
   providers: [
     { provide: MEMBERSHIP_PORT, useValue: new InMemoryMembershipPort([]) },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PlatformContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
-    { provide: APP_GUARD, useClass: PermissionGuard },
   ],
 })
 export class AppModule {}

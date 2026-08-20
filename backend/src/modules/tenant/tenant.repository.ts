@@ -48,6 +48,29 @@ export class TenantRepository {
     return result.rows[0]!;
   }
 
+  /**
+   * T099 — moves a tenant onto a different plan. Takes the target plan's `id`
+   * rather than its code: the caller (ChangePlanService) has already resolved and
+   * validated the code, so this is a plain foreign-key update with nothing left to
+   * check.
+   */
+  async changePlan(tx: PlatformTx, id: string, planId: string): Promise<TenantRow | null> {
+    const result = await tx.execute<TenantRow>(sql`
+      UPDATE tenant
+         SET plan_id = ${planId}::uuid
+       WHERE id = ${id}::uuid
+      RETURNING id,
+                name,
+                rfc,
+                (SELECT code::text FROM plan WHERE plan.id = ${planId}::uuid) AS "planCode",
+                status,
+                created_at::text  AS "createdAt",
+                deactivated_at::text AS "deactivatedAt",
+                now()::text AS "changedAt"
+    `);
+    return result.rows[0] ?? null;
+  }
+
   async findById(tx: PlatformTx, id: string): Promise<TenantRow | null> {
     const result = await tx.execute<TenantRow>(sql`
       SELECT t.id,

@@ -200,23 +200,23 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 ### Tests for User Story 4 ⚠️ Write first, watch them fail
 
-- [ ] T079 [P] [US4] Contract test: `GET /audit/events` returns only the caller's own tenant's events — zero foreign events across scenarios, in `backend/tests/contract/audit-query-scope.test.ts` — quickstart V9, SC-007
-- [ ] T080 [P] [US4] Contract test: a caller whose membership archetype does not permit the read gets `403 not_authorized`, in `backend/tests/contract/audit-query-authz.test.ts` — FR-013
-- [ ] T081 [P] [US4] Contract test: an **interactive** read adds exactly one `audit.queried` entry and an **automated** read adds none, asserted in both directions, in `backend/tests/contract/audit-query-channel.test.ts` — quickstart V9, FR-025, SC-015
-- [ ] T082 [P] [US4] Contract test: `from`/`to` are clamped to 24 months, the response reports the window actually served, and no entry older than the window is returned, in `backend/tests/contract/audit-query-retention.test.ts` — US4 scenario 5, FR-019, SC-013
-- [ ] T083 [P] [US4] Contract test: results are returned in bounded portions with a working forward cursor, and `limit` beyond the maximum is rejected, in `backend/tests/contract/audit-query-pagination.test.ts` — FR-013, US4 scenario 4
-- [ ] T084 [P] [US4] Contract test: `GET /internal/platform/audit` may span tenants and accepts `tenantId` as an explicit filter, in `backend/tests/contract/platform-audit-query.test.ts` — contracts/platform-admin.md
-- [ ] T085 [P] [US4] Integration test: the retention routine drops partitions past 24 months and the application role cannot invoke it, in `backend/tests/integration/audit-retention.test.ts` — FR-019
+- [X] T079 [P] [US4] Contract test: `GET /audit/events` returns only the caller's own tenant's events — zero foreign events across scenarios, in `backend/tests/contract/audit-query-scope.test.ts` — quickstart V9, SC-007
+- [X] T080 [P] [US4] Contract test: a caller whose membership archetype does not permit the read gets `403 not_authorized`, in `backend/tests/contract/audit-query-authz.test.ts` — FR-013
+- [X] T081 [P] [US4] Contract test: an **interactive** read adds exactly one `audit.queried` entry and an **automated** read adds none, asserted in both directions, in `backend/tests/contract/audit-query-channel.test.ts` — quickstart V9, FR-025, SC-015
+- [X] T082 [P] [US4] Contract test: `from`/`to` are clamped to 24 months, the response reports the window actually served, and no entry older than the window is returned, in `backend/tests/contract/audit-query-retention.test.ts` — US4 scenario 5, FR-019, SC-013
+- [X] T083 [P] [US4] Contract test: results are returned in bounded portions with a working forward cursor, and `limit` beyond the maximum is rejected, in `backend/tests/contract/audit-query-pagination.test.ts` — FR-013, US4 scenario 4
+- [X] T084 [P] [US4] Contract test: `GET /internal/platform/audit` may span tenants and accepts `tenantId` as an explicit filter, in `backend/tests/contract/platform-audit-query.test.ts` — contracts/platform-admin.md
+- [X] T085 [P] [US4] Integration test: the retention routine drops partitions past 24 months and the application role cannot invoke it, in `backend/tests/integration/audit-retention.test.ts` — FR-019
 
 ### Implementation for User Story 4
 
-- [ ] T086 [US4] Implement the audit query repository with time-bounded, partition-pruning reads in `backend/src/modules/audit/audit.repository.ts`
-- [ ] T087 [US4] Implement the retention window clamp and the `servedWindow` field in `backend/src/modules/audit/window.ts`
-- [ ] T088 [US4] Implement the tenant-facing audit controller in `backend/src/modules/audit/audit.controller.ts`
-- [ ] T089 [US4] Apply the interactive-only channel gate to `audit.queried` in `backend/src/modules/audit/audit.controller.ts`
-- [ ] T090 [US4] Implement the platform-scope audit controller accepting `tenantId` in `backend/src/modules/audit/platform-audit.controller.ts`
-- [ ] T091 [US4] Implement the retention job — detach and drop partitions past 24 months under a role the application does not hold — in `backend/drizzle/retention.sql` and `infra/retention-schedule.tf`
-- [ ] T092 [US4] Implement rolling monthly partition creation ahead of need in `backend/src/modules/audit/partition-maintenance.ts`
+- [X] T086 [US4] Implement the audit query repository with time-bounded, partition-pruning reads in `backend/src/modules/audit/audit.repository.ts`
+- [X] T087 [US4] Implement the retention window clamp and the `servedWindow` field in `backend/src/modules/audit/window.ts`
+- [X] T088 [US4] Implement the tenant-facing audit controller in `backend/src/modules/audit/audit.controller.ts`
+- [X] T089 [US4] Apply the interactive-only channel gate to `audit.queried` in `backend/src/modules/audit/audit.controller.ts`
+- [X] T090 [US4] Implement the platform-scope audit controller accepting `tenantId` in `backend/src/modules/audit/platform-audit.controller.ts`
+- [X] T091 [US4] Implement the retention job — detach and drop partitions past 24 months under a role the application does not hold — in `backend/drizzle/retention.sql` and `infra/retention-schedule.tf`
+- [X] T092 [US4] Implement rolling monthly partition creation ahead of need in `backend/src/modules/audit/partition-maintenance.ts`
 
 **Checkpoint**: A firm can read its own history, bounded and traced, and the log prunes itself.
 
@@ -232,19 +232,19 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 ### Tests for User Story 5 ⚠️ Write first, watch them fail
 
-- [ ] T093 [P] [US5] Contract test: `PATCH .../plan` changes the tier, records `tenant.plan_changed` with previous and new values, and performs no deployment, in `backend/tests/contract/plan-change.test.ts` — US5 scenario 1, SC-008
-- [ ] T094 [P] [US5] Contract test: a change to a tier whose limits the tenant exceeds returns `409 limits_exceeded` **naming which limits**, and succeeds when re-sent with acknowledgement, in `backend/tests/contract/plan-limits-exceeded.test.ts` — US5 scenario 4
-- [ ] T095 [P] [US5] Contract test: changing to the tier already in effect returns `422 same_plan`, and exactly one of the three tiers is ever in effect, in `backend/tests/contract/plan-invariants.test.ts` — US5 scenario 3
-- [ ] T096 [P] [US5] Contract test: `PATCH .../plans/{code}/limits` adjusts limits with no deployment and records `plan.limits_changed`, in `backend/tests/contract/plan-limits-config.test.ts` — FR-016, FR-014
-- [ ] T097 [P] [US5] Contract test: negative or non-integer limits return `400 validation_failed`, in `backend/tests/contract/plan-limits-validation.test.ts`
+- [X] T093 [P] [US5] Contract test: `PATCH .../plan` changes the tier, records `tenant.plan_changed` with previous and new values, and performs no deployment, in `backend/tests/contract/plan-change.test.ts` — US5 scenario 1, SC-008
+- [X] T094 [P] [US5] Contract test: a change to a tier whose limits the tenant exceeds returns `409 limits_exceeded` **naming which limits**, and succeeds when re-sent with acknowledgement, in `backend/tests/contract/plan-limits-exceeded.test.ts` — US5 scenario 4
+- [X] T095 [P] [US5] Contract test: changing to the tier already in effect returns `422 same_plan`, and exactly one of the three tiers is ever in effect, in `backend/tests/contract/plan-invariants.test.ts` — US5 scenario 3
+- [X] T096 [P] [US5] Contract test: `PATCH .../plans/{code}/limits` adjusts limits with no deployment and records `plan.limits_changed`, in `backend/tests/contract/plan-limits-config.test.ts` — FR-016, FR-014
+- [X] T097 [P] [US5] Contract test: negative or non-integer limits return `400 validation_failed`, in `backend/tests/contract/plan-limits-validation.test.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T098 [US5] Implement the plan repository against the platform client in `backend/src/modules/plan/plan.repository.ts`
-- [ ] T099 [US5] Implement the tier change service, including the exceeded-limits report and the acknowledgement path, in `backend/src/modules/plan/change-plan.service.ts`
-- [ ] T100 [US5] Implement limits and entitlements configuration in `backend/src/modules/plan/configure-limits.service.ts`
-- [ ] T101 [US5] Implement the plan controller in `backend/src/modules/plan/plan.controller.ts`
-- [ ] T102 [US5] Document explicitly in `backend/src/modules/plan/README.md` that nothing in this slice **enforces** limits — enforcement is slice 004, and the `409` is an operator warning gate, not a technical constraint
+- [X] T098 [US5] Implement the plan repository against the platform client in `backend/src/modules/plan/plan.repository.ts`
+- [X] T099 [US5] Implement the tier change service, including the exceeded-limits report and the acknowledgement path, in `backend/src/modules/plan/change-plan.service.ts`
+- [X] T100 [US5] Implement limits and entitlements configuration in `backend/src/modules/plan/configure-limits.service.ts`
+- [X] T101 [US5] Implement the plan controller in `backend/src/modules/plan/plan.controller.ts`
+- [X] T102 [US5] Document explicitly in `backend/src/modules/plan/README.md` that nothing in this slice **enforces** limits — enforcement is slice 004, and the `409` is an operator warning gate, not a technical constraint
 
 **Checkpoint**: All five stories are independently functional.
 
@@ -252,14 +252,14 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T103 Run the full quickstart.md validation suite (V1–V15) and record the results in `specs/001-tenant-foundation/quickstart-results.md`
-- [ ] T104 Verify SC-010 — first page of an audit query over the full retained history under 3 seconds — in `backend/tests/integration/audit-latency.test.ts`
-- [ ] T105 [P] Verify blocking coverage on tenant isolation meets the constitution's critical-coverage requirement, in `.github/workflows/ci.yml`
-- [ ] T106 [P] Add the operator runbook for provisioning, deactivation and plan changes in `docs/runbook-platform-admin.md`
-- [ ] T107 [P] Add developer documentation on why no business query filters tenant by hand in `docs/tenant-isolation.md`
-- [ ] T108 Security hardening review: confirm no secret reaches the repository, logs or error messages, in `backend/src/common/http/errors.ts` and `.github/workflows/ci.yml`
-- [ ] T109 Code cleanup and refactoring pass across `backend/src/common/`
-- [ ] T110 Confirm the walking skeleton items this slice owns (2, 3 and part of 6) are demonstrably standing, and record the gap list for slices 002–004 in `specs/001-tenant-foundation/skeleton-status.md`
+- [X] T103 Run the full quickstart.md validation suite (V1–V15) and record the results in `specs/001-tenant-foundation/quickstart-results.md`
+- [X] T104 Verify SC-010 — first page of an audit query over the full retained history under 3 seconds — in `backend/tests/integration/audit-latency.test.ts`
+- [X] T105 [P] Verify blocking coverage on tenant isolation meets the constitution's critical-coverage requirement, in `.github/workflows/ci.yml`
+- [X] T106 [P] Add the operator runbook for provisioning, deactivation and plan changes in `docs/runbook-platform-admin.md`
+- [X] T107 [P] Add developer documentation on why no business query filters tenant by hand in `docs/tenant-isolation.md`
+- [X] T108 Security hardening review: confirm no secret reaches the repository, logs or error messages, in `backend/src/common/http/errors.ts` and `.github/workflows/ci.yml`
+- [X] T109 Code cleanup and refactoring pass across `backend/src/common/`
+- [X] T110 Confirm the walking skeleton items this slice owns (2, 3 and part of 6) are demonstrably standing, and record the gap list for slices 002–004 in `specs/001-tenant-foundation/skeleton-status.md`
 
 ---
 

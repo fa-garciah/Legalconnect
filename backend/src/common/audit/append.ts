@@ -17,7 +17,8 @@ import { shouldEmit, type AuditAction } from './actions';
 import { assertNoSensitiveData } from './sanitise';
 
 export interface AppendInput {
-  readonly tenantId: string;
+  /** Null only for an action with no single tenant to belong to (plan.limits_changed). */
+  readonly tenantId: string | null;
   readonly action: AuditAction;
   readonly targetEntity: string;
   readonly targetId?: string | null;

@@ -63,4 +63,20 @@ describe('tenant-scoped cache keys', () => {
     expect(await cache.get(TENANT_A, 'plan')).toBeUndefined();
     expect(await cache.get(TENANT_B, 'plan')).toBe('b');
   });
+
+  it('refuses to build a key with no tenant id, rather than producing an unscoped one', () => {
+    expect(() => tenantCacheKey('')).toThrow(/tenant id is required/i);
+  });
+
+  it('reports how many entries it holds', async () => {
+    const cache = new TenantScopedCache();
+    expect(cache.size).toBe(0);
+
+    await cache.set(TENANT_A, 'plan', 'a');
+    await cache.set(TENANT_B, 'plan', 'b');
+    expect(cache.size).toBe(2);
+
+    await cache.clearTenant(TENANT_A);
+    expect(cache.size).toBe(1);
+  });
 });

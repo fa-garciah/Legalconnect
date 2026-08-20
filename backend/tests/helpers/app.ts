@@ -18,6 +18,7 @@ import {
   TenantContextInterceptor,
   currentTx,
 } from '../../src/common/tenant/middleware';
+import { AuditInterceptor } from '../../src/common/audit/interceptor';
 import {
   InMemoryMembershipPort,
   MEMBERSHIP_PORT,
@@ -45,6 +46,10 @@ export function buildTestModule(memberships: readonly MembershipRecord[]) {
     providers: [
       { provide: MEMBERSHIP_PORT, useValue: new InMemoryMembershipPort(memberships) },
       { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
+      // Mirrors app.module.ts's registration order. ProbeController declares no
+      // @Audited action, so this is a no-op for every existing test here — and it is
+      // what proves an undeclared route passes straight through without recording.
+      { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     ],
   })
   class TestModule {}

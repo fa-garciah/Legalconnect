@@ -32,7 +32,9 @@ import { resolvePrincipal } from './resolve';
 import { MEMBERSHIP_PORT, type MembershipPort } from './membership';
 import { refusalToHttp, shouldAudit } from './refusals';
 import { recordCrossTenantAttempt } from './record-attempt';
-import { PLATFORM_SURFACE } from '../permissions/guard';
+import { PLATFORM_SURFACE, REQUIRED_ARCHETYPES } from '../permissions/guard';
+import { NotAuthorized } from '../http/errors';
+import { firstHeaderValue } from '../http/header';
 
 interface TenantContext {
   readonly tx: Tx;
@@ -76,10 +78,8 @@ interface IncomingRequest {
   principal?: ActivePrincipal;
 }
 
-const header = (req: IncomingRequest, name: string): string | undefined => {
-  const value = req.headers[name];
-  return Array.isArray(value) ? value[0] : value;
-};
+const header = (req: IncomingRequest, name: string): string | undefined =>
+  firstHeaderValue(req.headers, name);
 
 @Injectable()
 export class TenantContextInterceptor implements NestInterceptor {
@@ -111,13 +111,14 @@ export class TenantContextInterceptor implements NestInterceptor {
 
     if (!resolution.ok) {
       if (shouldAudit(resolution.reason) && tenantId) {
-        // Recorded against the tenant that was NAMED — the firm whose data was
-        // reached for is the one with a reason to know.
+        // shouldAudit is true only for no_live_membership/membership_revoked, and
+        // resolvePrincipal can only reach either after identityId already passed
+        // its own format check — so identityId is never undefined here.
         await recordCrossTenantAttempt({
           targetTenantId: tenantId,
           targetEntity: 'tenant',
           targetId: tenantId,
-          actorIdentityId: identityId ?? null,
+          actorIdentityId: identityId,
           source: { channel, clientClass: 'http' },
         });
       }
@@ -125,6 +126,18 @@ export class TenantContextInterceptor implements NestInterceptor {
     }
 
     request.principal = resolution.principal;
+
+    // Archetype enforcement happens HERE rather than in a Guard. Guards run before
+    // every interceptor in Nest's request lifecycle, so a guard checking
+    // `request.principal` would always see it unset — the principal only exists once
+    // resolution above succeeds. See permissions/guard.ts for the fuller account.
+    const required = this.reflector.getAllAndOverride<readonly string[] | undefined>(
+      REQUIRED_ARCHETYPES,
+      [context.getHandler(), context.getClass()],
+    );
+    if (required && !required.includes(resolution.principal.archetype)) {
+      throw new NotAuthorized();
+    }
 
     return runInTenantContext(resolution.principal, async () =>
       firstValueFrom(next.handle() as Observable<unknown>),

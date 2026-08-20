@@ -60,6 +60,12 @@ export class NotAuthorized extends HttpException {
   }
 }
 
+export class SamePlan extends HttpException {
+  constructor() {
+    super(errorBody('same_plan', 'The tenant is already on that plan.'), HttpStatus.UNPROCESSABLE_ENTITY);
+  }
+}
+
 export class LimitsExceeded extends HttpException {
   constructor(exceeded: ReadonlyArray<{ limit: string; current: number; target: number }>) {
     super(

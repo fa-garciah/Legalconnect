@@ -67,9 +67,8 @@ export const auditEvent = pgTable(
   {
     id: uuid('id').notNull().defaultRandom(),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
-    tenantId: uuid('tenant_id')
-      .notNull()
-      .references(() => tenant.id),
+    // Nullable: plan.limits_changed belongs to no single tenant (0011_audit_event_tenant_id_nullable.sql).
+    tenantId: uuid('tenant_id').references(() => tenant.id),
     action: text('action').notNull(),
     actorIdentityId: uuid('actor_identity_id'),
     actorMembershipId: uuid('actor_membership_id'),

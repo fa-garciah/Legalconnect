@@ -1,0 +1,24 @@
+-- plan.limits_changed (FR-014, FR-016) is the one audited action with no single
+-- tenant to attribute it to: a plan's limits affect every tenant currently on that
+-- tier, and the platform role's own reach spans tenants by design (research.md D9).
+-- Every other action has a natural single tenant target. tenant_id was NOT NULL
+-- from 0003 onward, which had no action that needed otherwise until FR-014 was
+-- amended to add this one.
+--
+-- Safe for the fail-closed guarantee T037 tests (write-attribution.test.ts): that
+-- guarantee is RLS's WITH CHECK, not this constraint — with no active tenant
+-- context, NULLIF(current_setting('app.tenant_id', true), '') is NULL, and
+-- `tenant_id = NULL` is never true for any tenant_id (NULL included), so the
+-- lc_app write is refused by the policy regardless of this column's nullability.
+-- The NOT NULL constraint was defense in depth on top of that, not the guarantee
+-- itself, and dropping it removes only the redundant layer.
+--
+-- lc_platform's own policy is `USING (true) WITH CHECK (true)` — unrestricted
+-- either way — so this is what actually lets it write a row belonging to no tenant.
+--
+-- RLS visibility is unaffected on the tenant side: a NULL tenant_id never matches
+-- any active tenant's setting, so a row with none stays invisible to every tenant
+-- session. Only the platform role's unrestricted policy can read it — correct,
+-- since no tenant owns a change to the plan catalog.
+
+ALTER TABLE audit_event ALTER COLUMN tenant_id DROP NOT NULL;

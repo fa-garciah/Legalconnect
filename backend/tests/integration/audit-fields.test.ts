@@ -112,4 +112,26 @@ describe('audit entry fields and channel gating', () => {
     expect(await append(action, 'automated', marker)).toBe(false);
     expect(await fetch(marker)).toHaveLength(0);
   });
+
+  it('defaults metadata to {} when the caller omits it entirely', async () => {
+    const targetId = `deadbeef-0000-4000-8000-${String(Date.now()).padStart(12, '0').slice(-12)}`;
+    await runInTenantContext(principal, async (tx) =>
+      appendAuditEntry(tx, {
+        tenantId: principal.tenantId,
+        action: 'audit.queried',
+        targetEntity: 'audit_event',
+        targetId,
+        actorIdentityId: principal.identityId,
+        source: { channel: 'interactive' },
+        // metadata deliberately omitted
+      }),
+    );
+
+    const { rows: written } = await platform.query<{ metadata: Record<string, unknown> }>(
+      `SELECT metadata FROM audit_event WHERE target_id = $1`,
+      [targetId],
+    );
+    expect(written).toHaveLength(1);
+    expect(written[0]!.metadata).toEqual({});
+  });
 });

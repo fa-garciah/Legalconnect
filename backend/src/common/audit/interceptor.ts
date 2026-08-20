@@ -23,19 +23,29 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Observable, firstValueFrom, from } from 'rxjs';
 import { appendAuditEntry } from './append';
-import { TARGET_ENTITY_BY_ACTION, type AuditAction } from './actions';
+import type { AuditAction } from './actions';
 import { buildSource } from './source';
 import { actorFromPrincipal, PLATFORM_ACTOR } from './actor';
 import { currentPrincipal, currentTx } from '../tenant/middleware';
 import { currentPlatformTx } from '../db/platform-context';
+import { firstHeaderValue } from '../http/header';
 
 export const AUDITED = 'audited';
 
 export interface AuditedOptions {
   readonly action: AuditAction;
-  readonly targetEntity?: string;
+  readonly targetEntity: string;
   /** True for the platform administration surface, which has no membership. */
   readonly platform?: boolean;
+  /**
+   * True for the one action with no single tenant to belong to — plan.limits_changed
+   * affects every tenant on that tier. Without this, the interceptor skips recording
+   * when no tenant can be attributed (the correct behaviour for every OTHER platform
+   * action, whose target IS a tenant); with it, the entry is written with a NULL
+   * tenant_id instead, and `auditTargetId` is free to carry the actual target (the
+   * plan) rather than being reused as a stand-in for the tenant.
+   */
+  readonly tenantOptional?: boolean;
 }
 
 /**
@@ -57,12 +67,12 @@ interface RequestLike {
   headers?: Record<string, string | string[] | undefined>;
   ip?: string;
   auditTargetId?: string | null;
+  /** Platform tenant attribution for a `tenantOptional` action — see AuditedOptions. */
+  auditTenantId?: string | null;
 }
 
-const header = (req: RequestLike, name: string): string | undefined => {
-  const value = req.headers?.[name];
-  return Array.isArray(value) ? value[0] : value;
-};
+const header = (req: RequestLike, name: string): string | undefined =>
+  firstHeaderValue(req.headers, name);
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
@@ -96,14 +106,17 @@ export class AuditInterceptor implements NestInterceptor {
     // happens inside the mutation's transaction the mutation rolls back with it.
 
     const actor = declared.platform ? PLATFORM_ACTOR : actorFromPrincipal(currentPrincipal());
-    const tenantId = declared.platform
-      ? ((request.auditTargetId ?? null) as string)
+    const tenantId: string | null = declared.platform
+      ? declared.tenantOptional
+        ? (request.auditTenantId ?? null)
+        : (request.auditTargetId ?? null)
       : currentPrincipal().tenantId;
 
     // A platform route that reached here without setting auditTargetId has nothing to
     // attribute the entry to. Skipping is correct rather than guessing: a read that
-    // found nothing, or a mutation that was refused, must not appear in any log.
-    if (declared.platform && !tenantId) return result;
+    // found nothing, or a mutation that was refused, must not appear in any log. This
+    // does not apply to a tenantOptional action, which is written either way.
+    if (declared.platform && !declared.tenantOptional && !tenantId) return result;
 
     // Whichever surface this is, the append lands in THAT surface's transaction. The
     // two contexts are separate mechanisms (research.md D9) but share the discipline
@@ -113,7 +126,7 @@ export class AuditInterceptor implements NestInterceptor {
     await appendAuditEntry(tx, {
       tenantId,
       action: declared.action,
-      targetEntity: declared.targetEntity ?? TARGET_ENTITY_BY_ACTION[declared.action],
+      targetEntity: declared.targetEntity,
       targetId: request.auditTargetId ?? null,
       actorIdentityId: actor.actorIdentityId,
       actorMembershipId: actor.actorMembershipId,
