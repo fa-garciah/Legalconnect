@@ -1,0 +1,29 @@
+# Local PostgreSQL for development and for the migration/seed scripts.
+#
+# PostgreSQL 16 deliberately: Constitution v1.3.0 records that the null-safe RLS
+# predicate bug was reproduced against PostgreSQL 16, so local development runs the
+# same major version rather than a newer one where the behaviour might differ.
+#
+# The container superuser is the MIGRATION role. The application role is created by
+# drizzle/0000_roles.sql and owns nothing — see research.md D4.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: legalconnect-db
+    environment:
+      POSTGRES_USER: lc_migration
+      POSTGRES_PASSWORD: lc_migration_dev
+      POSTGRES_DB: legalconnect
+    ports:
+      - '5432:5432'
+    volumes:
+      - lc-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lc_migration -d legalconnect']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  lc-pgdata:

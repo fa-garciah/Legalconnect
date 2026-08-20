@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Every gate here is blocking. Constitution, Merge Rules: never merge on red.
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      # PostgreSQL 16 deliberately — the version the null-safe predicate rule was
+      # reproduced against (Constitution v1.3.0).
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lc_migration
+          POSTGRES_PASSWORD: lc_migration_ci
+          POSTGRES_DB: legalconnect
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U lc_migration -d legalconnect"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+
+    env:
+      DATABASE_URL_MIGRATION: postgresql://lc_migration:lc_migration_ci@localhost:5432/legalconnect
+      DATABASE_URL_APP: postgresql://lc_app:lc_app_ci@localhost:5432/legalconnect
+      DATABASE_URL_PLATFORM: postgresql://lc_platform:lc_platform_ci@localhost:5432/legalconnect
+      DATABASE_URL_RETENTION: postgresql://lc_retention:lc_retention_ci@localhost:5432/legalconnect
+      LC_APP_PASSWORD: lc_app_ci
+      LC_PLATFORM_PASSWORD: lc_platform_ci
+      LC_RETENTION_PASSWORD: lc_retention_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Migrate
+        run: npm run db:migrate
+
+      - name: Seed
+        run: npm run db:seed
+
+      # The role check leads deliberately. If it fails, every gate below it would pass
+      # while proving nothing.
+      - name: Application role is not superuser, owns nothing, lacks BYPASSRLS
+        run: npm run verify:role
+
+      - name: RLS coverage — every tenant-scoped table has a null-safe policy
+        run: npm run test:rls
+
+      - name: Cross-tenant leak suite (includes the no-context case)
+        run: npm run test:isolation
+
+      - name: Full suite with blocking coverage
+        run: npm test -- --coverage
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Principle VI: blocking secret scanning. Secrets never in the repository,
+      # never in logs, never in error messages.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      # No critical CVEs on main.
+      - run: npm audit --audit-level=critical

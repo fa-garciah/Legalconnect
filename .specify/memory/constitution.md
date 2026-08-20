@@ -243,8 +243,32 @@ CI:         GitHub Actions
   tables, and must NOT hold `BYPASSRLS`.** RLS is silently ignored for the table
   owner and for superusers: connecting with the wrong role leaves the policies
   written and the isolation nonexistent, with tests passing.
+- **Every RLS predicate MUST use the null-safe form:**
+  `tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid`
+  — never the bare form
+  `tenant_id = current_setting('app.tenant_id', true)::uuid`.
+  _Rationale:_ the missing-ok flag on `current_setting` returns `NULL` the
+  first time no value has been set, and that compares to `NULL` — correctly
+  invisible, fail-closed. But once a transaction on a pooled connection has set
+  the value and then ended, the same call returns `''` (empty string), not
+  `NULL`. Casting `''` to `uuid` raises an error. Without `NULLIF`, a request
+  that reaches a business query with no active tenant context fails loudly
+  (500) instead of failing closed (zero rows) — and the difference is invisible
+  in local development, where connections are rarely reused, and only appears
+  under pooling in staging or production. This was reproduced directly against
+  PostgreSQL 16 with Drizzle before being written here; it is not a theoretical
+  concern. This rule applies to every RLS policy in every slice, present and
+  future — it does not get re-litigated per feature.
 - Mandatory CI test verifying that every table carrying `tenant_id` has RLS
   enabled and an active policy. A new table without a policy breaks the build.
+  This catalog check confirms a policy _exists_; it cannot parse whether its
+  predicate is null-safe. The non-negotiable tenant-isolation test suite
+  (Development Workflow & Quality Gates) MUST therefore include, for every
+  tenant-scoped table, a case that opens a connection with no tenant context
+  active and asserts zero rows and no error — not just "foreign rows are
+  invisible" but "the absence of context produces silence, not a crash." That
+  test fails immediately if `NULLIF` is missing, which is what makes this rule
+  enforced by construction rather than by memory.
 
 ### Drizzle ORM — derived from Principle II
 
@@ -451,10 +475,18 @@ schedule pressure in the project.
 
 ---
 
-**Version:** 1.2.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-19
+**Version:** 1.3.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-19
 
 ### Amendment History
 
+- **1.3.0** — Added the null-safe RLS predicate rule (`NULLIF` around
+  `current_setting`) to Technology Constraints, and required the
+  tenant-isolation test suite to assert the no-context case explicitly. Root
+  cause: reproduced against a live PostgreSQL 16 instance during validation of
+  the `001-tenant-foundation` plan, where the naive predicate raised an error
+  under connection pooling instead of failing closed. Placed in the constitution
+  rather than in a single slice's `data-model.md` because it governs every RLS
+  policy in every present and future slice, not one feature.
 - **1.2.0** — Translated to English; language rule extended to cover specs, plans
   and this document. Principle I now references `master-user-story-catalog.md`
   as the authoritative backlog index. Technical Debt reconciled: items on the

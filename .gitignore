@@ -1,0 +1,40 @@
+# Node / TypeScript
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+*.log
+npm-debug.log*
+
+# Secrets. Constitution Principle VI: secrets never in the repository.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+# CSD private keys are invoice-signing material — secrets manager only, never here.
+*.cer
+*.sdg
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+crash.log
+
+# Python (companion extension scripts)
+__pycache__/
+*.pyc
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
+.vscode/
