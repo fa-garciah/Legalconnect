@@ -104,24 +104,24 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 - [X] T035 [P] [US1] Integration test: an unfiltered read returns **all of the active tenant's rows and zero foreign rows** in `backend/tests/integration/isolation/unfiltered-read.test.ts` — quickstart V3, SC-001
 - [X] T036 [P] [US1] Integration test: **no tenant context active → zero rows and no error**, for every tenant-scoped table, in `backend/tests/integration/isolation/no-context.test.ts` — quickstart V15, Constitution v1.3.0
-- [ ] T037 [P] [US1] Integration test: a write carrying no explicit tenant value is attributed to the active tenant and cannot be attributed to another, in `backend/tests/integration/isolation/write-attribution.test.ts` — US1 scenario 3
-- [ ] T038 [P] [US1] Contract test: a cross-tenant request answers `404` with the generic body, never `403` and never `200`, in `backend/tests/contract/cross-tenant-404.test.ts` — quickstart V4, AS-02, SC-003
-- [ ] T039 [P] [US1] Integration test: the cross-tenant attempt is recorded against the **targeted** tenant and the entry **does not name the actor's home tenant**, in `backend/tests/integration/isolation/cross-attempt-record.test.ts` — quickstart V4, FR-023
-- [ ] T040 [P] [US1] Integration test: a request naming a tenant the identity holds no live membership in is refused and recorded as a cross-tenant attempt, in `backend/tests/integration/isolation/membership-refusal.test.ts` — US1 scenario 7, FR-022
-- [ ] T041 [P] [US1] Integration test: an identity with membership in two tenants sees only the active one, and no response reveals the other membership's existence or count, in `backend/tests/integration/isolation/multi-membership.test.ts` — quickstart V10, SC-014
-- [ ] T042 [P] [US1] Integration test: an asynchronous job carrying its tenant in the message envelope is isolated exactly as a request is, in `backend/tests/integration/isolation/async-job.test.ts` — quickstart V12, FR-005
-- [ ] T043 [P] [US1] Integration test: a cache read that omits the tenant prefix misses rather than returning a foreign entry, in `backend/tests/integration/isolation/cache-prefix.test.ts` — FR-005
-- [ ] T044 [P] [US1] Integration test: activating a deactivated tenant is refused and its records remain intact, in `backend/tests/integration/isolation/deactivated-refusal.test.ts` — quickstart V11, research.md D13
+- [X] T037 [P] [US1] Integration test: a write carrying no explicit tenant value is attributed to the active tenant and cannot be attributed to another, in `backend/tests/integration/isolation/write-attribution.test.ts` — US1 scenario 3
+- [X] T038 [P] [US1] Contract test: a cross-tenant request answers `404` with the generic body, never `403` and never `200`, in `backend/tests/contract/cross-tenant-404.test.ts` — quickstart V4, AS-02, SC-003
+- [X] T039 [P] [US1] Integration test: the cross-tenant attempt is recorded against the **targeted** tenant and the entry **does not name the actor's home tenant**, in `backend/tests/integration/isolation/cross-attempt-record.test.ts` — quickstart V4, FR-023
+- [X] T040 [P] [US1] Integration test: a request naming a tenant the identity holds no live membership in is refused and recorded as a cross-tenant attempt, in `backend/tests/integration/isolation/membership-refusal.test.ts` — US1 scenario 7, FR-022
+- [X] T041 [P] [US1] Integration test: an identity with membership in two tenants sees only the active one, and no response reveals the other membership's existence or count, in `backend/tests/integration/isolation/multi-membership.test.ts` — quickstart V10, SC-014
+- [X] T042 [P] [US1] Integration test: an asynchronous job carrying its tenant in the message envelope is isolated exactly as a request is, in `backend/tests/integration/isolation/async-job.test.ts` — quickstart V12, FR-005
+- [X] T043 [P] [US1] Integration test: a cache read that omits the tenant prefix misses rather than returning a foreign entry, in `backend/tests/integration/isolation/cache-prefix.test.ts` — FR-005
+- [X] T044 [P] [US1] Integration test: activating a deactivated tenant is refused and its records remain intact, in `backend/tests/integration/isolation/deactivated-refusal.test.ts` — quickstart V11, research.md D13
 
 ### Implementation for User Story 1
 
-- [ ] T045 [US1] Implement the tenant context resolver — verify a live membership joins identity and requested tenant, and that the tenant is active — in `backend/src/common/tenant/resolve.ts`
-- [ ] T046 [US1] Implement the global middleware that opens the request transaction and issues `SET LOCAL app.tenant_id` on that same connection before any business query, in `backend/src/common/tenant/middleware.ts`
-- [ ] T047 [US1] Implement the refusal paths — no identity, no tenant named, no live membership, revoked membership, deactivated tenant — in `backend/src/common/tenant/refusals.ts`
-- [ ] T048 [US1] Wire cross-tenant attempt recording through the definer function, omitting the actor's home tenant from the entry, in `backend/src/common/tenant/record-attempt.ts`
-- [ ] T049 [US1] Implement the async worker activation path reusing the identical membership verification and `SET LOCAL` sequence, in `backend/src/common/tenant/job-context.ts`
-- [ ] T050 [US1] Implement tenant-prefixed cache keys that miss rather than fall back, in `backend/src/common/tenant/cache-keys.ts`
-- [ ] T051 [US1] Register the middleware globally and confirm no business query filters tenant by hand, in `backend/src/app.module.ts`
+- [X] T045 [US1] Implement the tenant context resolver — verify a live membership joins identity and requested tenant, and that the tenant is active — in `backend/src/common/tenant/resolve.ts`
+- [X] T046 [US1] Implement the global middleware that opens the request transaction and issues `SET LOCAL app.tenant_id` on that same connection before any business query, in `backend/src/common/tenant/middleware.ts`
+- [X] T047 [US1] Implement the refusal paths — no identity, no tenant named, no live membership, revoked membership, deactivated tenant — in `backend/src/common/tenant/refusals.ts`
+- [X] T048 [US1] Wire cross-tenant attempt recording through the definer function, omitting the actor's home tenant from the entry, in `backend/src/common/tenant/record-attempt.ts`
+- [X] T049 [US1] Implement the async worker activation path reusing the identical membership verification and `SET LOCAL` sequence, in `backend/src/common/tenant/job-context.ts`
+- [X] T050 [US1] Implement tenant-prefixed cache keys that miss rather than fall back, in `backend/src/common/tenant/cache-keys.ts`
+- [X] T051 [US1] Register the middleware globally and confirm no business query filters tenant by hand, in `backend/src/app.module.ts`
 
 **Checkpoint**: Isolation is enforced and provably fail-closed. This is the MVP boundary.
 
@@ -137,21 +137,21 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 ### Tests for User Story 2 ⚠️ Write first, watch them fail
 
-- [ ] T052 [P] [US2] Integration test: `UPDATE` and `DELETE` against an existing audit entry both fail with a **permission error**, not a missing method, in `backend/tests/integration/audit-immutability.test.ts` — quickstart V5, AS-04, SC-005
-- [ ] T053 [P] [US2] Integration test: a mutation whose audit append fails leaves **zero observable effects**, in `backend/tests/integration/audit-atomicity.test.ts` — quickstart V6, FR-017, SC-012
-- [ ] T054 [P] [US2] Integration test: each audited action produces exactly one entry carrying actor, action, target entity, timestamp, source and tenant, in `backend/tests/integration/audit-fields.test.ts` — quickstart V13, SC-004
-- [ ] T055 [P] [US2] Integration test: two mutations in the same instant produce two distinct, individually addressable entries, in `backend/tests/integration/audit-distinctness.test.ts` — FR-018
-- [ ] T056 [P] [US2] Integration test: timestamps come from the database and a caller-supplied timestamp is rejected, in `backend/tests/integration/audit-timestamp.test.ts` — FR-020, research.md D10
-- [ ] T057 [P] [US2] Integration test: no entry contains end-client personal data, secrets or authentication factors, checked against a deny-list of shapes, in `backend/tests/integration/audit-no-pii.test.ts` — quickstart V14, FR-012, SC-006
-- [ ] T058 [P] [US2] Integration test: the definer function can append an audit row and **can do nothing else**, in `backend/tests/integration/audit-definer-scope.test.ts` — research.md D8
+- [X] T052 [P] [US2] Integration test: `UPDATE` and `DELETE` against an existing audit entry both fail with a **permission error**, not a missing method, in `backend/tests/integration/audit-immutability.test.ts` — quickstart V5, AS-04, SC-005
+- [X] T053 [P] [US2] Integration test: a mutation whose audit append fails leaves **zero observable effects**, in `backend/tests/integration/audit-atomicity.test.ts` — quickstart V6, FR-017, SC-012
+- [X] T054 [P] [US2] Integration test: each audited action produces exactly one entry carrying actor, action, target entity, timestamp, source and tenant, in `backend/tests/integration/audit-fields.test.ts` — quickstart V13, SC-004
+- [X] T055 [P] [US2] Integration test: two mutations in the same instant produce two distinct, individually addressable entries, in `backend/tests/integration/audit-distinctness.test.ts` — FR-018
+- [X] T056 [P] [US2] Integration test: timestamps come from the database and a caller-supplied timestamp is rejected, in `backend/tests/integration/audit-timestamp.test.ts` — FR-020, research.md D10
+- [X] T057 [P] [US2] Integration test: no entry contains end-client personal data, secrets or authentication factors, checked against a deny-list of shapes, in `backend/tests/integration/audit-no-pii.test.ts` — quickstart V14, FR-012, SC-006
+- [X] T058 [P] [US2] Integration test: the definer function can append an audit row and **can do nothing else**, in `backend/tests/integration/audit-definer-scope.test.ts` — research.md D8
 
 ### Implementation for User Story 2
 
-- [ ] T059 [US2] Implement the global interceptor that appends the audit entry inside the mutation's own transaction, in `backend/src/common/audit/interceptor.ts`
-- [ ] T060 [US2] Register the interceptor globally over every mutation, so omitting it is an explicit act rather than an oversight, in `backend/src/app.module.ts`
-- [ ] T061 [US2] Implement the actor resolver mapping the active membership to `actor_identity_id` and `actor_membership_id`, with null for system and platform actors, in `backend/src/common/audit/actor.ts`
-- [ ] T062 [US2] Implement the `source` builder recording channel, coarse network origin and client class without personal data, in `backend/src/common/audit/source.ts`
-- [ ] T063 [US2] Implement the metadata sanitiser enforcing the no-personal-data, no-secrets rule at write time, in `backend/src/common/audit/sanitise.ts`
+- [X] T059 [US2] Implement the global interceptor that appends the audit entry inside the mutation's own transaction, in `backend/src/common/audit/interceptor.ts`
+- [X] T060 [US2] Register the interceptor globally over every mutation, so omitting it is an explicit act rather than an oversight, in `backend/src/app.module.ts`
+- [X] T061 [US2] Implement the actor resolver mapping the active membership to `actor_identity_id` and `actor_membership_id`, with null for system and platform actors, in `backend/src/common/audit/actor.ts`
+- [X] T062 [US2] Implement the `source` builder recording channel, coarse network origin and client class without personal data, in `backend/src/common/audit/source.ts`
+- [X] T063 [US2] Implement the metadata sanitiser enforcing the no-personal-data, no-secrets rule at write time, in `backend/src/common/audit/sanitise.ts`
 
 **Checkpoint**: Every mutation is recorded, atomically, in a log the application cannot rewrite.
 
