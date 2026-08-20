@@ -23,6 +23,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable, firstValueFrom, from } from 'rxjs';
 import { sql } from 'drizzle-orm';
 import { appDb, type Tx } from '../db/client';
@@ -31,6 +32,7 @@ import { resolvePrincipal } from './resolve';
 import { MEMBERSHIP_PORT, type MembershipPort } from './membership';
 import { refusalToHttp, shouldAudit } from './refusals';
 import { recordCrossTenantAttempt } from './record-attempt';
+import { PLATFORM_SURFACE } from '../permissions/guard';
 
 interface TenantContext {
   readonly tx: Tx;
@@ -81,9 +83,21 @@ const header = (req: IncomingRequest, name: string): string | undefined => {
 
 @Injectable()
 export class TenantContextInterceptor implements NestInterceptor {
-  constructor(@Inject(MEMBERSHIP_PORT) private readonly memberships: MembershipPort) {}
+  constructor(
+    @Inject(MEMBERSHIP_PORT) private readonly memberships: MembershipPort,
+    private readonly reflector: Reflector,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    // The platform administration surface is exempt (FR-009). The exemption is read
+    // from an explicit `@PlatformSurface()` declaration on the route, so opting out of
+    // tenant scope is a visible, reviewable act rather than a property of the URL.
+    const isPlatform = this.reflector.getAllAndOverride<boolean>(PLATFORM_SURFACE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPlatform) return next.handle();
+
     return from(this.activate(context, next));
   }
 

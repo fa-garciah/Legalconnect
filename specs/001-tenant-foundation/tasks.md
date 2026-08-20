@@ -167,24 +167,24 @@ Constitution exemption 1 covers declarative migrations and infrastructure manife
 
 ### Tests for User Story 3 ⚠️ Write first, watch them fail
 
-- [ ] T064 [P] [US3] Contract test: `POST /internal/platform/tenants` returns `201` with the tenant body and records one `tenant.provisioned` entry, in `backend/tests/contract/provision-tenant.test.ts` — AS-01
-- [ ] T065 [P] [US3] Contract test: a duplicate RFC returns `409 rfc_already_registered` and leaves **no partial tenant**, raised by the unique constraint rather than a read-then-write check, in `backend/tests/contract/provision-duplicate-rfc.test.ts` — quickstart V7, US3 scenarios 2 & 5
-- [ ] T066 [P] [US3] Contract test: two concurrent provisionings with the same RFC produce exactly one tenant, in `backend/tests/contract/provision-concurrent-rfc.test.ts` — spec.md edge case
-- [ ] T067 [P] [US3] Contract test: `400 validation_failed` for empty name and for a malformed RFC, in `backend/tests/contract/provision-validation.test.ts` — FR-007
-- [ ] T068 [P] [US3] Contract test: `POST .../deactivate` returns `200`, records `tenant.deactivated`, and a second call returns `409 already_deactivated`, in `backend/tests/contract/deactivate-tenant.test.ts` — US3 scenario 3
-- [ ] T069 [P] [US3] Integration test: no capability anywhere hard-deletes a tenant, in `backend/tests/integration/no-hard-delete.test.ts` — FR-006, SC-011
-- [ ] T070 [P] [US3] Contract test: an **interactive** registry read records exactly one `tenant.registry_read` entry and an **automated** read records none, in `backend/tests/contract/registry-read-channel.test.ts` — quickstart V13, FR-026
-- [ ] T071 [P] [US3] Integration test: the platform administration path never traverses the tenant middleware and reaches only the `tenant`, `plan` and `audit_event` tables — never a business table, in `backend/tests/integration/platform-scope.test.ts` — FR-009, research.md D9
+- [X] T064 [P] [US3] Contract test: `POST /internal/platform/tenants` returns `201` with the tenant body and records one `tenant.provisioned` entry, in `backend/tests/contract/provision-tenant.test.ts` — AS-01
+- [X] T065 [P] [US3] Contract test: a duplicate RFC returns `409 rfc_already_registered` and leaves **no partial tenant**, raised by the unique constraint rather than a read-then-write check, in `backend/tests/contract/provision-duplicate-rfc.test.ts` — quickstart V7, US3 scenarios 2 & 5
+- [X] T066 [P] [US3] Contract test: two concurrent provisionings with the same RFC produce exactly one tenant, in `backend/tests/contract/provision-concurrent-rfc.test.ts` — spec.md edge case
+- [X] T067 [P] [US3] Contract test: `400 validation_failed` for empty name and for a malformed RFC, in `backend/tests/contract/provision-validation.test.ts` — FR-007
+- [X] T068 [P] [US3] Contract test: `POST .../deactivate` returns `200`, records `tenant.deactivated`, and a second call returns `409 already_deactivated`, in `backend/tests/contract/deactivate-tenant.test.ts` — US3 scenario 3
+- [X] T069 [P] [US3] Integration test: no capability anywhere hard-deletes a tenant, in `backend/tests/integration/no-hard-delete.test.ts` — FR-006, SC-011
+- [X] T070 [P] [US3] Contract test: an **interactive** registry read records exactly one `tenant.registry_read` entry and an **automated** read records none, in `backend/tests/contract/registry-read-channel.test.ts` — quickstart V13, FR-026
+- [X] T071 [P] [US3] Integration test: the platform administration path never traverses the tenant middleware and reaches only the `tenant`, `plan` and `audit_event` tables — never a business table, in `backend/tests/integration/platform-scope.test.ts` — FR-009, research.md D9
 
 ### Implementation for User Story 3
 
-- [ ] T072 [US3] Implement the tenant repository against the platform client in `backend/src/modules/tenant/tenant.repository.ts`
-- [ ] T073 [US3] Implement provisioning as a single transaction in `backend/src/modules/tenant/provision.service.ts`
-- [ ] T074 [US3] Implement deactivation as the one-way `active → deactivated` transition in `backend/src/modules/tenant/deactivate.service.ts`
-- [ ] T075 [US3] Implement RFC validation (12 or 13 characters, uppercase, valid shape) in `backend/src/modules/tenant/rfc.ts`
-- [ ] T076 [US3] Implement the platform administration controller for provision, deactivate and registry read in `backend/src/modules/tenant/platform.controller.ts`
-- [ ] T077 [US3] Apply the interactive-only channel gate to the registry read in `backend/src/modules/tenant/platform.controller.ts`
-- [ ] T078 [US3] Bind the platform surface to localhost only, since this slice authenticates nothing, in `backend/src/main.ts` — contracts/README.md
+- [X] T072 [US3] Implement the tenant repository against the platform client in `backend/src/modules/tenant/tenant.repository.ts`
+- [X] T073 [US3] Implement provisioning as a single transaction in `backend/src/modules/tenant/provision.service.ts`
+- [X] T074 [US3] Implement deactivation as the one-way `active → deactivated` transition in `backend/src/modules/tenant/deactivate.service.ts`
+- [X] T075 [US3] Implement RFC validation (12 or 13 characters, uppercase, valid shape) in `backend/src/modules/tenant/rfc.ts`
+- [X] T076 [US3] Implement the platform administration controller for provision, deactivate and registry read in `backend/src/modules/tenant/platform.controller.ts`
+- [X] T077 [US3] Apply the interactive-only channel gate to the registry read in `backend/src/modules/tenant/platform.controller.ts`
+- [X] T078 [US3] Bind the platform surface to localhost only, since this slice authenticates nothing, in `backend/src/main.ts` — contracts/README.md
 
 **Checkpoint**: Tenants can be created and deactivated, and every such act is traced.
 
