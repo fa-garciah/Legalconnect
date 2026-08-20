@@ -1,3 +1,9 @@
+-- SUPERSEDED BY 0009. This version ends its INSERT with `RETURNING id`, which requires
+-- SELECT privilege that lc_audit_writer deliberately does not hold, so every call
+-- failed with "permission denied for table audit_event". 0009 replaces it with a
+-- void-returning version. Left in place rather than edited, because it has already
+-- been applied and migrations are recorded by filename.
+--
 -- The one place in the system permitted to write outside the active tenant
 -- (research.md D8).
 --

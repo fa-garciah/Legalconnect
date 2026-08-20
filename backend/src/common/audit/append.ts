@@ -14,6 +14,7 @@ import { auditEvent } from '../db/schema';
 import type { AuditSource } from '../db/schema';
 import type { Tx } from '../db/client';
 import { shouldEmit, type AuditAction } from './actions';
+import { assertNoSensitiveData } from './sanitise';
 
 export interface AppendInput {
   readonly tenantId: string;
@@ -37,6 +38,12 @@ export interface AppendInput {
  */
 export async function appendAuditEntry(tx: Tx, input: AppendInput): Promise<boolean> {
   if (!shouldEmit(input.action, input.source.channel)) return false;
+
+  // The choke point for FR-012, placed here rather than in the interceptor so that
+  // every path crosses it — jobs and direct callers included, not only HTTP. Refuses
+  // rather than strips; see sanitise.ts for why, and note that refusing inside the
+  // mutation's transaction rolls the mutation back with it (FR-017).
+  assertNoSensitiveData(input.metadata ?? {});
 
   await tx.insert(auditEvent).values({
     tenantId: input.tenantId,
