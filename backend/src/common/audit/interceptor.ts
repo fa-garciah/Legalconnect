@@ -27,6 +27,7 @@ import { TARGET_ENTITY_BY_ACTION, type AuditAction } from './actions';
 import { buildSource } from './source';
 import { actorFromPrincipal, PLATFORM_ACTOR } from './actor';
 import { currentPrincipal, currentTx } from '../tenant/middleware';
+import { currentPlatformTx } from '../db/platform-context';
 
 export const AUDITED = 'audited';
 
@@ -99,7 +100,17 @@ export class AuditInterceptor implements NestInterceptor {
       ? ((request.auditTargetId ?? null) as string)
       : currentPrincipal().tenantId;
 
-    await appendAuditEntry(currentTx(), {
+    // A platform route that reached here without setting auditTargetId has nothing to
+    // attribute the entry to. Skipping is correct rather than guessing: a read that
+    // found nothing, or a mutation that was refused, must not appear in any log.
+    if (declared.platform && !tenantId) return result;
+
+    // Whichever surface this is, the append lands in THAT surface's transaction. The
+    // two contexts are separate mechanisms (research.md D9) but share the discipline
+    // that makes FR-017 hold.
+    const tx = declared.platform ? currentPlatformTx() : currentTx();
+
+    await appendAuditEntry(tx, {
       tenantId,
       action: declared.action,
       targetEntity: declared.targetEntity ?? TARGET_ENTITY_BY_ACTION[declared.action],
