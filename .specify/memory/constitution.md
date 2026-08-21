@@ -27,9 +27,12 @@ appears, the spec is amended, not the plan.
 traceable reference is rejected automatically.
 
 **Traceability baseline:** the authoritative backlog index is
-`master-user-story-catalog.md` (169 user stories across EP00–EP16). It supersedes
+`master-user-story-catalog.md` (171 user stories across EP00–EP16). It supersedes
 `1. Epics.md`. Any user story not present in that catalog does not exist for the
-purposes of this principle.
+purposes of this principle. When a slice's design surfaces a capability the catalog
+does not describe, the catalog is amended in the same PR as that slice's spec —
+this has now happened twice (EP00's creation, and EP12's US18–US19), and it is the
+expected outcome of specifying carefully rather than a defect in the process.
 
 ### II. Tenant Isolation is Absolute (NON-NEGOTIABLE)
 
@@ -46,6 +49,10 @@ rows.
 cross-tenant leak between two firms litigating against each other ends the
 product and exposes CC to liability. No business, schedule or performance
 justification authorises an exception.
+
+**Consequence for identity:** tenancy is owned by this product's own PostgreSQL
+schema, never by the identity provider. The IdP authenticates a person; it holds no
+notion of which firm's data that person may reach. See Authentication below.
 
 ### III. Product Core vs. Tenant Customization
 
@@ -67,16 +74,36 @@ exists.
 ### IV. Least Privilege by Default
 
 Deny by default. Every permission is explicit. Every `spec.md` involving an
-archetype (MP, AA, PL, CM, BM, SA, CC, IC, CB, EL, and the portal roles) declares
-its permission matrix: what it may read, write, delete and export.
+archetype declares its permission matrix: what it may read, write, delete and
+export.
 
 **Verifiable:** a `spec.md` without a permission matrix does not pass the
 Discovery approval gate.
 
+**Archetype codes.** Fixed here so they are unambiguous across specs:
+
+| Code | Archetype | Class |
+|---|---|---|
+| PO | CC Platform Operator (Cosmic Chimps staff) | Vendor — not a tenant membership |
+| MP | Managing Partner | Internal |
+| AA | Associate Attorney | Internal |
+| PL | Paralegal | Internal |
+| CM | Case Manager | Internal |
+| BM | Billing Manager | Internal |
+| SA | System Administrator | Internal, per tenant |
+| CC | Corporate Client | Portal |
+| IC | Individual Client | Portal |
+| CB | Corporate Billing Contact | Portal |
+| EL | External Legal Representative | Portal |
+
+PO replaces the earlier overloaded use of CC for the vendor role; CC now
+denotes only the Corporate Client portal archetype. "CC" in prose continues to mean
+Cosmic Chimps the company.
+
 **Note:** the global role matrix is still undefined (April requirements session:
 "to be defined once all user types accessing the system are identified"). This
 principle builds it incrementally per story rather than blocking development
-until it is complete.
+until it is complete. Slice 004-authorization-entitlements owns its completion.
 
 ### V. Auditable by Construction
 
@@ -114,42 +141,131 @@ review for any endpoint handling personal data.
 
 ### Authentication
 
-- Identity delegated to an **external IdP** (provider: **[PENDING — close before
-  end of Fase 0]**). LegalConnect MX stores no passwords.
+**Identity provider: Amazon Cognito user pools, Essentials tier.** Decided
+2026-08-21, closing the `[PENDING]` this section carried since v1.1.0. One shared
+user pool for the whole platform; a single app client. LegalConnect MX stores no
+passwords.
+
+**Why this provider, stated plainly so the decision can be re-litigated on
+evidence rather than taste:**
+
+1. **It is the only candidate with data residency in Mexico.** Cognito has been
+   available in mx-central-1 with all three tiers since 2025-07-29. Every
+   alternative evaluated — Auth0, Logto, WorkOS, Clerk, Descope, Zitadel, Stytch,
+   Entra External ID, Google Identity Platform — hosts identity data in the United
+   States or Europe. For a product whose subject matter is covered by
+   attorney-client privilege and sold to Mexican firms, keeping identity data in
+   the same jurisdiction as the case files is both a compliance simplification and
+   a sales argument. See Data Residency.
+2. **It adds no vendor.** The stack is already AWS. No additional contract, no
+   additional data processor in the privacy notice, no additional external
+   dependency in front of the door to privileged material, and no additional
+   pass-through line in the iguala.
+3. **Cost.** Cognito Essentials includes 10,000 MAU per month at no charge, and
+   that allowance does not expire with the AWS free tier; beyond it, $0.015/MAU.
+   At the projected scale — roughly 110 users per tenant with EP13 active, 10:1
+   external to internal — twenty firms is about 2,200 MAU, inside the free
+   allowance. The nearest functional equivalent, Logto, is $120/month from the
+   first tenant. That difference lands directly on iguala margin, which is CC's,
+   not the client's.
+4. **It satisfies the three hard requirements below** — mandatory MFA that no
+   tenant administrator can relax, native WebAuthn, and sign-out that propagates
+   to the provider — without a tier jump.
+
+**What this choice costs, and it is not nothing.** Cognito has no organizations
+primitive and no backup codes. The first is irrelevant: tenancy and the archetype
+matrix live in this product's PostgreSQL with Row-Level Security (Principle II),
+and were built that way in slice 001-tenant-foundation before this decision. The
+second is a real gap against a hard requirement of this document and is addressed
+by the named exception below.
+
+**Requirements this provider satisfies, and which any replacement must also
+satisfy:**
+
 - **MFA enrollment is MANDATORY** for every user of the system, internal and
-  external. No exceptions, and no ability to relax it per tenant.
+  external. No exceptions, and no ability to relax it per tenant. Cognito enforces
+  this at the user pool, and Cognito has no notion of a tenant administrator, so
+  there is nobody below the platform who could relax it.
 - **MFA challenge on EVERY sign-in**, for every role. There is no trusted-device
-  mechanism and no suppression of the second factor.
-  _Rationale:_ every access reaches material covered by attorney-client
+  mechanism and no suppression of the second factor. Cognito device tracking MUST
+  be configured to **"Don't remember"**; the "Always remember" setting substitutes
+  a device credential for the MFA challenge and is therefore prohibited.
+  Rationale: every access reaches material covered by attorney-client
   privilege; this product recognises no low-risk role.
-- Permitted factors (v1.0):
-  - **TOTP** (authenticator app) as the primary factor for all roles.
-  - **Email OTP** permitted for low-frequency external portal users.
-  - **SMS prohibited as a primary factor** (SIM swap, plus per-message cost on
-    every session given the permanent challenge). Permitted only as a
-    last-resort fallback.
-  - Backup codes mandatory, issued at enrollment.
-- The selected IdP **MUST support WebAuthn/passkeys natively**, even though they
-  are not enabled in v1.0. Choosing an IdP without that support turns future
-  passkey adoption into a provider migration rather than a configuration change.
-- **Step-up MFA is mandatory**, regardless of session age, for: creating or
-  deactivating users, changes to the permission matrix, uploading or replacing
-  PAC/CSD credentials, full case export, and resetting another user's MFA.
-- **Access recovery:** every factor reset is recorded in the audit log
-  identifying the authorising party. No internal role may reset an external
-  user's factor without documented out-of-band verification.
-  _Rationale:_ with universal mandatory MFA, the recovery flow becomes the
-  weakest attack surface in the system. A phone call cannot be allowed to unlock
-  access to a case file.
-- Compensating mitigations, mandatory while the primary factor is phishable:
-  DMARC/SPF/DKIM enforced on the domain; requesting OTPs via email links is
-  prohibited; a single access domain is communicated to users.
-- **IdP selection constraint:** per-MAU cost must be modelled against the portal
-  user projection before signing. With EP13 active, external users will outnumber
-  internal users by roughly 10:1 per tenant, and that cost lands directly on the
-  iguala margin.
+- **Native WebAuthn/passkey support**, even though passkeys are not enabled in
+  v1.0. Choosing a provider without it would turn future adoption into a provider
+  migration rather than a configuration change. Cognito supports passkeys from the
+  Essentials tier. **Regional availability of this specific capability in
+  mx-central-1 is not positively confirmed in AWS documentation — see Recognised
+  Technical Debt item 11.**
+- **Sign-out and revocation propagate to the provider.** Cognito GlobalSignOut
+  and RevokeToken provide this. Note that a revoked Cognito token still passes
+  naive signature-and-expiry validation, so the API must consult revocation state
+  rather than trusting the token — which this product does anyway, because
+  sessions are its own (see Sessions).
+
+**Permitted factors (v1.0):**
+
+- **TOTP** (authenticator app) — the sole enrolled factor for every role in v1.0.
+- **Backup codes** — mandatory, issued at enrollment. Built by this product; see
+  the named exception below.
+- **SMS is PROHIBITED**, as a primary factor and as a fallback. Rationale
+  unchanged (SIM swap; per-message cost on every session given the permanent
+  challenge), now reinforced by the fact that no factor in v1.0 requires it.
+- **Email OTP is DEFERRED, not permitted, in v1.0.** Earlier revisions of this
+  document allowed it for low-frequency external portal users. Three findings
+  retire that allowance for now: EP13, the only epic with such users, remains
+  unvalidated (Technical Debt item 2); Cognito cannot serve email MFA and
+  email-based account recovery from the same user pool, which would break
+  self-service recovery for precisely the users who have no other channel; and
+  Amazon SES is not available in mx-central-1. Reinstating email OTP requires an
+  amendment, and the earliest sensible trigger is EP13's validation.
+
+**Named exception — custody of backup code material.** This document states that
+the platform stores no passwords, and that remains true. It does not store
+authentication factors either, with exactly one exception, granted here because
+the chosen provider does not offer the capability and this document requires it:
+
+- The platform MAY store backup codes for the sole purpose of recovering a lost
+  second factor.
+- Codes MUST be stored only as hashes produced by a memory-hard function
+  (Argon2id or scrypt), never in recoverable form, never in logs, never in error
+  messages, and never in an audit entry.
+- Each code is single-use. Consuming one invalidates it. Re-issuance replaces the
+  entire set rather than topping it up.
+- Issuance, consumption, exhaustion and re-issuance are each audited, identifying
+  the acting identity by reference.
+- Coverage of this path is non-negotiable and blocking in CI, on the same footing
+  as tenant isolation.
+- No archetype may read another person's codes, and no archetype may read any
+  code at all — including PO and SA.
+
+Slice 003-authentication-mfa owns this construction. It is the price of the
+provider decision and is recorded as Recognised Technical Debt item 9 so it is not
+mistaken for a free capability.
+
+**Step-up MFA is mandatory**, regardless of session age, for: creating or
+deactivating users, changes to the permission matrix, uploading or replacing
+PAC/CSD credentials, full case export, and resetting another user's MFA. Slice
+005-session-lifecycle owns the mechanism; capabilities that require it MUST NOT
+be exposed in production before it exists.
+
+**Access recovery:** every factor reset is recorded in the audit log identifying
+the authorising party. No internal role may reset an external user's factor without
+documented out-of-band verification.
+Rationale: with universal mandatory MFA, the recovery flow becomes the weakest
+attack surface in the system. A phone call cannot be allowed to unlock access to a
+case file.
+
+**Compensating mitigations, mandatory while the primary factor is phishable:**
+DMARC/SPF/DKIM enforced on the domain; requesting OTPs via email links is
+prohibited; a single access domain is communicated to users.
 
 ### Sessions
+
+Sessions belong to this product, not to the identity provider. The provider
+authenticates; this product decides how long the resulting access lives and
+revokes it.
 
 - Access token: **15 min**. Rotating refresh token (rotation on every use;
   detected reuse revokes the entire token family).
@@ -163,20 +279,48 @@ review for any endpoint handling personal data.
 - Refresh tokens are persisted server-side with device metadata and are
   individually revocable. **Pure stateless JWT is prohibited**:
   US09-EP12-ASC-ViewActiveSessions and US10-EP12-ASC-RevokeSession require it.
-  Revocation must also propagate to the IdP.
-- Explicit sign-out invalidates the token immediately, server-side and at the IdP.
+  Revocation must also propagate to the provider.
+- Explicit sign-out invalidates the token immediately, server-side and at the
+  provider.
+
+**Consequence of owning sessions:** Cognito has no API to list a user's active
+sessions, and that does not matter — the session inventory those two stories
+require is this product's own table. The provider is not asked for a capability it
+does not have.
 
 ### Data Residency
 
-Provider fixed: **AWS**. Region: **[PENDING — close before end of Fase 0]**
+Provider: **AWS**. Region: **mx-central-1 — AWS Mexico (Central)**. Decided
+2026-08-21, closing the `[PENDING]` this section carried since v1.1.0.
 
-Constraints that apply regardless of the region chosen:
+Verified available in that region: Cognito user pools (all three tiers), ECS with
+Fargate, RDS for PostgreSQL (through major version 18), S3, KMS with FIPS
+endpoints, SQS, Secrets Manager. The region has **three Availability Zones** and
+supports Multi-AZ RDS.
 
-- The region must appear in the firm's privacy notice.
-- Any international transfer must be declared in accordance with LFPDPPP.
-- The contractual operator of the infrastructure must be documented, along with
-  its legal capacity (data processor), given that cloud is billed as a
-  pass-through to the firm.
+**One documented exception, and it must appear in the privacy notice.** Amazon SES
+is **not available** in mx-central-1. Transactional email — invitation delivery
+above all — therefore leaves the region, either through SES in another AWS region
+or through a third-party provider. Consequences to hold:
+
+- Case files, documents, notes, time entries, invoices, the audit log and identity
+  records remain in Mexico. Nothing about that changes.
+- What crosses the border is the transactional message itself: a recipient email
+  address and the message body. Invitation emails MUST therefore carry no case
+  data, no client name and no matter reference — only a firm name and an opaque
+  invitation reference.
+- The transfer must be declared in the privacy notice in accordance with LFPDPPP,
+  scoped to transactional email rather than stated as a general transfer.
+- The choice between cross-region SES and a third-party provider is a `plan.md`
+  decision for slice 002-identity-membership, not a constitutional one. Either
+  way the provider is a data processor and must be named.
+
+Constraints that continue to apply:
+
+- The region appears in the firm's privacy notice.
+- The contractual operator of the infrastructure is documented along with its legal
+  capacity (data processor), given that cloud is billed as a pass-through to the
+  firm.
 - Backups reside in the same jurisdiction as the primary data.
 
 ### Dependencies and Infrastructure
@@ -220,12 +364,13 @@ principle** requires a formal amendment to this constitution.
 ### Stack
 
 ```
-Cloud:      AWS — ECS Fargate + RDS PostgreSQL + S3 + KMS + SQS
+Cloud:      AWS mx-central-1 — ECS Fargate + RDS PostgreSQL + S3 + KMS + SQS
 DB:         PostgreSQL with enforced Row-Level Security
              (shared schema, tenant_id on every table)
 Backend:    NestJS (TypeScript) + Drizzle ORM
 Frontend:   Next.js (React), responsive web
-Auth:       External IdP with native WebAuthn — [PENDING]
+Auth:       Amazon Cognito user pools, Essentials tier — one pool, one app client
+Email:      Transactional provider outside mx-central-1 — [decided in slice 002 plan]
 CFDI:       PAC with multi-issuer support — [PENDING]
 Queues:     SQS + worker inside the same deployment
 IaC:        Terraform or CDK (per the infrastructure team's practice)
@@ -270,6 +415,24 @@ CI:         GitHub Actions
   test fails immediately if `NULLIF` is missing, which is what makes this rule
   enforced by construction rather than by memory.
 
+### Amazon Cognito — derived from Principle II and the Authentication section
+
+- **One user pool for the entire platform, one app client.** Pool-per-tenant and
+  app-client-per-tenant are both **prohibited**. Reasons: the 1,000 user pools per
+  region quota does not scale operationally, a global policy change would become
+  one API call per tenant, and — decisively — a person may hold membership in more
+  than one tenant (`001/FR-021`), which a pool-per-tenant model cannot represent
+  without duplicating the human being.
+- **Cognito holds no tenancy and no authorization.** It answers one question: is
+  this person who they claim to be. Which firm they may reach, and with what
+  archetype, is answered by this product's membership table under RLS. No token
+  claim is ever trusted as a source of tenant or archetype
+  (`002/FR-016`).
+- Device tracking MUST be **"Don't remember"** (see Authentication).
+- Because a revoked Cognito token still passes naive signature-and-expiry
+  validation, the API MUST validate against this product's own session state, never
+  against the token alone.
+
 ### Drizzle ORM — derived from Principle II
 
 Drizzle is mandatory. **Prisma is prohibited** due to practical incompatibility
@@ -286,14 +449,21 @@ mechanisms, never per endpoint:
 
 | Requirement                       | Mandatory mechanism                    |
 | --------------------------------- | -------------------------------------- |
-| Tenant scope (P. II)              | Global middleware                      |
-| Permissions per archetype (P. IV) | Global guard                           |
+| Tenant scope (P. II)              | Global interceptor                     |
+| Permissions per archetype (P. IV) | Global interceptor                     |
 | Tier entitlement                  | Global guard                           |
 | Audit event (P. V)                | Global interceptor over every mutation |
 
 An endpoint that requires applying any of these manually is a design violation:
 the mechanism must apply by default, and omitting it must be an explicit,
 reviewable act rather than a possible oversight.
+
+**Correction (v1.4.0):** the first two rows said "middleware" and "guard". Slice
+001 established that both must run as **interceptors**: NestJS Guards execute
+before Interceptors, and the resolved principal an archetype check needs is only
+available after the tenant-context interceptor has run. A Guard-based permission
+check therefore cannot see what it must evaluate. Entitlement checking remains a
+Guard because it depends on the tenant's plan rather than on the principal.
 
 Framework scope in use: Modules, Controllers + DTOs, Providers/DI, Guards and
 Interceptors. Out of MVP scope: microservices, GraphQL, CQRS, WebSockets and
@@ -311,6 +481,8 @@ Each of these costs more than it contributes within the committed timeline:
 - ❌ GraphQL — REST; no multiple consumers justify it.
 - ❌ Offline sync engine — see Recognised Technical Debt.
 - ❌ Native mobile app in MVP — responsive web. Pending Discovery.
+- ❌ A second identity provider, or federation to a firm's own IdP. Enterprise SSO
+  is a Fase 2 conversation, not an MVP capability.
 
 ### PAC Constraints (CFDI 4.0)
 
@@ -324,19 +496,22 @@ Each of these costs more than it contributes within the committed timeline:
   with which invoices can be issued in their name. It belongs in a secrets
   manager with KMS, with access recorded in the audit log, and step-up MFA
   mandatory to upload or replace it.
+- **`[PENDING]` — PAC selection.** This is now the only open pending in this
+  document. It does not block slices 002–010; it blocks slice 011-cfdi-stamping,
+  which additionally has no user stories in the catalog yet (Technical Debt item 4).
 
 ### Walking Skeleton — entry condition to Fase 1
 
 Before day one of Fase 1, a trivial endpoint must exist that traverses the entire
 architecture with the non-negotiables already installed:
 
-1. Login against the IdP with MFA end-to-end.
-2. Tenant middleware + `SET LOCAL app.tenant_id` + one table with active RLS.
-3. Audit interceptor writing to the append-only table.
-4. Permission guard and entitlement guard operational.
-5. Cross-tenant leak test green.
+1. Login against the IdP with MFA end-to-end. — slice 003
+2. Tenant interceptor + `SET LOCAL app.tenant_id` + one table with active RLS. — ✅ slice 001
+3. Audit interceptor writing to the append-only table. — ✅ slice 001
+4. Permission guard and entitlement guard operational. — partial in 001 (SA only, no entitlement check); completed in slice 004
+5. Cross-tenant leak test green. — ✅ slice 001 on fixtures; against real data in slice 002
 6. Complete CI pipeline: secret scanning, dependency scanning, blocking coverage,
-   RLS verification.
+   RLS verification. — ✅ slice 001
 
 It is built during Fase 0. If the skeleton is not standing at the close of
 Fase 0, that is a signal that the stack or the estimate is wrong, and both are
@@ -369,8 +544,8 @@ in the `plan.md` Complexity Tracking section or blocks the merge.
 
 **Non-negotiable critical coverage.** Regardless of discipline, these paths
 require complete and blocking coverage in CI: authentication and sessions,
-**tenant isolation**, entitlement verification, fee and billable-hour
-calculation, and CFDI generation.
+**tenant isolation**, entitlement verification, **backup code issuance and
+consumption**, fee and billable-hour calculation, and CFDI generation.
 
 **Consciously accepted risk:** strict TDD in a team without prior practice
 reduces velocity by 15% to 30% during the first weeks. The Fase 1 commercial
@@ -397,7 +572,12 @@ additions:
 - Minimum one approved peer code review (per Handbook).
 - **English** for code, branches, commits, user stories, specs, plans and this
   constitution. **Spanish** for UI and client-facing documentation. No mixing
-  within a layer.
+  within a layer. Team coordination documents (slice roadmap, work allocation) are
+  exempt and may be written in Spanish; they are not SpecKit artifacts.
+- One slice per directory under `specs/`. A PR is scoped to a single slice
+  directory plus, at most, its own row of the catalog index. The slice roadmap
+  (`speckit/slice-roadmap.md`) records the queue and the merge protocol for the
+  files two people genuinely contend over.
 
 ---
 
@@ -411,33 +591,44 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
    that vector. **Claiming phishing resistance in commercial, sales or compliance
    material is prohibited.**
    _Review trigger:_ close of Discovery, or the first corporate client that
-   requires it in a security due diligence review.
+   requires it in a security due diligence review. Enabling Cognito passkeys is
+   the remedy and is a configuration change, not a migration — which is why native
+   WebAuthn support was a disqualifying requirement in provider selection.
 
 2. **EP13 (Client Portal) is unvalidated.** It is treated as a core MVP epic but
    did not appear in the client-stated priorities during the April 2026
-   requirements session. Its authentication cost (IdP MAU, external user
-   onboarding, MFA reset support) falls on CC's iguala margin. Requires
-   re-validation in Fase 0 before committing specs.
+   requirements session. Its authentication cost (MAU, external user onboarding,
+   MFA reset support) falls on CC's iguala margin. Requires re-validation in
+   Fase 0 before committing specs. Note that the Cognito free allowance of 10,000
+   MAU absorbs the projected external population for the first tens of firms, so
+   the MAU argument is now much weaker than when this item was written; the
+   support-volume argument is not.
 
 3. **External user onboarding does not exist.** EP13 has no user stories for
    invitation, enrollment or first access of a client to the portal. With
    universal mandatory MFA, that flow is a necessary condition for the epic to
-   function at all.
+   function at all. EP12's US18–US19 now cover the internal equivalent; whether
+   the external flow reuses them is an EP13 question and is not settled.
 
 4. **EP09 (Billing) has no CFDI stories.** Twelve user stories cover invoice CRUD
    and none covers PAC stamping, cancellation with SAT acknowledgement, payment
    complement or multi-issuer CSD handling. The heaviest technical work in the
-   epic is unspecified and unestimated. Must be resolved in Discovery.
+   epic is unspecified and unestimated. Must be resolved in Discovery, and it
+   gates slice 011 together with the PAC pending.
 
 5. **Ownership overlap between EP00, EP10 and EP12.** US01–US03-EP10-CFG
    (manage users, manage roles, configure permissions) duplicate
-   US11–US13-EP00-FND and US01-EP12-ASC. Ownership must be split before
-   `/specify`: EP00 owns the mechanism, EP10 owns the administrative UI.
+   US11–US13-EP00-FND and US01-EP12-ASC. Ownership is now split by slice: EP00's
+   mechanism is slice 004, EP12's invitation flow is slice 002, and EP10's
+   administrative UI is slice 014. Any residual ambiguity is resolved in favour of
+   the mechanism owning behaviour and the UI owning presentation.
 
 6. **US02-EP11-PMG (configure email) conflicts with IdP semantics.** If email is
    the identity identifier, changing it is an identity operation requiring
    step-up MFA and re-verification, not a profile edit. Currently classified as
-   trivial MVP work; it is not.
+   trivial MVP work; it is not. `002/FR-003` already forbids the silent-merge
+   behaviour that would make this dangerous, but the user-facing flow remains
+   unspecified.
 
 7. **Offline operation is unspecified and unestimated.** The April 2026 session
    states the app must work offline. Offline-first combined with multi-tenancy
@@ -446,11 +637,37 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
    occur, when did it sync, which one wins). If it survives Discovery, the
    current quote is not deliverable.
 
-8. **Unresolved: can a user belong to more than one tenant?** A corporate client
-   may retain two firms that both use LegalConnect MX; external counsel may
-   collaborate with several. If yes, the identity model changes at its root
-   (`Identity` + `Membership`, RLS over membership, tenant selector at login).
-   This is not a later adjustment. Must be closed before the first `/plan`.
+8. **Backup codes are built by this product, not bought.** Cognito provides none,
+   and this document requires them. The consequence is that LegalConnect MX
+   custodies authentication material it would otherwise have avoided entirely —
+   see the named exception under Authentication. This is the single largest
+   concession made in exchange for data residency in Mexico and a zero-cost
+   provider, and it is a real one: a bug in that path is an authentication bypass.
+   Coverage is blocking. Owned by slice 003.
+   _Review trigger:_ if a future provider offers backup codes with residency in
+   Mexico, this exception should be withdrawn rather than kept for convenience.
+
+9. **Transactional email leaves mx-central-1.** SES is not available in the
+   region. Invitation and notification email therefore transits another
+   jurisdiction, carrying a recipient address and a message body. Mitigated by
+   forbidding case data in those messages and by declaring the transfer in the
+   privacy notice, but not eliminated. A firm in a security due diligence review
+   will ask about it, and the honest answer is that identity and case data stay in
+   Mexico while transactional email does not.
+
+10. **Cognito passkey availability in mx-central-1 is not positively
+    confirmed.** AWS documents no regional exclusion for the capability, and the
+    launch announcement lists all three tiers, but no AWS source states feature
+    parity explicitly. Since native WebAuthn was a disqualifying requirement in
+    provider selection, this must be verified with AWS or by direct test **before
+    slice 003's plan is approved**, not at the moment passkeys are first needed.
+    If it turns out to be unavailable in the region, the choice is between the
+    region and the provider, and this constitution is amended either way.
+
+11. **The 004 archetype matrix does not exist yet.** Today only SA is ever
+    granted anything, and no entitlement check exists at all — `plan.entitlements`
+    is written and read by nothing. Until slice 004 lands, every capability that
+    depends on a real archetype decision is either unavailable or gated to SA.
 
 ---
 
@@ -468,17 +685,39 @@ schedule pressure in the project.
   budget or client request. A violation can only be resolved by amending the
   constitution, never by ignoring it in a PR.
 - Every `[PENDING]` in this document must be closed before the end of Fase 0.
-  Entering Fase 1 with open pendings is a governance violation.
+  Entering Fase 1 with open pendings is a governance violation. **One remains:
+  PAC selection.**
 - Relaxing a principle de facto — without an amendment — invalidates the
   authority of the entire document. If a principle cannot be met, it is amended
   or removed; it is not ignored.
 
 ---
 
-**Version:** 1.3.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-19
+**Version:** 1.4.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-21
 
 ### Amendment History
 
+- **1.4.0** — Closed two of the three `[PENDING]` items. **Identity provider:
+  Amazon Cognito user pools, Essentials tier**, one shared pool and one app
+  client, chosen for data residency in Mexico, absence of an additional vendor,
+  cost inside the free MAU allowance at projected scale, and satisfaction of the
+  three hard requirements (irrelaxable MFA, native WebAuthn, revocation that
+  propagates). **Region: mx-central-1**, with SES's absence there recorded as a
+  documented exception affecting transactional email only. Added a **named
+  exception permitting custody of hashed backup code material**, because Cognito
+  provides none and this document requires them; blocking coverage extended to
+  that path. **Email OTP retired from v1.0** and made amendment-gated, for three
+  independent reasons. Added the archetype code table, introducing PO for the
+  vendor role so CC unambiguously means Corporate Client. Corrected the
+  cross-cutting mechanism table: tenant scope and permission checks are
+  **interceptors**, not middleware and guards — Guards run before Interceptors and
+  cannot see the resolved principal. Struck the closed multi-tenant identity debt
+  item (closed by 001/D1), renumbered the remainder, and added four new items
+  (backup code custody, transactional email egress, unconfirmed passkey regional
+  availability, absent archetype matrix). Walking skeleton items annotated with
+  their owning slice and current state. Traceability baseline updated to 171
+  stories; a second identity provider and federated SSO added to the MVP
+  prohibitions.
 - **1.3.0** — Added the null-safe RLS predicate rule (`NULLIF` around
   `current_setting`) to Technology Constraints, and required the
   tenant-isolation test suite to assert the no-context case explicitly. Root
