@@ -32,7 +32,7 @@ import { resolvePrincipal } from './resolve';
 import { MEMBERSHIP_PORT, type MembershipPort } from './membership';
 import { refusalToHttp, shouldAudit } from './refusals';
 import { recordCrossTenantAttempt } from './record-attempt';
-import { PLATFORM_SURFACE, REQUIRED_ARCHETYPES } from '../permissions/guard';
+import { IDENTITY_SURFACE, PLATFORM_SURFACE, REQUIRED_ARCHETYPES } from '../permissions/guard';
 import { NotAuthorized } from '../http/errors';
 import { firstHeaderValue } from '../http/header';
 
@@ -62,13 +62,22 @@ export function currentPrincipal(): ActivePrincipal {
   return context.principal;
 }
 
-/** Exactly one tenant, active for the whole transaction. FR-022. */
+/**
+ * Exactly one tenant, active for the whole transaction. FR-022.
+ *
+ * Also sets `app.identity_id` (research.md D3, slice 002) — the same setting
+ * `GET /identity/memberships` uses alone, with no tenant active. Setting both
+ * together here is what lets `membership`'s second, identity-scoped SELECT
+ * policy stay harmless inside an ordinary tenant session: it only ever matches
+ * the caller's own row, which the tenant-scoped policy already permitted.
+ */
 export async function runInTenantContext<T>(
   principal: ActivePrincipal,
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   return appDb().transaction(async (tx) => {
     await tx.execute(sql`SELECT set_config('app.tenant_id', ${principal.tenantId}, true)`);
+    await tx.execute(sql`SELECT set_config('app.identity_id', ${principal.identityId}, true)`);
     return storage.run({ tx, principal }, () => fn(tx));
   });
 }
@@ -89,14 +98,20 @@ export class TenantContextInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    // The platform administration surface is exempt (FR-009). The exemption is read
-    // from an explicit `@PlatformSurface()` declaration on the route, so opting out of
-    // tenant scope is a visible, reviewable act rather than a property of the URL.
+    // The platform administration surface is exempt (FR-009), and so is the
+    // identity-only self-service surface (slice 002, research.md D3) — neither
+    // has a tenant to activate. Both exemptions are read from an explicit
+    // declaration on the route, so opting out of tenant scope is a visible,
+    // reviewable act rather than a property of the URL.
     const isPlatform = this.reflector.getAllAndOverride<boolean>(PLATFORM_SURFACE, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPlatform) return next.handle();
+    const isIdentityOnly = this.reflector.getAllAndOverride<boolean>(IDENTITY_SURFACE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPlatform || isIdentityOnly) return next.handle();
 
     return from(this.activate(context, next));
   }

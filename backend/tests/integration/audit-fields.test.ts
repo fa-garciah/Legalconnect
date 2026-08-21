@@ -22,7 +22,25 @@ import {
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import type { ActivePrincipal } from '../../src/common/tenant/principal';
 
-const UNCONDITIONAL = AUDIT_ACTIONS.filter((a) => !CHANNEL_GATED_ACTIONS.has(a));
+/**
+ * slice 002, backend/drizzle/0018: these four are reserved to
+ * `accept_invitation()`/`lc_identity_writer` at the GRANT level — `lc_app`'s
+ * own audit_event policy now refuses them by construction, the same
+ * discipline as every other narrow exception in this system. They are
+ * covered by their own dedicated tests exercising the real acceptance path
+ * (tests/integration/accept-invitation-atomicity.test.ts and neighbours), not
+ * by this generic sweep, which writes through the ordinary `lc_app` path.
+ */
+const RESERVED_TO_IDENTITY_WRITER: readonly string[] = [
+  'identity.created',
+  'membership.created',
+  'invitation.accepted',
+  'invitation.refused',
+];
+
+const UNCONDITIONAL = AUDIT_ACTIONS.filter(
+  (a) => !CHANNEL_GATED_ACTIONS.has(a) && !RESERVED_TO_IDENTITY_WRITER.includes(a),
+);
 const GATED = AUDIT_ACTIONS.filter((a) => CHANNEL_GATED_ACTIONS.has(a));
 
 describe('audit entry fields and channel gating', () => {
@@ -73,10 +91,24 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it('covers every action in the vocabulary — seven', () => {
-    // Guards against an action being added to FR-014 without a test reaching it.
-    expect(AUDIT_ACTIONS).toHaveLength(7);
+  it('covers every action in the vocabulary — sixteen (001\'s seven plus 002\'s nine)', () => {
+    // Guards against an action being added to FR-014/FR-031 without a test reaching it.
+    expect(AUDIT_ACTIONS).toHaveLength(16);
     expect(GATED).toHaveLength(2);
+    expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
+    expect(UNCONDITIONAL).toHaveLength(16 - 2 - 4);
+  });
+
+  it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {
+    for (const action of RESERVED_TO_IDENTITY_WRITER) {
+      const marker = `reserved-${action}-${Date.now()}`;
+      // Drizzle wraps the driver error, so the RLS reason lives on `.cause`
+      // rather than the top-level message (the same wrapping tenant.repository.ts
+      // already has to unwrap for a different error). Asserting rejection plus
+      // zero rows written is the meaningful check either way.
+      await expect(append(action as AuditAction, 'interactive', marker)).rejects.toBeTruthy();
+      expect(await fetch(marker)).toHaveLength(0);
+    }
   });
 
   it.each(UNCONDITIONAL)('%s produces exactly one entry with all six fields', async (action) => {

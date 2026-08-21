@@ -22,6 +22,7 @@ import { AuditInterceptor } from '../../src/common/audit/interceptor';
 import {
   InMemoryMembershipPort,
   MEMBERSHIP_PORT,
+  type MembershipPort,
   type MembershipRecord,
 } from '../../src/common/tenant/membership';
 
@@ -40,11 +41,11 @@ export class ProbeController {
   }
 }
 
-export function buildTestModule(memberships: readonly MembershipRecord[]) {
+export function buildTestModuleWithPort(port: MembershipPort) {
   @Module({
     controllers: [ProbeController],
     providers: [
-      { provide: MEMBERSHIP_PORT, useValue: new InMemoryMembershipPort(memberships) },
+      { provide: MEMBERSHIP_PORT, useValue: port },
       { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
       // Mirrors app.module.ts's registration order. ProbeController declares no
       // @Audited action, so this is a no-op for every existing test here — and it is
@@ -56,10 +57,25 @@ export function buildTestModule(memberships: readonly MembershipRecord[]) {
   return TestModule;
 }
 
+export function buildTestModule(memberships: readonly MembershipRecord[]) {
+  return buildTestModuleWithPort(new InMemoryMembershipPort(memberships));
+}
+
 export async function createTestApp(
   memberships: readonly MembershipRecord[],
 ): Promise<INestApplication> {
   const app = await NestFactory.create(buildTestModule(memberships), { logger: false });
+  await app.init();
+  return app;
+}
+
+/**
+ * slice 002 — builds the same probe app against an arbitrary `MembershipPort`,
+ * so the real `DbMembershipPort` can be exercised through the identical
+ * isolation-suite shape 001 already wrote against the fixture.
+ */
+export async function createTestAppWithPort(port: MembershipPort): Promise<INestApplication> {
+  const app = await NestFactory.create(buildTestModuleWithPort(port), { logger: false });
   await app.init();
   return app;
 }

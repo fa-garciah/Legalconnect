@@ -23,3 +23,11 @@ export const RequireArchetypes = (...archetypes: readonly Archetype[]) =>
 /** Marks an endpoint as not tenant-scoped — the platform administration surface. */
 export const PLATFORM_SURFACE = 'platformSurface';
 export const PlatformSurface = () => SetMetadata(PLATFORM_SURFACE, true);
+
+/**
+ * Marks an endpoint as identity-only — no tenant active at all (slice 002,
+ * research.md D3). The self-service surface: enumerate-own-memberships and
+ * accept-invitation. See `common/identity/context.ts`.
+ */
+export const IDENTITY_SURFACE = 'identitySurface';
+export const IdentitySurface = () => SetMetadata(IDENTITY_SURFACE, true);

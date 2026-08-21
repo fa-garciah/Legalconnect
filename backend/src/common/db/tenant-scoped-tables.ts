@@ -24,8 +24,18 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
     table: 'audit_event',
     scopeColumn: 'tenant_id',
   },
-  // Slice 002 adds `membership` here (tenant_id). Adding the table without adding it
-  // to this list must break the build.
+  {
+    table: 'membership',
+    scopeColumn: 'tenant_id',
+    note: 'Carries a second, identity-scoped SELECT policy for self-enumeration (research.md D3, slice 002) — the tenant-scoped policy above is what this registry verifies.',
+  },
+  {
+    table: 'invitation',
+    scopeColumn: 'tenant_id',
+  },
+  // `identity` (slice 002) is deliberately NOT registered here: it carries no
+  // tenant_id column at all and is scoped by app.identity_id instead
+  // (research.md D4). It is covered by its own lockdown test, not this one.
 ];
 
 /** Tables that legitimately hold no tenant data and therefore carry no policy. */

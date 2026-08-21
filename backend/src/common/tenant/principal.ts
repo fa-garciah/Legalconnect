@@ -4,7 +4,13 @@
  * This slice authenticates nothing — it is handed an already-authenticated principal.
  * The seam is specified in contracts/tenant-context.md; these are its types.
  */
-export type Archetype = 'SA' | 'MP' | 'AA' | 'PL' | 'CM' | 'BM' | 'IC' | 'CB' | 'EL';
+/**
+ * The ten membership-capable archetype codes fixed by Constitution v1.4.0
+ * Principle IV. `CC` (Corporate Client) was added in slice 002 — research.md
+ * D9 — closing a gap against the constitution's own table; `PO` is not a
+ * membership at all and never appears here.
+ */
+export type Archetype = 'SA' | 'MP' | 'AA' | 'PL' | 'CM' | 'BM' | 'CC' | 'IC' | 'CB' | 'EL';
 
 export type Channel = 'interactive' | 'automated';
 
@@ -27,13 +33,22 @@ export interface RequestOrigin {
   readonly networkOrigin?: string;
 }
 
-/** Why an activation was refused. Distinguished because they audit differently. */
+/**
+ * Why an activation was refused. Distinguished because they audit and answer
+ * differently.
+ *
+ * `mfa_not_enrolled` (slice 002, FR-026, research.md D5) is the one refusal
+ * that does not answer the generic tenant-context `404`: reaching it is proof
+ * the caller already holds a genuine, live, resolved membership, so there is
+ * no tenant-existence question left to protect.
+ */
 export type RefusalReason =
   | 'no_identity'
   | 'no_tenant_named'
   | 'no_live_membership'
   | 'membership_revoked'
-  | 'tenant_deactivated';
+  | 'tenant_deactivated'
+  | 'mfa_not_enrolled';
 
 /**
  * Only two of the five refusals write an audit entry. A deactivated tenant does not:

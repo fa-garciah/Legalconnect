@@ -15,14 +15,15 @@ import { AuditInterceptor } from '../../src/common/audit/interceptor';
 import {
   InMemoryMembershipPort,
   MEMBERSHIP_PORT,
+  type MembershipPort,
   type MembershipRecord,
 } from '../../src/common/tenant/membership';
 
-export function buildTenantTestModule(memberships: readonly MembershipRecord[]) {
+export function buildTenantTestModuleWithPort(port: MembershipPort) {
   @Module({
     imports: [AuditModule],
     providers: [
-      { provide: MEMBERSHIP_PORT, useValue: new InMemoryMembershipPort(memberships) },
+      { provide: MEMBERSHIP_PORT, useValue: port },
       { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
       { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     ],
@@ -31,10 +32,21 @@ export function buildTenantTestModule(memberships: readonly MembershipRecord[]) 
   return TenantTestModule;
 }
 
+export function buildTenantTestModule(memberships: readonly MembershipRecord[]) {
+  return buildTenantTestModuleWithPort(new InMemoryMembershipPort(memberships));
+}
+
 export async function createTenantApp(
   memberships: readonly MembershipRecord[],
 ): Promise<INestApplication> {
   const app = await NestFactory.create(buildTenantTestModule(memberships), { logger: false });
+  await app.init();
+  return app;
+}
+
+/** slice 002 — the real-adapter counterpart, for SC-001's re-run requirement. */
+export async function createTenantAppWithPort(port: MembershipPort): Promise<INestApplication> {
+  const app = await NestFactory.create(buildTenantTestModuleWithPort(port), { logger: false });
   await app.init();
   return app;
 }

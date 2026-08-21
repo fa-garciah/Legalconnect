@@ -51,11 +51,81 @@ export class AlreadyDeactivated extends HttpException {
   }
 }
 
+export class AlreadyRevoked extends HttpException {
+  constructor() {
+    super(errorBody('already_revoked', 'The membership is already revoked.'), HttpStatus.CONFLICT);
+  }
+}
+
+/**
+ * FR-035 (slice 002). Unlike most refusals in this system, this one names a
+ * specific, informative cause deliberately: the caller is the platform
+ * operator, who already knows the tenant's full state through the platform
+ * registry read — this discloses nothing FR-028 protects anyone from
+ * (research.md, contracts/platform-seed.md).
+ */
+export class TenantAlreadyHasMembers extends HttpException {
+  constructor() {
+    super(
+      errorBody('tenant_already_has_members', 'The tenant already has at least one live membership.'),
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
 export class NotAuthorized extends HttpException {
   constructor() {
     super(
       errorBody('not_authorized', 'Your role does not permit this operation.'),
       HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+/**
+ * FR-026 (slice 002). Deliberately distinct from `NotAuthorized`: the caller's
+ * archetype is fine and their membership is genuinely live — the one missing
+ * precondition is second-factor enrollment, which is actionable information
+ * for them, not a disclosure risk (research.md D5).
+ */
+export class MfaEnrollmentRequired extends HttpException {
+  constructor() {
+    super(
+      errorBody('mfa_enrollment_required', 'Second-factor enrollment must be completed first.'),
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+/**
+ * FR-022/FR-034 (slice 002). The ONE refusal `POST /identity/invitations/{ref}/accept`
+ * can ever return — no such reference, expired, used, revoked, email mismatch,
+ * tenant deactivated, and attempt-threshold-exceeded all answer identically.
+ * `400`, not `404`: there is no tenant-existence question to protect at this
+ * boundary (the caller has no tenant context to probe), but FR-028's
+ * email-enumeration question still applies, which is what the single generic
+ * body protects regardless of status code.
+ */
+export class InvitationInvalid extends HttpException {
+  constructor() {
+    super(
+      errorBody('invitation_invalid', 'This invitation cannot be accepted.'),
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+/**
+ * research.md D8 — the per-tenant issuance cap. Unlike `InvitationInvalid`,
+ * the issuer here is already an authenticated SA/MP of the tenant, not an
+ * outsider FR-028 needs to protect against, so there is no enumeration
+ * rationale for hiding the reason.
+ */
+export class RateLimited extends HttpException {
+  constructor() {
+    super(
+      errorBody('rate_limited', 'Too many invitations issued for this tenant recently.'),
+      HttpStatus.TOO_MANY_REQUESTS,
     );
   }
 }

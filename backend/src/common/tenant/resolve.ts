@@ -42,6 +42,13 @@ export async function resolvePrincipal(
   const active = await tenantIsActive(input.tenantId);
   if (!active) return { ok: false, reason: 'tenant_deactivated' };
 
+  // FR-026, research.md D5. `undefined` (every pre-002 fixture) is treated as
+  // not applicable; only an explicit `null` — the database adapter's answer
+  // when enrollment genuinely has not completed — refuses here.
+  if (membership.identityMfaEnrolledAt === null) {
+    return { ok: false, reason: 'mfa_not_enrolled' };
+  }
+
   return {
     ok: true,
     principal: {
