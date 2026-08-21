@@ -1,14 +1,19 @@
 # LegalConnect MX — Master User Story Catalog
 
-**Version:** 1.0 | **Date:** 2026-08-19 | **Constitution:** v1.1.0
+**Version:** 1.2 | **Date:** 2026-08-21 | **Constitution:** v1.4.0
 **Naming:** `US<NN>-EP<NN>-<ModuleCode>-<ActionDescription>` (Development Handbook)
 
 This document is the reconciled single source of truth for the backlog. It
 supersedes `1. Epics.md` as the epic index.
 
-**Slice column:** `MVP` / `IT2` / `IT3` per Story Mapping · `FND` = foundation,
-mandatory before any business feature · `TBD` = not yet sliced · `DFT` = draft,
+**Slice column:** MVP / IT2 / IT3 per Story Mapping · FND = foundation,
+mandatory before any business feature · TBD = not yet sliced · DFT = draft,
 pending Discovery.
+
+**Archetype codes** are fixed by Constitution v1.4.0 Principle IV: PO (CC Platform
+Operator), MP, AA, PL, CM, BM, SA internal; CC (Corporate Client),
+IC, CB, EL portal. PO replaced the earlier overloaded use of CC for the
+vendor role.
 
 ---
 
@@ -16,25 +21,25 @@ pending Discovery.
 
 | Ref | Code | Epic | US | Status |
 |---|---|---|---|---|
-| EP00 | FND | Platform Foundation | 15 | **NEW** — was missing entirely |
+| EP00 | FND | Platform Foundation | 16 | **NEW** — was missing entirely; +US16 on 2026-08-21 |
 | EP01 | DSH | Dashboard | 11 | Existing |
 | EP02 | CSM | Case Management | 13 | Existing + 3 new |
 | EP03 | CLM | Client Management | 6 | Existing |
 | EP04 | DOC | Document Management | 16 | Existing |
-| EP05 | CAL | Calendar & Scheduling | 10 | Renamed from `ViewUpcomingEvents` |
-| EP06 | KPI | KPI Dashboard | 9 | Renamed from `ViewOverallKPIs` + 1 new |
+| EP05 | CAL | Calendar & Scheduling | 10 | Renamed from ViewUpcomingEvents |
+| EP06 | KPI | KPI Dashboard | 9 | Renamed from ViewOverallKPIs + 1 new |
 | EP07 | JCN | Judicial Connectors | 9 | Existing — **out of MVP, Fase 2** |
 | EP08 | TTK | Time Tracking | 13 | Existing — **scope conflict open** |
 | EP09 | BIL | Billing | 12 | Existing |
 | EP10 | CFG | System Configuration | 10 | Existing |
 | EP11 | PMG | Profile Management | 3 | Existing |
-| EP12 | ASC | Account Security | 17 | **REWRITTEN** — was 2 US |
-| EP13 | PTL | Client Portal | 10 | Renamed from `CommunicationChannel` — **unvalidated** |
+| EP12 | ASC | Account Security | 19 | **REWRITTEN** — was 2 US; +US18–US19 on 2026-08-21 |
+| EP13 | PTL | Client Portal | 10 | Renamed from CommunicationChannel — **unvalidated** |
 | EP14 | NOT | Note Management | 5 | **NEW** — fills numbering gap |
 | EP15 | QTE | Quote Management | 6 | **NEW** — fills numbering gap, referenced by EP16 |
 | EP16 | CCT | Cost Center | 4 | Existing — **DRAFT** |
 
-**Total: 169 user stories.**
+**Total: 172 user stories.**
 
 ---
 
@@ -45,21 +50,34 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP00-FND-ProvisionTenant | CC Platform Operator | Provision a firm as an isolated tenant | FND |
-| US02-EP00-FND-AssignTenantPlan | CC Platform Operator | Assign/change iguala plan without deployment | FND |
-| US03-EP00-FND-EnforceTenantIsolation | CC Platform Operator | Isolation enforced at data layer | FND |
-| US04-EP00-FND-DeactivateTenant | CC Platform Operator | Deactivate tenant without deleting data | FND |
-| US05-EP00-FND-ConfigureTenantLimits | CC Platform Operator | Quantitative limits per plan | FND |
-| US06-EP00-FND-WriteAuditEvent | Managing Partner | Every mutation logged append-only | FND |
-| US07-EP00-FND-EnforceAuditImmutability | Managing Partner | Audit records unalterable by the app | FND |
-| US08-EP00-FND-QueryAuditLog | System Administrator | Query own-tenant log by date/actor/entity | FND |
-| US09-EP00-FND-ExportAuditTrail | Managing Partner | Export trail for a case or date range | IT2 |
-| US10-EP00-FND-LogCrossTenantAttempt | CC Platform Operator | Cross-tenant attempts as security events | FND |
-| US11-EP00-FND-EnforceDenyByDefault | System Administrator | No explicit permission = rejection | FND |
-| US12-EP00-FND-DefineRole | System Administrator | Define roles as permission sets per tenant | FND |
-| US13-EP00-FND-AssignRoleToUser | System Administrator | Assign/change a user's role | FND |
-| US14-EP00-FND-EnforceEntitlementByTier | CC Platform Operator | Tier gate enforced in backend | FND |
-| US15-EP00-FND-AuditPermissionChange | Managing Partner | Role/permission changes logged | FND |
+| US01-EP00-FND-ProvisionTenant | PO | Provision a firm as an isolated tenant | FND |
+| US02-EP00-FND-AssignTenantPlan | PO | Assign/change iguala plan without deployment | FND |
+| US03-EP00-FND-EnforceTenantIsolation | PO | Isolation enforced at data layer | FND |
+| US04-EP00-FND-DeactivateTenant | PO | Deactivate tenant without deleting data | FND |
+| US05-EP00-FND-ConfigureTenantLimits | PO | Quantitative limits per plan | FND |
+| US06-EP00-FND-WriteAuditEvent | MP | Every mutation logged append-only | FND |
+| US07-EP00-FND-EnforceAuditImmutability | MP | Audit records unalterable by the app | FND |
+| US08-EP00-FND-QueryAuditLog | SA | Query own-tenant log by date/actor/entity | FND |
+| US09-EP00-FND-ExportAuditTrail | MP | Export trail for a case or date range | IT2 |
+| US10-EP00-FND-LogCrossTenantAttempt | PO | Cross-tenant attempts as security events | FND |
+| US11-EP00-FND-EnforceDenyByDefault | SA | No explicit permission = rejection | FND |
+| US12-EP00-FND-DefineRole | SA | Define roles as permission sets per tenant | FND |
+| US13-EP00-FND-AssignRoleToUser | SA | Assign/change a user's role | FND |
+| US14-EP00-FND-EnforceEntitlementByTier | PO | Tier gate enforced in backend | FND |
+| US15-EP00-FND-AuditPermissionChange | MP | Role/permission changes logged | FND |
+| **US16-EP00-FND-SeedFirstAdministrator** | PO | Issue the first SA invitation for a tenant with no members yet | FND |
+
+> **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation.
+> **Pending:** US16 → slice 002-identity-membership; US11–US15 → slice
+> 004-authorization-entitlements; US09 → IT2.
+>
+> **US16 added 2026-08-21**, closing Open Question 2 of spec 002. The permission
+> matrix of that spec correctly denies PO every membership capability — if CC staff
+> could create memberships, CC could grant itself access to a firm's case files,
+> which is what Principle II exists to prevent. That left a real bootstrap gap: a
+> freshly provisioned tenant has no member who can invite the first one. US16 is the
+> narrowest resolution: one archetype (SA), available only while the tenant holds
+> zero live memberships, granting the operator nothing, and self-extinguishing.
 
 ---
 
@@ -67,20 +85,20 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP01-DSH-ViewTodaysKPISummary | Managing Partner | Today's KPI summary | MVP |
-| US02-EP01-DSH-ViewOverdueDeadlineAlerts | Managing Partner | Alerts for overdue deadlines | MVP |
-| US03-EP01-DSH-ReviewRecentActivityFeed | Managing Partner | Recent team activity feed | MVP |
-| US04-EP01-DSH-ViewUpcomingTasksAndDeadlines | Associate Attorney | Own upcoming tasks and deadlines | IT2 |
-| US05-EP01-DSH-UseQuickActionLinks | Associate Attorney | Quick-create cases and tasks | IT2 |
-| US06-EP01-DSH-ViewPendingFilings | Paralegal | Pending filings and court deadline notices | IT2 |
-| US07-EP01-DSH-MonitorCaseStatusIndicators | Case Manager | Case status indicators, bottleneck detection | IT2 |
-| US08-EP01-DSH-ViewOutstandingInvoices | Billing Manager | Outstanding invoices and payment stats | IT2 |
-| US09-EP01-DSH-ViewSystemHealthMetrics | System Administrator | Platform availability and security metrics | IT3 |
-| US10-EP01-DSH-ViewActiveMattersStatus | Corporate Client | Own active matter status | TBD |
-| US11-EP01-DSH-ViewUpcomingHearings | Individual Client | Own upcoming hearings and required actions | TBD |
+| US01-EP01-DSH-ViewTodaysKPISummary | MP | Today's KPI summary | MVP |
+| US02-EP01-DSH-ViewOverdueDeadlineAlerts | MP | Alerts for overdue deadlines | MVP |
+| US03-EP01-DSH-ReviewRecentActivityFeed | MP | Recent team activity feed | MVP |
+| US04-EP01-DSH-ViewUpcomingTasksAndDeadlines | AA | Own upcoming tasks and deadlines | IT2 |
+| US05-EP01-DSH-UseQuickActionLinks | AA | Quick-create cases and tasks | IT2 |
+| US06-EP01-DSH-ViewPendingFilings | PL | Pending filings and court deadline notices | IT2 |
+| US07-EP01-DSH-MonitorCaseStatusIndicators | CM | Case status indicators, bottleneck detection | IT2 |
+| US08-EP01-DSH-ViewOutstandingInvoices | BM | Outstanding invoices and payment stats | IT2 |
+| US09-EP01-DSH-ViewSystemHealthMetrics | SA | Platform availability and security metrics | IT3 |
+| US10-EP01-DSH-ViewActiveMattersStatus | CC | Own active matter status | TBD |
+| US11-EP01-DSH-ViewUpcomingHearings | IC | Own upcoming hearings and required actions | TBD |
 
-> **Fixed:** source `US09` was mislabeled with US08's title; `US10` was missing
-> its `EP01` segment. US10–US11 are portal-facing and depend on EP13 validation.
+> **Fixed:** source US09 was mislabeled with US08's title; US10 was missing
+> its EP01 segment. US10–US11 are portal-facing and depend on EP13 validation.
 
 ---
 
@@ -88,19 +106,19 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP02-CSM-CreateNewCase | Case Manager | Create case in under 2 min from intake | MVP |
-| US02-EP02-CSM-FilterCases | Case Manager | Filter by number, client, type, court, date, attorney, status | IT2 |
-| US03-EP02-CSM-ViewCaseList | Case Manager | Tabular case list with key columns | MVP |
-| US04-EP02-CSM-ViewCaseDetails | Associate Attorney | Detail panel on row selection | IT2 |
-| US05-EP02-CSM-IdentifyUrgentCases | Case Manager | "Urgent" status badge | IT2 |
-| US06-EP02-CSM-SortCases | Associate Attorney | Sort by any column | IT2 |
-| US07-EP02-CSM-MonitorCaseStatus | Paralegal | Status: In Process / On Hold / Concluded | IT3 |
-| US08-EP02-CSM-ViewAssignedAttorney | Case Manager | Assigned attorney per case | IT3 |
-| US09-EP02-CSM-ViewUpcomingDeadlines | Paralegal | Next three deadlines per case | MVP |
-| US10-EP02-CSM-ViewAssociatedTasks | Case Manager | Task count and status per case | MVP |
-| **US11-EP02-CSM-ViewCaseActivityFeed** | Case Manager | Activity log of case, documents and notes | MVP |
-| **US12-EP02-CSM-FilterActivityByMonth** | Case Manager | Filter case activity by month | MVP |
-| **US13-EP02-CSM-GenerateClientActivityReport** | Managing Partner | Client-facing activity report per case | IT2 |
+| US01-EP02-CSM-CreateNewCase | CM | Create case in under 2 min from intake | MVP |
+| US02-EP02-CSM-FilterCases | CM | Filter by number, client, type, court, date, attorney, status | IT2 |
+| US03-EP02-CSM-ViewCaseList | CM | Tabular case list with key columns | MVP |
+| US04-EP02-CSM-ViewCaseDetails | AA | Detail panel on row selection | IT2 |
+| US05-EP02-CSM-IdentifyUrgentCases | CM | "Urgent" status badge | IT2 |
+| US06-EP02-CSM-SortCases | AA | Sort by any column | IT2 |
+| US07-EP02-CSM-MonitorCaseStatus | PL | Status: In Process / On Hold / Concluded | IT3 |
+| US08-EP02-CSM-ViewAssignedAttorney | CM | Assigned attorney per case | IT3 |
+| US09-EP02-CSM-ViewUpcomingDeadlines | PL | Next three deadlines per case | MVP |
+| US10-EP02-CSM-ViewAssociatedTasks | CM | Task count and status per case | MVP |
+| **US11-EP02-CSM-ViewCaseActivityFeed** | CM | Activity log of case, documents and notes | MVP |
+| **US12-EP02-CSM-FilterActivityByMonth** | CM | Filter case activity by month | MVP |
+| **US13-EP02-CSM-GenerateClientActivityReport** | MP | Client-facing activity report per case | IT2 |
 
 > **US11–US13 are new**, derived from "Actividad por Expediente" in the
 > 23 Apr 2026 session, which had no epic assigned.
@@ -111,12 +129,12 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP03-CLM-ViewClientSummaryMetrics | Managing Partner | Total / active / new-this-month | IT2 |
-| US02-EP03-CLM-SearchAndFilterClients | Associate Attorney | Search and filter by name or status | MVP |
-| US03-EP03-CLM-AddOrUpdateClientProfile | Paralegal | Quick-add and edit client profiles | MVP |
-| US04-EP03-CLM-ViewAndManageClientCases | Case Manager | Cases per client | MVP |
-| US05-EP03-CLM-ViewBillingStatusIndicators | Billing Manager | Outstanding invoices beside client record | IT2 |
-| US06-EP03-CLM-ConfigureDashboardColumns | System Administrator | Configurable columns and fields | IT2 |
+| US01-EP03-CLM-ViewClientSummaryMetrics | MP | Total / active / new-this-month | IT2 |
+| US02-EP03-CLM-SearchAndFilterClients | AA | Search and filter by name or status | MVP |
+| US03-EP03-CLM-AddOrUpdateClientProfile | PL | Quick-add and edit client profiles | MVP |
+| US04-EP03-CLM-ViewAndManageClientCases | CM | Cases per client | MVP |
+| US05-EP03-CLM-ViewBillingStatusIndicators | BM | Outstanding invoices beside client record | IT2 |
+| US06-EP03-CLM-ConfigureDashboardColumns | SA | Configurable columns and fields | IT2 |
 
 ---
 
@@ -124,22 +142,22 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP04-DOC-UploadDocumentToFolder | Paralegal | Upload to correct folder | MVP |
-| US02-EP04-DOC-PreviewDocumentInline | Associate Attorney | Preview without downloading | MVP |
-| US03-EP04-DOC-OrganizeDocumentsByMatter | Case Manager | Categorize by case and subfolder | MVP |
-| US04-EP04-DOC-ShareDocumentWithClient | Managing Partner | Secure share link | IT2 |
-| US05-EP04-DOC-SearchDocumentsByKeyword | Paralegal | Keyword and filename search | IT2 |
-| US06-EP04-DOC-AssignAccessPermissions | System Administrator | View/edit/download rights per role | MVP |
-| US07-EP04-DOC-ViewDocumentHistory | Case Manager | Upload date and user per file | IT3 |
-| US08-EP04-DOC-ReplaceDocumentVersion | Associate Attorney | Replace with updated version | IT2 |
-| US09-EP04-DOC-DownloadDocumentEasily | Corporate Client | One-click download | TBD |
-| US10-EP04-DOC-TagDocumentsByType | Paralegal | Labels: contract, evidence, etc. | IT3 |
-| US11-EP04-DOC-BulkUploadDocuments | Case Manager | Multiple simultaneous uploads | IT2 |
-| US12-EP04-DOC-NotifyTeamOnUpload | Paralegal | Team alert on upload | IT3 |
-| US13-EP04-DOC-ConfirmDocumentView | Managing Partner | Who viewed a shared document | IT3 |
-| US14-EP04-DOC-ExportDocumentsByCase | System Administrator | Export all case documents as folder | IT3 |
-| US15-EP04-DOC-LinkDocumentsToCaseFile | Case Manager | Auto-link to related case | MVP |
-| US16-EP04-DOC-AccessDocumentsOnMobile | Associate Attorney | View/download from phone | IT3 |
+| US01-EP04-DOC-UploadDocumentToFolder | PL | Upload to correct folder | MVP |
+| US02-EP04-DOC-PreviewDocumentInline | AA | Preview without downloading | MVP |
+| US03-EP04-DOC-OrganizeDocumentsByMatter | CM | Categorize by case and subfolder | MVP |
+| US04-EP04-DOC-ShareDocumentWithClient | MP | Secure share link | IT2 |
+| US05-EP04-DOC-SearchDocumentsByKeyword | PL | Keyword and filename search | IT2 |
+| US06-EP04-DOC-AssignAccessPermissions | SA | View/edit/download rights per role | MVP |
+| US07-EP04-DOC-ViewDocumentHistory | CM | Upload date and user per file | IT3 |
+| US08-EP04-DOC-ReplaceDocumentVersion | AA | Replace with updated version | IT2 |
+| US09-EP04-DOC-DownloadDocumentEasily | CC | One-click download | TBD |
+| US10-EP04-DOC-TagDocumentsByType | PL | Labels: contract, evidence, etc. | IT3 |
+| US11-EP04-DOC-BulkUploadDocuments | CM | Multiple simultaneous uploads | IT2 |
+| US12-EP04-DOC-NotifyTeamOnUpload | PL | Team alert on upload | IT3 |
+| US13-EP04-DOC-ConfirmDocumentView | MP | Who viewed a shared document | IT3 |
+| US14-EP04-DOC-ExportDocumentsByCase | SA | Export all case documents as folder | IT3 |
+| US15-EP04-DOC-LinkDocumentsToCaseFile | CM | Auto-link to related case | MVP |
+| US16-EP04-DOC-AccessDocumentsOnMobile | AA | View/download from phone | IT3 |
 
 > **US06 promoted to MVP.** Constitution Principle IV (deny-by-default) makes
 > document permissions non-deferrable — documents cannot ship without them.
@@ -150,16 +168,16 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP05-CAL-ViewUpcomingEvents | Associate Attorney | Unified calendar of hearings, deadlines, meetings | MVP |
-| US02-EP05-CAL-ScheduleNewEvent | Paralegal | Create event from calendar | IT2 |
-| US03-EP05-CAL-EditAndRescheduleEvent | Case Manager | Edit and reschedule | IT2 |
-| US04-EP05-CAL-ReceiveEventNotifications | Associate Attorney | Automated reminders | MVP |
-| US05-EP05-CAL-FilterCalendarByCase | Case Manager | Filter by case or client | IT2 |
-| US06-EP05-CAL-SyncJudicialDeadlines | Case Manager | Auto-sync deadlines from court portals | IT3 |
-| US07-EP05-CAL-ConfigureNotificationPreferences | System Administrator | Who receives which notifications | IT2 |
-| US08-EP05-CAL-ViewEventsInClientPortal | Corporate Client | Hearings and deadlines in portal | TBD |
-| US09-EP05-CAL-SetRecurringEvents | Associate Attorney | Recurring events | IT2 |
-| US10-EP05-CAL-ExportCalendar | Billing Manager | Export to Outlook / Google Calendar | IT3 |
+| US01-EP05-CAL-ViewUpcomingEvents | AA | Unified calendar of hearings, deadlines, meetings | MVP |
+| US02-EP05-CAL-ScheduleNewEvent | PL | Create event from calendar | IT2 |
+| US03-EP05-CAL-EditAndRescheduleEvent | CM | Edit and reschedule | IT2 |
+| US04-EP05-CAL-ReceiveEventNotifications | AA | Automated reminders | MVP |
+| US05-EP05-CAL-FilterCalendarByCase | CM | Filter by case or client | IT2 |
+| US06-EP05-CAL-SyncJudicialDeadlines | CM | Auto-sync deadlines from court portals | IT3 |
+| US07-EP05-CAL-ConfigureNotificationPreferences | SA | Who receives which notifications | IT2 |
+| US08-EP05-CAL-ViewEventsInClientPortal | CC | Hearings and deadlines in portal | TBD |
+| US09-EP05-CAL-SetRecurringEvents | AA | Recurring events | IT2 |
+| US10-EP05-CAL-ExportCalendar | BM | Export to Outlook / Google Calendar | IT3 |
 
 > **US06 depends on EP07** (out of MVP). **US10 is one of the four open scope
 > conflicts** (Google Calendar sync).
@@ -170,15 +188,15 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP06-KPI-ViewOverallKPIs | Managing Partner | Active matters, resolution time, success rate, revenue | MVP |
-| US02-EP06-KPI-MonitorWorkloadDistribution | Case Manager | Active matters per attorney | IT2 |
-| US03-EP06-KPI-TrackSuccessRateByType | Managing Partner | Success rate by case type | IT3 |
-| US04-EP06-KPI-AnalyzeResolutionTimeTrends | Case Manager | Resolution time over quarters | IT3 |
-| US05-EP06-KPI-MonitorRevenueGrowth | Billing Manager | Monthly revenue growth % | IT2 |
-| US06-EP06-KPI-ReceiveKPIAlerts | Associate Attorney | Alert on KPI threshold deviation | IT3 |
-| US07-EP06-KPI-FilterKPIsByDateRange | Paralegal | Custom date ranges | IT2 |
-| US08-EP06-KPI-ExportDashboardReport | System Administrator | Export dashboard as PDF | IT3 |
-| **US09-EP06-KPI-ViewAdministrativeDashboard** | Managing Partner | Billing, hour costs and monthly summary | MVP |
+| US01-EP06-KPI-ViewOverallKPIs | MP | Active matters, resolution time, success rate, revenue | MVP |
+| US02-EP06-KPI-MonitorWorkloadDistribution | CM | Active matters per attorney | IT2 |
+| US03-EP06-KPI-TrackSuccessRateByType | MP | Success rate by case type | IT3 |
+| US04-EP06-KPI-AnalyzeResolutionTimeTrends | CM | Resolution time over quarters | IT3 |
+| US05-EP06-KPI-MonitorRevenueGrowth | BM | Monthly revenue growth % | IT2 |
+| US06-EP06-KPI-ReceiveKPIAlerts | AA | Alert on KPI threshold deviation | IT3 |
+| US07-EP06-KPI-FilterKPIsByDateRange | PL | Custom date ranges | IT2 |
+| US08-EP06-KPI-ExportDashboardReport | SA | Export dashboard as PDF | IT3 |
+| **US09-EP06-KPI-ViewAdministrativeDashboard** | MP | Billing, hour costs and monthly summary | MVP |
 
 > **US09 is new**, derived from "Dashboard Administrativo" in the 23 Apr 2026
 > session, which had no epic assigned.
@@ -189,15 +207,15 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP07-JCN-ViewConnectorStatus | Case Manager | Last sync date, success/failure | IT2 |
-| US02-EP07-JCN-TriggerManualSync | Case Manager | On-demand sync per case | IT2 |
-| US03-EP07-JCN-ConfigureConnectors | System Administrator | Court systems, credentials, frequency | IT2 |
-| US04-EP07-JCN-MapCasesToConnectors | Associate Attorney | Link cases to connectors | IT2 |
-| US05-EP07-JCN-ReviewImportedUpdates | Paralegal | Approve imports before merge | IT2 |
-| US06-EP07-JCN-ReceiveSyncAlerts | Case Manager | Alerts on failure or new updates | IT2 |
-| US07-EP07-JCN-FilterConnectorLogs | System Administrator | Filter logs by date, court, case | IT3 |
-| US08-EP07-JCN-ScheduleAutomaticSync | System Administrator | Daily 6 AM scheduled sync | IT3 |
-| US09-EP07-JCN-ExportSyncReport | Managing Partner | Monthly sync activity report | IT3 |
+| US01-EP07-JCN-ViewConnectorStatus | CM | Last sync date, success/failure | IT2 |
+| US02-EP07-JCN-TriggerManualSync | CM | On-demand sync per case | IT2 |
+| US03-EP07-JCN-ConfigureConnectors | SA | Court systems, credentials, frequency | IT2 |
+| US04-EP07-JCN-MapCasesToConnectors | AA | Link cases to connectors | IT2 |
+| US05-EP07-JCN-ReviewImportedUpdates | PL | Approve imports before merge | IT2 |
+| US06-EP07-JCN-ReceiveSyncAlerts | CM | Alerts on failure or new updates | IT2 |
+| US07-EP07-JCN-FilterConnectorLogs | SA | Filter logs by date, court, case | IT3 |
+| US08-EP07-JCN-ScheduleAutomaticSync | SA | Daily 6 AM scheduled sync | IT3 |
+| US09-EP07-JCN-ExportSyncReport | MP | Monthly sync activity report | IT3 |
 
 > Entire epic deferred to Fase 2. **Credential custody warning:** storing each
 > firm's court portal credentials carries the same handling requirements as the
@@ -209,19 +227,19 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP08-TTK-StartStopTimer | Associate Attorney | Live timer on a case | MVP |
-| US02-EP08-TTK-LogManualHours | Associate Attorney | Manual entry with date, case, description | MVP |
-| US03-EP08-TTK-EditTimeEntries | Associate Attorney | Edit/delete within 24 h | IT2 |
-| US04-EP08-TTK-ViewMyTimesheet | Associate Attorney | Own timesheet by date range | MVP |
-| US05-EP08-TTK-LogParalegalHours | Paralegal | Record support work time | MVP |
-| US06-EP08-TTK-ApproveTimeEntries | Billing Manager | Approve/reject submitted entries | IT2 |
-| US07-EP08-TTK-ExportTimeDataToCFDI | Billing Manager | Export approved entries to invoicing | IT2 |
-| US08-EP08-TTK-ViewTeamHours | Case Manager | Aggregated hours per member per case | IT3 |
-| US09-EP08-TTK-SetTimeEntryAlerts | Case Manager | Weekly alerts for missing timesheets | IT3 |
-| US10-EP08-TTK-ConfigureBillableRates | System Administrator | Default and case-specific rates | MVP |
-| US11-EP08-TTK-ManageTimeTrackingPermissions | System Administrator | Grant/revoke log, approve, export rights | MVP |
-| US12-EP08-TTK-ViewUtilizationDashboard | Managing Partner | Utilization rates, quarterly billable hours | IT3 |
-| US13-EP08-TTK-ViewClientHoursPortal | Corporate Client | Hours logged on own cases | TBD |
+| US01-EP08-TTK-StartStopTimer | AA | Live timer on a case | MVP |
+| US02-EP08-TTK-LogManualHours | AA | Manual entry with date, case, description | MVP |
+| US03-EP08-TTK-EditTimeEntries | AA | Edit/delete within 24 h | IT2 |
+| US04-EP08-TTK-ViewMyTimesheet | AA | Own timesheet by date range | MVP |
+| US05-EP08-TTK-LogParalegalHours | PL | Record support work time | MVP |
+| US06-EP08-TTK-ApproveTimeEntries | BM | Approve/reject submitted entries | IT2 |
+| US07-EP08-TTK-ExportTimeDataToCFDI | BM | Export approved entries to invoicing | IT2 |
+| US08-EP08-TTK-ViewTeamHours | CM | Aggregated hours per member per case | IT3 |
+| US09-EP08-TTK-SetTimeEntryAlerts | CM | Weekly alerts for missing timesheets | IT3 |
+| US10-EP08-TTK-ConfigureBillableRates | SA | Default and case-specific rates | MVP |
+| US11-EP08-TTK-ManageTimeTrackingPermissions | SA | Grant/revoke log, approve, export rights | MVP |
+| US12-EP08-TTK-ViewUtilizationDashboard | MP | Utilization rates, quarterly billable hours | IT3 |
+| US13-EP08-TTK-ViewClientHoursPortal | CC | Hours logged on own cases | TBD |
 
 ---
 
@@ -229,22 +247,23 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP09-BIL-ViewMonthlyBillingSummary | Billing Manager | Monthly total and MoM change | MVP |
-| US02-EP09-BIL-ViewPendingInvoices | Billing Manager | Count and value of pending invoices | IT2 |
-| US03-EP09-BIL-ViewPaidInvoices | Billing Manager | Count and total paid this month | IT2 |
-| US04-EP09-BIL-ViewAveragePaymentTime | Billing Manager | Average payment time and change | IT2 |
-| US05-EP09-BIL-GenerateNewInvoice | Billing Manager | Create invoice with client, concept, dates, amount | MVP |
-| US06-EP09-BIL-FilterInvoices | Billing Manager | Filter by number, client, concept, dates, amount, status | IT2 |
-| US07-EP09-BIL-DownloadInvoicePDF | Billing Manager | Download invoice PDF | IT2 |
-| US08-EP09-BIL-SwitchBillingTabs | Billing Manager | Invoices / Time Records / Reports tabs | IT2 |
-| US09-EP09-BIL-ViewInvoiceDetails | Billing Manager | Invoice detail view | MVP |
-| US10-EP09-BIL-GenerateBillingReport | Billing Manager | Period billing reports | IT3 |
-| US11-EP09-BIL-ViewBillingKPIs | Managing Partner | Billing KPI summary cards | IT3 |
-| US12-EP09-BIL-UpdateInvoiceStatus | Billing Manager | Mark paid / cancelled | MVP |
+| US01-EP09-BIL-ViewMonthlyBillingSummary | BM | Monthly total and MoM change | MVP |
+| US02-EP09-BIL-ViewPendingInvoices | BM | Count and value of pending invoices | IT2 |
+| US03-EP09-BIL-ViewPaidInvoices | BM | Count and total paid this month | IT2 |
+| US04-EP09-BIL-ViewAveragePaymentTime | BM | Average payment time and change | IT2 |
+| US05-EP09-BIL-GenerateNewInvoice | BM | Create invoice with client, concept, dates, amount | MVP |
+| US06-EP09-BIL-FilterInvoices | BM | Filter by number, client, concept, dates, amount, status | IT2 |
+| US07-EP09-BIL-DownloadInvoicePDF | BM | Download invoice PDF | IT2 |
+| US08-EP09-BIL-SwitchBillingTabs | BM | Invoices / Time Records / Reports tabs | IT2 |
+| US09-EP09-BIL-ViewInvoiceDetails | BM | Invoice detail view | MVP |
+| US10-EP09-BIL-GenerateBillingReport | BM | Period billing reports | IT3 |
+| US11-EP09-BIL-ViewBillingKPIs | MP | Billing KPI summary cards | IT3 |
+| US12-EP09-BIL-UpdateInvoiceStatus | BM | Mark paid / cancelled | MVP |
 
 > **Gap:** no US covers CFDI stamping via PAC, cancellation with SAT acuse,
 > complemento de pago, or multi-issuer CSD handling. The heaviest technical work
-> in this epic is unspecified. Must be resolved in Discovery.
+> in this epic is unspecified. Must be resolved in Discovery. Gates slice
+> 011-cfdi-stamping together with the PAC pending.
 
 ---
 
@@ -252,20 +271,21 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP10-CFG-ManageUsers | System Administrator | Create, edit, deactivate accounts | MVP |
-| US02-EP10-CFG-ManageRoles | System Administrator | Define and assign roles | MVP |
-| US03-EP10-CFG-ConfigurePermissions | System Administrator | Granular permissions per role | MVP |
-| US04-EP10-CFG-ConfigureBillingParameters | Billing Manager | Rates, tax rates, invoice templates | MVP |
-| US05-EP10-CFG-ConfigureCFDIIntegration | Billing Manager | CFDI credentials | IT2 |
-| US06-EP10-CFG-ConfigureClientPortal | System Administrator | Portal branding, access levels, auth | TBD |
-| US07-EP10-CFG-ConfigureJudicialConnectors | System Administrator | Add and test court portal connections | IT3 |
-| US08-EP10-CFG-ConfigureNotifications | System Administrator | Email and WhatsApp templates and triggers | IT2 |
-| US09-EP10-CFG-ConfigureKPIDashboards | Managing Partner | Default KPIs and alert thresholds | IT3 |
-| US10-EP10-CFG-ConfigureTimeTrackingRules | Associate Attorney | Time increments and rounding rules | IT3 |
+| US01-EP10-CFG-ManageUsers | SA | Create, edit, deactivate accounts | MVP |
+| US02-EP10-CFG-ManageRoles | SA | Define and assign roles | MVP |
+| US03-EP10-CFG-ConfigurePermissions | SA | Granular permissions per role | MVP |
+| US04-EP10-CFG-ConfigureBillingParameters | BM | Rates, tax rates, invoice templates | MVP |
+| US05-EP10-CFG-ConfigureCFDIIntegration | BM | CFDI credentials | IT2 |
+| US06-EP10-CFG-ConfigureClientPortal | SA | Portal branding, access levels, auth | TBD |
+| US07-EP10-CFG-ConfigureJudicialConnectors | SA | Add and test court portal connections | IT3 |
+| US08-EP10-CFG-ConfigureNotifications | SA | Email and WhatsApp templates and triggers | IT2 |
+| US09-EP10-CFG-ConfigureKPIDashboards | MP | Default KPIs and alert thresholds | IT3 |
+| US10-EP10-CFG-ConfigureTimeTrackingRules | AA | Time increments and rounding rules | IT3 |
 
-> **US01–US03 overlap EP00 and EP12** (US11–US13-EP00-FND,
-> US01-EP12-ASC-InviteUser). Resolve before /specify: EP00 owns the mechanism,
-> EP10 owns the admin UI. **US08 is a scope conflict** (WhatsApp).
+> **US01–US03 overlap EP00 and EP12.** Ownership is now split by slice: the
+> mechanism is slices 002 and 004, the administrative UI is slice 014. Behaviour
+> belongs to the mechanism, presentation to the UI. **US08 is a scope conflict**
+> (WhatsApp).
 
 ---
 
@@ -279,7 +299,8 @@ Every other epic depends on this one.
 
 > **US02 conflicts with the IdP.** If email is the identity identifier, changing
 > it is an identity operation requiring step-up MFA and re-verification, not a
-> profile edit. Must be resolved with spec 002.
+> profile edit. 002/FR-003 already forbids the silent-merge behaviour that would
+> make this dangerous; the user-facing flow remains unspecified.
 
 ---
 
@@ -287,26 +308,46 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP12-ASC-InviteUser | System Administrator | Invite by email with target role | FND |
+| US01-EP12-ASC-InviteUser | SA | Invite by email with target role | FND |
 | US02-EP12-ASC-EnrollMFAFactor | System User | Mandatory second factor at enrollment | FND |
 | US03-EP12-ASC-ReceiveBackupCodes | System User | Single-use backup codes | FND |
-| US04-EP12-ASC-RejectExpiredInvitation | System Administrator | Single-use, expiring invitations | FND |
-| US05-EP12-ASC-PreventAccountEnumeration | System Administrator | No disclosure of email existence | FND |
+| US04-EP12-ASC-RejectExpiredInvitation | SA | Single-use, expiring invitations | FND |
+| US05-EP12-ASC-PreventAccountEnumeration | SA | No disclosure of email existence | FND |
 | US06-EP12-ASC-AuthenticateWithMFA | System User | Second factor on every sign-in | FND |
-| US07-EP12-ASC-ExpireIdleSession | Managing Partner | Idle and absolute expiry by role class | FND |
+| US07-EP12-ASC-ExpireIdleSession | MP | Idle and absolute expiry by role class | FND |
 | US08-EP12-ASC-SignOut | System User | Immediate invalidation, server and IdP | FND |
 | US09-EP12-ASC-ViewActiveSessions | System User | Device, location, last activity | IT2 |
 | US10-EP12-ASC-RevokeSession | System User | Revoke individually or all | IT2 |
-| US11-EP12-ASC-RevokeSessionsOnDeactivation | System Administrator | Deactivation revokes all sessions | FND |
-| US12-EP12-ASC-StepUpForSensitiveOperation | Managing Partner | Fresh factor regardless of session age | FND |
+| US11-EP12-ASC-RevokeSessionsOnDeactivation | SA | Deactivation revokes all sessions | FND |
+| US12-EP12-ASC-StepUpForSensitiveOperation | MP | Fresh factor regardless of session age | FND |
 | US13-EP12-ASC-RecoverWithBackupCode | System User | Recover and re-enroll a factor | FND |
 | US14-EP12-ASC-RequestAssistedMFAReset | System User | Defined path when codes exhausted | IT2 |
-| US15-EP12-ASC-PerformAssistedMFAReset | System Administrator | Reset with step-up + out-of-band reference | IT2 |
-| US16-EP12-ASC-AuditMFAReset | Managing Partner | Reset logged with authorising party | IT2 |
-| US17-EP12-ASC-ReviewTenantMFAStatus | System Administrator | MFA coverage across own tenant | IT2 |
+| US15-EP12-ASC-PerformAssistedMFAReset | SA | Reset with step-up + out-of-band reference | IT2 |
+| US16-EP12-ASC-AuditMFAReset | MP | Reset logged with authorising party | IT2 |
+| US17-EP12-ASC-ReviewTenantMFAStatus | SA | MFA coverage across own tenant | IT2 |
+| **US18-EP12-ASC-AcceptInvitation** | System User | Accept a valid invitation and obtain membership in that tenant | FND |
+| **US19-EP12-ASC-SelectActiveTenant** | System User | Choose which tenant is active when holding more than one membership | FND |
 
-> **Retired:** `US01-EP12-Security-ChangePassword` — handled by the external IdP,
-> not this product. `US02-EP12-Security-ActiveDevices` — superseded by US09/US10.
+> **Retired:** US01-EP12-Security-ChangePassword — handled by the external IdP,
+> not this product. US02-EP12-Security-ActiveDevices — superseded by US09/US10.
+>
+> **US18–US19 added 2026-08-21**, surfaced while drafting spec
+> 002-identity-membership. US01 covered issuing an invitation and nothing
+> covered the invited person acting on it — the moment an identity and a
+> membership actually come into existence. Separately, 001/FR-022 requires the
+> active tenant to be explicit and membership-verified, and for an identity holding
+> several memberships nothing described who chooses. Without both stories the slice
+> 002 PRs carry no traceable ID and Principle I rejects them. Constitution
+> Technical Debt item 3 records the same gap for external portal users.
+>
+> **US03 and US13 are built, not bought.** Constitution v1.4.0 selected Amazon
+> Cognito, which provides no backup codes, so this product custodies hashed backup
+> code material under a named constitutional exception. Coverage of that path is
+> blocking in CI. See Constitution Technical Debt item 8.
+>
+> **Slice assignment:** US01, US04, US05, US18, US19 → 002-identity-membership.
+> US02, US03, US06, US13 → 003-authentication-mfa. US07, US08, US11, US12 →
+> 005-session-lifecycle. US09, US10, US14–US17 → IT2.
 
 ---
 
@@ -314,23 +355,28 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP13-PTL-ViewCaseStatus | Corporate Client | Current status of each active case | TBD |
-| US02-EP13-PTL-ReviewHistoricCases | Authorized Third-Party Viewer | Closed cases with outcomes and dates | TBD |
-| US03-EP13-PTL-UploadRequiredDocumentation | Family Member / Legal Guardian | Secure upload to case file | TBD |
-| US04-EP13-PTL-ViewBillingStatus | Corporate Billing Contact | Amounts due and due dates | TBD |
-| US05-EP13-PTL-SendMessageToFirm | External Legal Representative | Secure messaging to legal team | TBD |
-| US06-EP13-PTL-RequestMeetingSlot | Corporate Client | Request meeting from available windows | TBD |
-| US07-EP13-PTL-ReceiveCaseNotifications | Individual Client | Real-time notifications | TBD |
-| US08-EP13-PTL-DownloadCaseDocuments | Authorized Third-Party Viewer | Bulk ZIP download | TBD |
-| US09-EP13-PTL-TrackDocumentRequests | Family Member / Legal Guardian | Checklist with submission deadlines | TBD |
-| US10-EP13-PTL-ProvidePortalFeedback | Corporate Client | Feedback after case milestones | TBD |
+| US01-EP13-PTL-ViewCaseStatus | CC | Current status of each active case | TBD |
+| US02-EP13-PTL-ReviewHistoricCases | EL | Closed cases with outcomes and dates | TBD |
+| US03-EP13-PTL-UploadRequiredDocumentation | IC | Secure upload to case file | TBD |
+| US04-EP13-PTL-ViewBillingStatus | CB | Amounts due and due dates | TBD |
+| US05-EP13-PTL-SendMessageToFirm | EL | Secure messaging to legal team | TBD |
+| US06-EP13-PTL-RequestMeetingSlot | CC | Request meeting from available windows | TBD |
+| US07-EP13-PTL-ReceiveCaseNotifications | IC | Real-time notifications | TBD |
+| US08-EP13-PTL-DownloadCaseDocuments | EL | Bulk ZIP download | TBD |
+| US09-EP13-PTL-TrackDocumentRequests | IC | Checklist with submission deadlines | TBD |
+| US10-EP13-PTL-ProvidePortalFeedback | CC | Feedback after case milestones | TBD |
 
 > **Missing entirely:** external user onboarding — invitation, enrollment and
 > first access for a client. With universal mandatory MFA, that flow is a
 > precondition for this epic to function at all. Do not spec EP13 until it exists.
-> **Cost note:** external users will outnumber internal roughly 10:1 per tenant,
-> driving IdP MAU cost and MFA reset support volume, both of which land on CC's
-> iguala margin.
+> EP12's US18–US19 cover the internal equivalent; whether the external flow
+> reuses them is an EP13 question, not settled here.
+> **Cost note, revised:** external users will outnumber internal roughly 10:1 per
+> tenant. The MAU argument is now much weaker than when it was written — Cognito's
+> free allowance of 10,000 MAU absorbs the projected external population for the
+> first tens of firms — but the MFA reset support volume still lands on CC's iguala
+> margin, and email OTP for portal users is no longer permitted in v1.0
+> (Constitution v1.4.0), so those users need TOTP like everyone else.
 
 ---
 
@@ -341,14 +387,15 @@ mes se deberá mostrar dentro de Expediente." (23 Apr 2026)
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP14-NOT-CreateCaseNote | Associate Attorney | Create a note attached to a case | MVP |
-| US02-EP14-NOT-ViewNoteHistoryByMonth | Case Manager | Note history grouped by month within the case | MVP |
-| US03-EP14-NOT-EditOwnNote | Associate Attorney | Edit own note within a defined window | IT2 |
-| US04-EP14-NOT-RestrictNoteVisibility | Managing Partner | Limit note visibility by role | IT2 |
-| US05-EP14-NOT-AuditNoteChanges | Managing Partner | Note creation and edits in the audit log | MVP |
+| US01-EP14-NOT-CreateCaseNote | AA | Create a note attached to a case | MVP |
+| US02-EP14-NOT-ViewNoteHistoryByMonth | CM | Note history grouped by month within the case | MVP |
+| US03-EP14-NOT-EditOwnNote | AA | Edit own note within a defined window | IT2 |
+| US04-EP14-NOT-RestrictNoteVisibility | MP | Limit note visibility by role | IT2 |
+| US05-EP14-NOT-AuditNoteChanges | MP | Note creation and edits in the audit log | MVP |
 
-> `[NEEDS CLARIFICATION]` Are notes ever client-visible via EP13, or strictly
-> internal work product? This affects privilege and cannot be assumed.
+> [NEEDS CLARIFICATION] Are notes ever client-visible via EP13, or strictly
+> internal work product? This affects privilege and cannot be assumed. Blocks
+> slice 008-notes-and-activity.
 
 ---
 
@@ -361,16 +408,16 @@ Referenced by EP16 ("link to EP15/EP09").
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP15-QTE-UploadQuoteDocument | Billing Manager | Upload a proposal document to a case | MVP |
-| US02-EP15-QTE-RecordQuoteDecision | Billing Manager | Record client acceptance or rejection | MVP |
-| US03-EP15-QTE-SetCaseHourlyRate | Billing Manager | Set hourly cost per case | MVP |
-| US04-EP15-QTE-RegisterClientPayment | Billing Manager | Register payments received from client | MVP |
-| US05-EP15-QTE-ViewQuoteHistory | Managing Partner | Quote and decision history per case | IT2 |
-| US06-EP15-QTE-LinkQuoteToInvoice | Billing Manager | Link accepted quote to invoicing | IT2 |
+| US01-EP15-QTE-UploadQuoteDocument | BM | Upload a proposal document to a case | MVP |
+| US02-EP15-QTE-RecordQuoteDecision | BM | Record client acceptance or rejection | MVP |
+| US03-EP15-QTE-SetCaseHourlyRate | BM | Set hourly cost per case | MVP |
+| US04-EP15-QTE-RegisterClientPayment | BM | Register payments received from client | MVP |
+| US05-EP15-QTE-ViewQuoteHistory | MP | Quote and decision history per case | IT2 |
+| US06-EP15-QTE-LinkQuoteToInvoice | BM | Link accepted quote to invoicing | IT2 |
 
-> `[NEEDS CLARIFICATION]` Does US04 (client payments) overlap
+> [NEEDS CLARIFICATION] Does US04 (client payments) overlap
 > US12-EP09-BIL-UpdateInvoiceStatus? Payment registration must live in exactly
-> one place or the ledger diverges.
+> one place or the ledger diverges. Blocks slice 012-quotes-and-payments.
 
 ---
 
@@ -378,10 +425,10 @@ Referenced by EP16 ("link to EP15/EP09").
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP16-CCT-AssignViaticosToAttorney | Billing Manager | Assign travel budget, optionally per case | DFT |
-| US02-EP16-CCT-RegisterExpense | Associate Attorney | Register expense against assigned budget | DFT |
-| US03-EP16-CCT-RegisterPaymentToAttorney | Billing Manager | Auditable ledger of internal disbursements | DFT |
-| US04-EP16-CCT-ViewCostSummary | Managing Partner | Monthly cost summary beside revenue | DFT |
+| US01-EP16-CCT-AssignViaticosToAttorney | BM | Assign travel budget, optionally per case | DFT |
+| US02-EP16-CCT-RegisterExpense | AA | Register expense against assigned budget | DFT |
+| US03-EP16-CCT-RegisterPaymentToAttorney | BM | Auditable ledger of internal disbursements | DFT |
+| US04-EP16-CCT-ViewCostSummary | MP | Monthly cost summary beside revenue | DFT |
 
 > Open questions carried from the original file: approval flow, receipts vs.
 > fixed allowance, client billable pass-through, and whether payroll is in scope.
@@ -410,19 +457,35 @@ deliverable.
 ## Reconciliation summary
 
 **Fixed**
-- EP00 created — tenancy, audit and permissions had no epic
-- EP12 rewritten from 2 US to 17
+- EP00 created — tenancy, audit and permissions had no epic — then extended to 16
+  with US16 (seed first administrator)
+- EP12 rewritten from 2 US to 17, then to 19 (US18–US19)
 - EP14 and EP15 created, closing the numbering gap EP16 already referenced
 - Four April features assigned: Notes → EP14, Quotes → EP15, Case Activity →
   EP02 US11–13, Admin Dashboard → EP06 US09
 - EP05, EP06, EP13 renamed to match their actual scope
-- `<ModuleCode>` applied to all 169 US per the Handbook
+- `<ModuleCode>` applied to all 172 US per the Handbook
 - Mislabeled and malformed IDs in EP01 corrected
+- Archetype column normalised to the codes fixed in Constitution v1.4.0; PO
+  replaces the overloaded vendor use of CC
+- Slice assignments recorded for EP00 and EP12, so the FND stories are traceable to
+  a specific spec directory rather than to an epic
+
+**Closed**
+1. ~~Can a user belong to more than one tenant?~~ **Yes** (001/FR-021). Identity
+   and membership are distinct; archetype is a property of membership.
+2. ~~How does a tenant's first System Administrator obtain access?~~ **Seed
+   invitation** from the platform context, archetype SA only, available only while
+   the tenant holds zero live memberships (US16-EP00-FND, 002/FR-035).
+3. ~~Identity provider and hosting region.~~ **Amazon Cognito user pools
+   (Essentials) in mx-central-1** — Constitution v1.4.0.
 
 **Still open**
-1. Can a user belong to more than one tenant? Blocks the identity model.
-2. EP13 unvalidated against client priorities; external onboarding missing.
-3. EP09 has no CFDI stamping, cancellation or multi-issuer stories.
-4. US01–US03-EP10 overlap EP00/EP12 — ownership must be split.
-5. US02-EP11 (change email) conflicts with IdP identity semantics.
-6. Offline operation unspecified and unestimated.
+1. EP13 unvalidated against client priorities; external onboarding missing.
+2. EP09 has no CFDI stamping, cancellation or multi-issuer stories, and the PAC is
+   still `[PENDING]`. Together these gate slice 011.
+3. US02-EP11 (change email) conflicts with IdP identity semantics.
+4. Offline operation unspecified and unestimated.
+5. Are notes client-visible via EP13? Blocks slice 008.
+6. Does EP15 US04 overlap EP09 US12 for payment registration? Blocks slice 012.
+7. Time tracking scope conflict. Blocks slice 009.
