@@ -3,7 +3,7 @@
  */
 import type { HttpException } from '@nestjs/common';
 import { REFUSALS_THAT_AUDIT, type RefusalReason } from './principal';
-import { ResourceNotFound, ValidationFailed } from '../http/errors';
+import { MfaEnrollmentRequired, ResourceNotFound, ValidationFailed } from '../http/errors';
 
 /**
  * Only the two membership refusals audit.
@@ -24,6 +24,13 @@ export function shouldAudit(reason: RefusalReason): boolean {
  * confirm to a caller that the tenant exists, which is the disclosure FR-008 exists to
  * prevent. Only malformed requests, which reveal nothing about any tenant, answer
  * differently.
+ *
+ * `mfa_not_enrolled` (slice 002, research.md D5) is the other deliberate
+ * exception, in the opposite direction: it answers `403`, not `404`, because
+ * reaching this branch already proves the caller holds a genuine, live,
+ * resolved membership. There is no tenant-existence question left to protect —
+ * telling them to finish enrollment discloses nothing they do not already
+ * legitimately know.
  */
 export function refusalToHttp(reason: RefusalReason): HttpException {
   switch (reason) {
@@ -35,5 +42,7 @@ export function refusalToHttp(reason: RefusalReason): HttpException {
     case 'membership_revoked':
     case 'tenant_deactivated':
       return new ResourceNotFound();
+    case 'mfa_not_enrolled':
+      return new MfaEnrollmentRequired();
   }
 }

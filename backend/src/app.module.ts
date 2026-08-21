@@ -3,10 +3,13 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantContextInterceptor } from './common/tenant/middleware';
 import { PlatformContextInterceptor } from './common/db/platform-context';
 import { AuditInterceptor } from './common/audit/interceptor';
-import { InMemoryMembershipPort, MEMBERSHIP_PORT } from './common/tenant/membership';
+import { DbMembershipPort, MEMBERSHIP_PORT } from './common/tenant/membership';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { PlanModule } from './modules/plan/plan.module';
+import { IdentityModule } from './modules/identity/identity.module';
+import { InvitationModule } from './modules/invitation/invitation.module';
+import { MembershipModule } from './modules/membership/membership.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -30,14 +33,23 @@ import { PlanModule } from './modules/plan/plan.module';
  * transaction to write into, and FR-017's atomicity would be silently lost — the
  * mutation could commit while its entry failed separately.
  *
- * The membership port is the empty in-memory adapter until slice 002 supplies the
- * database-backed one. Empty is the safe default: with no memberships every tenant
- * request is refused, which fails closed rather than open.
+ * The membership port is `DbMembershipPort` (slice 002) — the real
+ * `identity`/`membership` tables, replacing 001's empty in-memory adapter.
+ * `InMemoryMembershipPort` is unchanged and still used directly by 001's
+ * fixture-driven test helpers; this is the one place its production binding
+ * changes.
  */
 @Module({
-  imports: [TenantModule, AuditModule, PlanModule],
+  imports: [
+    TenantModule,
+    AuditModule,
+    PlanModule,
+    IdentityModule,
+    InvitationModule,
+    MembershipModule,
+  ],
   providers: [
-    { provide: MEMBERSHIP_PORT, useValue: new InMemoryMembershipPort([]) },
+    { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PlatformContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },

@@ -6,8 +6,10 @@
  * This file is the typed view of that schema, not its source of truth.
  */
 import {
+  boolean,
   check,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -20,6 +22,27 @@ import { sql } from 'drizzle-orm';
 
 export const planCode = pgEnum('plan_code', ['esencial', 'profesional', 'premium']);
 export const tenantStatus = pgEnum('tenant_status', ['active', 'deactivated']);
+
+/**
+ * The ten membership-capable archetype codes fixed by Constitution v1.4.0
+ * Principle IV. `PO` is deliberately absent — it is not a membership at all,
+ * and no column here ever needs to hold it. research.md D9.
+ */
+export const archetype = pgEnum('archetype', [
+  'SA',
+  'MP',
+  'AA',
+  'PL',
+  'CM',
+  'BM',
+  'CC',
+  'IC',
+  'CB',
+  'EL',
+]);
+
+export const membershipStatus = pgEnum('membership_status', ['live', 'revoked']);
+export const invitationStatus = pgEnum('invitation_status', ['pending', 'accepted', 'revoked']);
 
 export interface PlanLimits {
   readonly users?: number;
@@ -80,6 +103,77 @@ export const auditEvent = pgTable(
   (t) => [index('audit_event_tenant_time_idx').on(t.tenantId, t.occurredAt)],
 );
 
+/**
+ * Identity: the person as recognised by the external IdP. Holds no tenant.
+ * data-model.md, research.md D4. `lc_app` holds exactly one privilege here —
+ * SELECT restricted to its own row — so nothing above this schema can insert or
+ * update through it; only `accept_invitation()` (0015) can.
+ */
+export const identity = pgTable('identity', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  subject: text('subject').notNull().unique(),
+  email: text('email').notNull(),
+  mfaEnrolledAt: timestamp('mfa_enrolled_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Membership: the access one identity holds within one tenant. Named at slice
+ * 001's boundary; built here. Never hard-deleted (FR-009); `lc_app` holds no
+ * INSERT grant at all — research.md D1.
+ */
+export const membership = pgTable(
+  'membership',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    identityId: uuid('identity_id')
+      .notNull()
+      .references(() => identity.id),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenant.id),
+    /** FR-024 (001): the archetype belongs to the membership, not the identity. */
+    archetype: archetype('archetype').notNull(),
+    status: membershipStatus('status').notNull().default('live'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (t) => [unique('membership_identity_tenant_unique').on(t.identityId, t.tenantId)],
+);
+
+/**
+ * Invitation: a single-use, 7-day grant to become a member of one tenant with
+ * one named archetype — issued to one email address, or seeded by the platform
+ * context for a tenant with no members yet. `expires_at` is a database-
+ * generated column (0014); it is declared here without a default because this
+ * file states shape, not the generation expression that the migration owns.
+ */
+export const invitation = pgTable(
+  'invitation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenant.id),
+    targetArchetype: archetype('target_archetype').notNull(),
+    invitedEmail: text('invited_email').notNull(),
+    /** research.md D2 — the bearer credential is a separate token; only its hash is stored. */
+    referenceHash: text('reference_hash').notNull().unique(),
+    issuedByMembershipId: uuid('issued_by_membership_id').references(() => membership.id),
+    seeded: boolean('seeded').notNull().default(false),
+    status: invitationStatus('status').notNull().default('pending'),
+    failedAttempts: integer('failed_attempts').notNull().default(0),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (t) => [index('invitation_tenant_status_idx').on(t.tenantId, t.status)],
+);
+
 export type Tenant = typeof tenant.$inferSelect;
 export type Plan = typeof plan.$inferSelect;
+export type Identity = typeof identity.$inferSelect;
+export type Membership = typeof membership.$inferSelect;
+export type Invitation = typeof invitation.$inferSelect;
 export type AuditEvent = typeof auditEvent.$inferSelect;

@@ -1,9 +1,19 @@
 /**
- * Seeds the three iguala tiers and two tenants.
+ * Seeds the three iguala tiers, two tenants, and (slice 002) real identity and
+ * membership rows replacing the fixtures slice 001 used.
  *
- * Runs as the PLATFORM role, not as the owner. FORCE ROW LEVEL SECURITY subjects the
- * owner to the policies and the owner has no matching one — and provisioning is a
- * platform operation anyway, so this is semantically right rather than a workaround.
+ * Tenant/plan rows run as the PLATFORM role, not as the owner. FORCE ROW LEVEL
+ * SECURITY subjects the owner to the policies and the owner has no matching one
+ * — and provisioning is a platform operation anyway, so this is semantically
+ * right rather than a workaround.
+ *
+ * Identity and membership rows run as the MIGRATION (superuser) connection.
+ * lc_app holds no INSERT grant on either table (research.md D1/D4) and
+ * lc_platform's own reach stops at a read-only existence-check (D6), so
+ * neither of the two application-facing roles could seed this data even if
+ * asked to — which is the point. Seed data is fixture setup, not a simulated
+ * user journey, so it is exempt from the same discipline the accept_invitation
+ * path exists to enforce for real requests.
  *
  * Two tenants, deliberately: cross-tenant checks need somewhere to reach.
  */
@@ -81,6 +91,78 @@ async function main(): Promise<void> {
 
     console.log('\nSEED_TENANT_A=' + tenantIds[0]);
     console.log('SEED_TENANT_B=' + tenantIds[1]);
+
+    await seedIdentitiesAndMemberships(tenantIds[0]!, tenantIds[1]!);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * research.md D1/D4: neither lc_app nor lc_platform can insert identity or
+ * membership rows, so this runs on the migration (superuser) connection —
+ * fixture setup, exempt from the discipline that path enforces for real
+ * requests.
+ */
+async function seedIdentitiesAndMemberships(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    // The reason FR-023 (001) is testable at all: one person, two tenants, two
+    // different archetypes, per FR-024. mfa_enrolled_at is set at seed time —
+    // these fixtures represent already-onboarded people for ISOLATION testing
+    // (SC-001's re-run bar), not for exercising FR-026's MFA gate, which has
+    // its own purpose-built unenrolled identity in mfa-gate.test.ts.
+    const dual = await client.query<{ id: string }>(
+      `INSERT INTO identity (subject, email, mfa_enrolled_at)
+       VALUES ('idp|dual-tenant-counsel', 'dual@example.com', now())
+       ON CONFLICT (subject) DO UPDATE SET email = excluded.email, mfa_enrolled_at = excluded.mfa_enrolled_at
+       RETURNING id`,
+    );
+    const dualId = dual.rows[0]!.id;
+
+    const outsider = await client.query<{ id: string }>(
+      `INSERT INTO identity (subject, email, mfa_enrolled_at)
+       VALUES ('idp|no-membership', 'outsider@example.com', now())
+       ON CONFLICT (subject) DO UPDATE SET email = excluded.email, mfa_enrolled_at = excluded.mfa_enrolled_at
+       RETURNING id`,
+    );
+    console.log(`seeded identity outsider -> ${outsider.rows[0]!.id}`);
+
+    const membershipA = await client.query<{ id: string }>(
+      `INSERT INTO membership (identity_id, tenant_id, archetype)
+       VALUES ($1, $2, 'MP')
+       ON CONFLICT (identity_id, tenant_id) DO UPDATE SET archetype = excluded.archetype
+       RETURNING id`,
+      [dualId, tenantA],
+    );
+    const membershipB = await client.query<{ id: string }>(
+      `INSERT INTO membership (identity_id, tenant_id, archetype)
+       VALUES ($1, $2, 'IC')
+       ON CONFLICT (identity_id, tenant_id) DO UPDATE SET archetype = excluded.archetype
+       RETURNING id`,
+      [dualId, tenantB],
+    );
+    console.log(`seeded identity dual -> ${dualId} (membership A ${membershipA.rows[0]!.id}, membership B ${membershipB.rows[0]!.id})`);
+
+    // One pending invitation per tenant, so accept-flow tests have something to
+    // consume without issuing one first (quickstart.md Setup).
+    for (const [tenantId, membershipId, email] of [
+      [tenantA, membershipA.rows[0]!.id, 'pending-invitee-a@example.com'],
+      [tenantB, membershipB.rows[0]!.id, 'pending-invitee-b@example.com'],
+    ] as const) {
+      await client.query(
+        `INSERT INTO invitation (tenant_id, target_archetype, invited_email, reference_hash, issued_by_membership_id, seeded)
+         VALUES ($1, 'AA', $2, $3, $4, false)
+         ON CONFLICT (reference_hash) DO NOTHING`,
+        [tenantId, email, `seed-reference-${tenantId}`, membershipId],
+      );
+    }
+    console.log('seeded 2 pending invitations');
   } finally {
     await client.end();
   }

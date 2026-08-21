@@ -3,6 +3,8 @@ import { PlatformTenantController } from './platform.controller';
 import { ProvisionService } from './provision.service';
 import { DeactivateService } from './deactivate.service';
 import { TenantRepository } from './tenant.repository';
+import { SeedAdministratorController } from './seed.controller';
+import { SeedAdministratorService } from './seed.service';
 
 /**
  * Tenant provisioning, deactivation and registry reads.
@@ -13,8 +15,8 @@ import { TenantRepository } from './tenant.repository';
  * no archetype.
  */
 @Module({
-  controllers: [PlatformTenantController],
-  providers: [TenantRepository, ProvisionService, DeactivateService],
+  controllers: [PlatformTenantController, SeedAdministratorController],
+  providers: [TenantRepository, ProvisionService, DeactivateService, SeedAdministratorService],
   exports: [TenantRepository],
 })
 export class TenantModule {}

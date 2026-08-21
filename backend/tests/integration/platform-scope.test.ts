@@ -1,11 +1,15 @@
 /**
- * T071 / FR-009 / research.md D9 — the platform administration path never traverses
- * the tenant middleware, and reaches only tenant, plan and audit_event.
+ * T071 / FR-009 / research.md 001/D9 — the platform administration path never
+ * traverses the tenant middleware, and reaches only tenant, plan, audit_event,
+ * plus (slice 002, research.md D6) a read-only existence-check on membership
+ * and a seeded-only insert on invitation.
  *
  * This is the test that keeps the deliberate Principle II exception narrow. The
- * platform role legitimately spans tenants; the point of confining it to three tables
- * is that no case file is ever reachable across firms, so the exception buys
- * provisioning without buying access to privileged material.
+ * platform role legitimately spans tenants; the point of confining its reach to
+ * exactly five tables, two of them narrowed further by column/row restrictions,
+ * is that no case file — and no tenant's membership roster — is ever reachable
+ * across firms. The exception buys provisioning and the bootstrap seed, never
+ * access to privileged material.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
@@ -73,7 +77,7 @@ describe('platform administration scope', () => {
     }
   });
 
-  it('holds privileges on exactly three tables', async () => {
+  it('holds privileges on exactly five tables — the original three plus D6\'s two narrow extensions', async () => {
     const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
       `SELECT table_name, privilege_type
          FROM information_schema.role_table_grants
@@ -82,7 +86,21 @@ describe('platform administration scope', () => {
     );
 
     const tables = [...new Set(rows.map((r) => r.table_name))].sort();
-    expect(tables).toEqual(['audit_event', 'plan', 'tenant']);
+    expect(tables).toEqual(['audit_event', 'invitation', 'membership', 'plan', 'tenant']);
+  });
+
+  it('the two D6 extensions are narrower than the original three grants — read-only on membership, insert-only on invitation, no identity at all', async () => {
+    const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
+      `SELECT table_name, privilege_type
+         FROM information_schema.role_table_grants
+        WHERE grantee = 'lc_platform' AND table_name IN ('membership', 'invitation', 'identity')
+        ORDER BY table_name, privilege_type`,
+    );
+
+    expect(rows.map((r) => `${r.table_name}:${r.privilege_type}`)).toEqual([
+      'invitation:INSERT',
+      'membership:SELECT',
+    ]);
   });
 
   it('holds no DELETE on any of them', async () => {

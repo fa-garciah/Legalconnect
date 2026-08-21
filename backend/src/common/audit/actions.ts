@@ -7,6 +7,7 @@
  * event a firm needs in its own history, and would otherwise grow the log it watches.
  */
 export const AUDIT_ACTIONS = [
+  // Slice 001 (FR-014, 001)
   'tenant.provisioned',
   'tenant.deactivated',
   'tenant.plan_changed',
@@ -14,6 +15,24 @@ export const AUDIT_ACTIONS = [
   'tenant.cross_access_attempted',
   'audit.queried',
   'tenant.registry_read',
+  // Slice 002 (FR-031). None of these nine is channel-gated — none is a read
+  // of a monitorable log, so none carries the self-amplification risk the two
+  // gates above exist to prevent. `identity.created`, `membership.created`,
+  // `invitation.accepted` and `invitation.refused` are written by the
+  // `accept_invitation()` SQL function itself (backend/drizzle/0015), not by
+  // this TypeScript vocabulary at request time — they are listed here so the
+  // check constraint in 0017 and this module stay in sync, and so
+  // `TARGET_ENTITY_BY_ACTION` below has an entry for every action the audit
+  // read surfaces can encounter.
+  'identity.created',
+  'membership.created',
+  'membership.revoked',
+  'membership.archetype_changed',
+  'invitation.issued',
+  'invitation.seed_issued',
+  'invitation.revoked',
+  'invitation.accepted',
+  'invitation.refused',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -33,6 +52,15 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'tenant.cross_access_attempted': 'unknown',
   'audit.queried': 'audit_event',
   'tenant.registry_read': 'tenant',
+  'identity.created': 'identity',
+  'membership.created': 'membership',
+  'membership.revoked': 'membership',
+  'membership.archetype_changed': 'membership',
+  'invitation.issued': 'invitation',
+  'invitation.seed_issued': 'invitation',
+  'invitation.revoked': 'invitation',
+  'invitation.accepted': 'invitation',
+  'invitation.refused': 'invitation',
 };
 
 export type Channel = 'interactive' | 'automated';
