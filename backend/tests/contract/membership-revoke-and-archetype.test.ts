@@ -9,6 +9,7 @@ import { createRealApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
+import { uniqueRfc } from '../helpers/rfc';
 
 describe('membership revoke and archetype change', () => {
   let app: INestApplication;
@@ -151,5 +152,53 @@ describe('membership revoke and archetype change', () => {
       .send({ archetype: 'PL' });
 
     expect(response.status).toBe(403);
+  });
+
+  it('T053 (004): a refused last-SA archetype change writes no audit entry at all', async () => {
+    // A throwaway tenant with exactly one live SA — the actor demoting themselves.
+    const migration = await connectAs('migration');
+    let tenantId: string;
+    let saIdentityId: string;
+    let saMembershipId: string;
+    try {
+      const tenant = await migration.query<{ id: string }>(
+        `INSERT INTO tenant (name, rfc, plan_id)
+         VALUES ($1, $2, (SELECT id FROM plan WHERE code = 'esencial'))
+         RETURNING id`,
+        ['T053 Audit Probe, S.C.', uniqueRfc()],
+      );
+      tenantId = tenant.rows[0]!.id;
+      const identity = await migration.query<{ id: string }>(
+        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, $2, now()) RETURNING id`,
+        [`idp|t053-${Date.now()}`, `t053-${Date.now()}@example.com`],
+      );
+      saIdentityId = identity.rows[0]!.id;
+      const membership = await migration.query<{ id: string }>(
+        `INSERT INTO membership (identity_id, tenant_id, archetype) VALUES ($1, $2, 'SA') RETURNING id`,
+        [saIdentityId, tenantId],
+      );
+      saMembershipId = membership.rows[0]!.id;
+    } finally {
+      await migration.end();
+    }
+
+    const refused = await request(app.getHttpServer())
+      .patch(`/tenant/memberships/${saMembershipId}/archetype`)
+      .set('x-identity-id', saIdentityId)
+      .set('x-tenant-id', tenantId)
+      .send({ archetype: 'AA' });
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.code).toBe('last_administrator_protected');
+
+    const check = await connectAs('migration');
+    try {
+      const { rows } = await check.query(
+        `SELECT * FROM audit_event WHERE action = 'membership.archetype_changed' AND target_id = $1`,
+        [saMembershipId],
+      );
+      expect(rows).toHaveLength(0);
+    } finally {
+      await check.end();
+    }
   });
 });

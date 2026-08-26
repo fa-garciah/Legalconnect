@@ -65,6 +65,40 @@ describe('identity/membership grant lockdown', () => {
     expect(Number(rows[0]!.n)).toBe(0);
   });
 
+  it("T061 (004, research.md D10): lc_app holds no more than SELECT on tenant — the grant audit's expected finding: none", async () => {
+    await withTenant(app, tenantA, async () => {
+      await expect(
+        app.query(`UPDATE tenant SET name = 'attacker-renamed' WHERE id = $1`, [tenantA]),
+      ).rejects.toThrow(/permission denied/i);
+    });
+    await withTenant(app, tenantA, async () => {
+      await expect(
+        app.query(`INSERT INTO tenant (name, rfc, plan_id) VALUES ('x', 'ABC123456XYZ', (SELECT id FROM plan LIMIT 1))`),
+      ).rejects.toThrow(/permission denied/i);
+    });
+    await withTenant(app, tenantA, async () => {
+      await expect(app.query(`DELETE FROM tenant WHERE id = $1`, [tenantA])).rejects.toThrow(
+        /permission denied/i,
+      );
+    });
+  });
+
+  it('T061 (004, research.md D10): lc_app holds no more than SELECT on plan', async () => {
+    await withTenant(app, tenantA, async () => {
+      await expect(
+        app.query(`UPDATE plan SET name = 'attacker-renamed' WHERE code = 'esencial'`),
+      ).rejects.toThrow(/permission denied/i);
+    });
+    await withTenant(app, tenantA, async () => {
+      await expect(
+        app.query(`INSERT INTO plan (code, name, limits, entitlements) VALUES ('premium', 'x', '{}', '{}')`),
+      ).rejects.toThrow(/permission denied/i);
+    });
+    await withTenant(app, tenantA, async () => {
+      await expect(app.query(`DELETE FROM plan WHERE code = 'esencial'`)).rejects.toThrow(/permission denied/i);
+    });
+  });
+
   it('lc_app cannot UPDATE the immutable columns of invitation (expires_at, issued_at)', async () => {
     await withTenant(app, tenantA, async () => {
       const { rows } = await app.query<{ id: string }>(

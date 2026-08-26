@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantContextInterceptor } from './common/tenant/middleware';
 import { PlatformContextInterceptor } from './common/db/platform-context';
+import { AuthorizationInterceptor } from './common/authz/interceptor';
 import { AuditInterceptor } from './common/audit/interceptor';
 import { DbMembershipPort, MEMBERSHIP_PORT } from './common/tenant/membership';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -23,15 +24,19 @@ import { MembershipModule } from './modules/membership/membership.module';
  *
  * ORDER IS LOAD-BEARING. Nest runs interceptors outermost-first in registration order:
  *
- *   TenantContextInterceptor     activates one tenant, opens its transaction
- *   PlatformContextInterceptor   opens the platform transaction
- *     └── AuditInterceptor       appends inside whichever one is active
+ *   TenantContextInterceptor      activates one tenant, opens its transaction
+ *   PlatformContextInterceptor    opens the platform transaction
+ *     └── AuthorizationInterceptor  decides — tenant, platform and identity alike (004, research.md D2)
+ *       └── AuditInterceptor        appends inside whichever transaction is open
  *
  * The two context interceptors are mutually exclusive by declaration: each inspects
  * the route's `@PlatformSurface()` marker and passes straight through when the route is
  * not its own. Reversing either against the audit interceptor would leave it with no
  * transaction to write into, and FR-017's atomicity would be silently lost — the
- * mutation could commit while its entry failed separately.
+ * mutation could commit while its entry failed separately. `AuthorizationInterceptor`
+ * must run inside both context interceptors — it reads `currentPrincipal()` from the
+ * `AsyncLocalStorage` `TenantContextInterceptor` opens — and outside `AuditInterceptor`,
+ * so a refusal never reaches the point where an entry could be appended for it.
  *
  * The membership port is `DbMembershipPort` (slice 002) — the real
  * `identity`/`membership` tables, replacing 001's empty in-memory adapter.
@@ -52,6 +57,7 @@ import { MembershipModule } from './modules/membership/membership.module';
     { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PlatformContextInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuthorizationInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })

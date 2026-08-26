@@ -16,6 +16,7 @@
 import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { IdentitySurface } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { IdentityContextInterceptor, currentIdentityTx } from '../../common/identity/context';
 import type { Archetype } from '../../common/tenant/principal';
 
@@ -29,6 +30,7 @@ export interface OwnMembershipItem {
 @Controller('identity/memberships')
 export class MembershipsController {
   @Get()
+  @Capability('membership.read_own')
   @UseInterceptors(IdentityContextInterceptor)
   async list(): Promise<{ items: readonly OwnMembershipItem[] }> {
     const result = await currentIdentityTx().execute<{

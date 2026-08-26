@@ -1,24 +1,18 @@
 /**
- * Permission metadata. CONTINGENT on plan.md open item 1 — the constitution puts
- * the full permissions matrix in slice 004; this is the seam it fills in.
+ * Surface metadata. The permission decision itself lives in `common/authz/` (004) —
+ * `matrix.ts` decides who holds a capability, and `AuthorizationInterceptor` is the
+ * only code that reads it. `RequireArchetypes` lived here until 004: it was deleted
+ * rather than kept alongside `@Capability`, because two mechanisms deciding one rule
+ * is how they diverge (plan.md Complexity Tracking).
  *
- * There is deliberately no Guard here. NestJS runs Guards before Interceptors,
- * unconditionally, for every request — and `request.principal` is only ever set by
- * TenantContextInterceptor, which is an interceptor. A guard reading
- * `request.principal` would find it undefined on every request and refuse
- * everything, archetype notwithstanding. So `TenantContextInterceptor` itself
- * enforces `RequireArchetypes`, immediately after it resolves the principal — see
- * `backend/src/common/tenant/middleware.ts`. The platform surface's own exemption is
- * likewise read directly from `PLATFORM_SURFACE` by each interceptor that needs it.
+ * There is deliberately no Guard here, for `AuthorizationInterceptor` the same reason
+ * this file once gave for `RequireArchetypes`: NestJS runs Guards before Interceptors,
+ * unconditionally, for every request, and neither the principal nor the tenant's plan
+ * exists yet at that point — both are only ever set by interceptors further in
+ * (research.md D2). The platform and identity surface markers below are read directly
+ * by every interceptor that needs them, `AuthorizationInterceptor` included.
  */
 import { SetMetadata } from '@nestjs/common';
-import type { Archetype } from '../tenant/principal';
-
-export const REQUIRED_ARCHETYPES = 'requiredArchetypes';
-
-/** Deny by default: an endpoint with no declaration is unreachable, not open. */
-export const RequireArchetypes = (...archetypes: readonly Archetype[]) =>
-  SetMetadata(REQUIRED_ARCHETYPES, archetypes);
 
 /** Marks an endpoint as not tenant-scoped — the platform administration surface. */
 export const PLATFORM_SURFACE = 'platformSurface';

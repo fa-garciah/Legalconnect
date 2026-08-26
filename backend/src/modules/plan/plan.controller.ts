@@ -7,6 +7,7 @@
 import { Body, Controller, Param, Patch, Req } from '@nestjs/common';
 import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
 import { PlatformSurface } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { assertUuid } from '../tenant/rfc';
 import { ChangePlanService } from './change-plan.service';
 import { ConfigureLimitsService } from './configure-limits.service';
@@ -26,6 +27,7 @@ export class PlanController {
   ) {}
 
   @Patch('tenants/:tenantId/plan')
+  @Capability('tenant.change_plan')
   @Audited({ action: 'tenant.plan_changed', targetEntity: 'tenant', platform: true })
   async change(
     @Param('tenantId') tenantId: string,
@@ -41,6 +43,7 @@ export class PlanController {
   }
 
   @Patch('plans/:planCode/limits')
+  @Capability('plan.configure_limits')
   @Audited({ action: 'plan.limits_changed', targetEntity: 'plan', platform: true, tenantOptional: true })
   async configureLimitsFor(
     @Param('planCode') planCode: string,

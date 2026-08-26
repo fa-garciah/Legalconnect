@@ -155,8 +155,10 @@ describe('membership resolution against real data (SC-001)', () => {
     const result = await activate(identities.dualId, tenants.a);
     if (!result.ok) throw new Error('expected activation to succeed');
     expect(result.principal.archetype).toBe('MP');
+    // 004, research.md D7: `plan` joins the tenant's entitlements/limits into this
+    // same lookup — the one field this slice's own widening of ActivePrincipal adds.
     expect(Object.keys(result.principal).sort()).toEqual(
-      ['archetype', 'identityId', 'membershipId', 'tenantId'].sort(),
+      ['archetype', 'identityId', 'membershipId', 'plan', 'tenantId'].sort(),
     );
   });
 });

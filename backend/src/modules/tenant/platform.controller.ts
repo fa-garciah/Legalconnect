@@ -13,6 +13,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
 import { Audited } from '../../common/audit/interceptor';
 import { PlatformSurface } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { currentPlatformTx } from '../../common/db/platform-context';
 import { ResourceNotFound } from '../../common/http/errors';
 import { ProvisionService } from './provision.service';
@@ -36,6 +37,7 @@ export class PlatformTenantController {
 
   @Post()
   @HttpCode(201)
+  @Capability('tenant.provision')
   @Audited({ action: 'tenant.provisioned', targetEntity: 'tenant', platform: true })
   async provision(@Body() body: unknown, @Req() req: AuditableRequest): Promise<TenantRow> {
     const created = await this.provisioning.provision((body ?? {}) as Record<string, unknown>);
@@ -46,6 +48,7 @@ export class PlatformTenantController {
 
   @Post(':id/deactivate')
   @HttpCode(200)
+  @Capability('tenant.deactivate')
   @Audited({ action: 'tenant.deactivated', targetEntity: 'tenant', platform: true })
   async deactivate(@Param('id') id: string, @Req() req: AuditableRequest): Promise<TenantRow> {
     const tenantId = assertUuid(id, 'tenant id');
@@ -62,6 +65,7 @@ export class PlatformTenantController {
    * the action and lets the mechanism decide.
    */
   @Get(':id')
+  @Capability('tenant.read_registry')
   @Audited({ action: 'tenant.registry_read', targetEntity: 'tenant', platform: true })
   async read(@Param('id') id: string, @Req() req: AuditableRequest): Promise<TenantRow> {
     const tenantId = assertUuid(id, 'tenant id');

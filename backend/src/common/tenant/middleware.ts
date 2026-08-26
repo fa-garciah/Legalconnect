@@ -32,8 +32,7 @@ import { resolvePrincipal } from './resolve';
 import { MEMBERSHIP_PORT, type MembershipPort } from './membership';
 import { refusalToHttp, shouldAudit } from './refusals';
 import { recordCrossTenantAttempt } from './record-attempt';
-import { IDENTITY_SURFACE, PLATFORM_SURFACE, REQUIRED_ARCHETYPES } from '../permissions/guard';
-import { NotAuthorized } from '../http/errors';
+import { IDENTITY_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
 import { firstHeaderValue } from '../http/header';
 
 interface TenantContext {
@@ -142,18 +141,13 @@ export class TenantContextInterceptor implements NestInterceptor {
 
     request.principal = resolution.principal;
 
-    // Archetype enforcement happens HERE rather than in a Guard. Guards run before
-    // every interceptor in Nest's request lifecycle, so a guard checking
-    // `request.principal` would always see it unset — the principal only exists once
-    // resolution above succeeds. See permissions/guard.ts for the fuller account.
-    const required = this.reflector.getAllAndOverride<readonly string[] | undefined>(
-      REQUIRED_ARCHETYPES,
-      [context.getHandler(), context.getClass()],
-    );
-    if (required && !required.includes(resolution.principal.archetype)) {
-      throw new NotAuthorized();
-    }
-
+    // Archetype (and everything else Principle IV governs) is decided by
+    // AuthorizationInterceptor against matrix.ts, not here (004, research.md D2) —
+    // this interceptor's job ends at resolving the principal and opening the
+    // transaction. It used to enforce archetype itself, for the same reason a Guard
+    // could not: `request.principal` does not exist until resolution above succeeds,
+    // and no Guard runs late enough to see it. AuthorizationInterceptor nests inside
+    // this one for the same reason, one interceptor further in.
     return runInTenantContext(resolution.principal, async () =>
       firstValueFrom(next.handle() as Observable<unknown>),
     );

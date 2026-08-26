@@ -4,6 +4,7 @@
  * This slice authenticates nothing — it is handed an already-authenticated principal.
  * The seam is specified in contracts/tenant-context.md; these are its types.
  */
+import type { PlanLimits } from '../db/schema';
 /**
  * The ten membership-capable archetype codes fixed by Constitution v1.4.0
  * Principle IV. `CC` (Corporate Client) was added in slice 002 — research.md
@@ -25,6 +26,15 @@ export interface ActivePrincipal {
   readonly membershipId: string;
   readonly tenantId: string;
   readonly archetype: Archetype;
+  /**
+   * 004, research.md D7. Optional for the same reason `MembershipRecord`'s own plan
+   * fields are (`common/tenant/membership.ts`): every principal literal constructed
+   * directly by a pre-004 test fixture must keep compiling untouched (SC-017). Absent
+   * or `null` both mean "no plan resolved," which `AuthorizationInterceptor`'s
+   * `decide()` call treats as fail-closed for any capability carrying a `tier` or
+   * `limit` key.
+   */
+  readonly plan?: { readonly entitlements: Record<string, boolean>; readonly limits: PlanLimits } | null;
 }
 
 export interface RequestOrigin {

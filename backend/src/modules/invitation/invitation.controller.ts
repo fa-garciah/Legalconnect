@@ -1,11 +1,11 @@
 /**
  * contracts/tenant-invitations.md — issue, revoke, list. Tenant surface;
- * `@RequireArchetypes` is enforced by `TenantContextInterceptor`, not a Guard
- * (see common/permissions/guard.ts).
+ * `@Capability` is decided by `AuthorizationInterceptor` against `matrix.ts`
+ * (see common/authz/interceptor.ts).
  */
 import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
 import { Audited } from '../../common/audit/interceptor';
-import { RequireArchetypes } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { assertUuid } from '../tenant/rfc';
 import { InvitationService, type InvitationRow } from './invitation.service';
 
@@ -19,7 +19,7 @@ export class InvitationController {
 
   @Post()
   @HttpCode(201)
-  @RequireArchetypes('SA', 'MP')
+  @Capability('invitation.issue')
   @Audited({ action: 'invitation.issued', targetEntity: 'invitation' })
   async issue(
     @Body() body: unknown,
@@ -36,7 +36,7 @@ export class InvitationController {
 
   @Post(':id/revoke')
   @HttpCode(200)
-  @RequireArchetypes('SA', 'MP')
+  @Capability('invitation.revoke')
   @Audited({ action: 'invitation.revoked', targetEntity: 'invitation' })
   async revoke(@Param('id') id: string, @Req() req: AuditableRequest): Promise<InvitationRow> {
     const invitationId = assertUuid(id, 'invitation id');
@@ -46,7 +46,7 @@ export class InvitationController {
   }
 
   @Get()
-  @RequireArchetypes('SA', 'MP')
+  @Capability('invitation.read_pending')
   async list(): Promise<{ items: readonly InvitationRow[] }> {
     return { items: await this.invitations.listPending() };
   }

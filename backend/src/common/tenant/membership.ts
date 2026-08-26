@@ -12,6 +12,7 @@
 import { sql } from 'drizzle-orm';
 import type { Archetype } from './principal';
 import { appDb } from '../db/client';
+import type { PlanLimits } from '../db/schema';
 
 export const MEMBERSHIP_PORT = Symbol('MEMBERSHIP_PORT');
 
@@ -31,6 +32,15 @@ export interface MembershipRecord {
    * `DbMembershipPort` ever returns `null`.
    */
   readonly identityMfaEnrolledAt?: string | null;
+  /**
+   * 004, research.md D7. Populated only by `DbMembershipPort`, from the tenant's
+   * plan, joined into this same query — optional for the same reason
+   * `identityMfaEnrolledAt` is: `InMemoryMembershipPort` fixtures must keep compiling
+   * untouched. `undefined` here means "no plan resolved," which `decide()` treats as
+   * fail-closed for any capability carrying a `tier` or `limit` key.
+   */
+  readonly planEntitlements?: Record<string, boolean>;
+  readonly planLimits?: PlanLimits;
 }
 
 export interface MembershipPort {
@@ -78,6 +88,11 @@ export class DbMembershipPort implements MembershipPort {
       await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
       await tx.execute(sql`SELECT set_config('app.identity_id', ${identityId}, true)`);
 
+      // 004, research.md D7: `tenant` and `plan` are joined into this SAME SELECT —
+      // same transaction, same round trip, no added query. Both grants already exist
+      // (`GRANT SELECT ON tenant/plan TO lc_app`, backend/drizzle/0006_grants.sql);
+      // `tenant` is RLS-restricted to the row whose id equals `app.tenant_id`, set
+      // above, and `plan` carries no RLS — it is global product configuration.
       const result = await tx.execute<{
         id: string;
         identity_id: string;
@@ -85,10 +100,15 @@ export class DbMembershipPort implements MembershipPort {
         archetype: Archetype;
         status: 'live' | 'revoked';
         mfa_enrolled_at: string | null;
+        plan_entitlements: Record<string, boolean>;
+        plan_limits: PlanLimits;
       }>(sql`
-        SELECT m.id, m.identity_id, m.tenant_id, m.archetype, m.status, i.mfa_enrolled_at
+        SELECT m.id, m.identity_id, m.tenant_id, m.archetype, m.status, i.mfa_enrolled_at,
+               p.entitlements AS plan_entitlements, p.limits AS plan_limits
           FROM membership m
           JOIN identity i ON i.id = m.identity_id
+          JOIN tenant t ON t.id = m.tenant_id
+          JOIN plan p ON p.id = t.plan_id
          WHERE m.identity_id = ${identityId}::uuid
            AND m.tenant_id = ${tenantId}::uuid
       `);
@@ -103,6 +123,8 @@ export class DbMembershipPort implements MembershipPort {
         archetype: row.archetype,
         status: row.status,
         identityMfaEnrolledAt: row.mfa_enrolled_at,
+        planEntitlements: row.plan_entitlements,
+        planLimits: row.plan_limits,
       };
     });
   }

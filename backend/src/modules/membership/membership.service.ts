@@ -6,9 +6,28 @@
 import { Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { currentTx } from '../../common/tenant/middleware';
-import { AlreadyRevoked, ResourceNotFound } from '../../common/http/errors';
+import { AlreadyRevoked, LastAdministratorProtected, ResourceNotFound } from '../../common/http/errors';
 import { normaliseArchetype } from '../invitation/validate';
 import type { Archetype } from '../../common/tenant/principal';
+
+/**
+ * `backend/drizzle/0019_membership_retain_one_sa.sql` — the last-SA invariant. Match
+ * on the `code` property, never the message, so a reworded exception does not break
+ * the mapping (004, T052).
+ */
+const LAST_SA_PROTECTED_SQLSTATE = '23001';
+
+function sqlstateOf(error: unknown): unknown {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const withCode = error as { code?: unknown; cause?: unknown };
+  // Drizzle wraps the driver's error in a DrizzleQueryError; the SQLSTATE pg set
+  // lives on `.cause.code`, not on the wrapper itself.
+  return withCode.code ?? sqlstateOf(withCode.cause);
+}
+
+function isLastSaProtectedError(error: unknown): boolean {
+  return sqlstateOf(error) === LAST_SA_PROTECTED_SQLSTATE;
+}
 
 export interface MembershipRow {
   readonly id: string;
@@ -45,12 +64,18 @@ export class MembershipService {
     if (!existing.rows[0]) throw new ResourceNotFound();
     if (existing.rows[0].status === 'revoked') throw new AlreadyRevoked();
 
-    const { rows } = await currentTx().execute<RawRow>(sql`
-      UPDATE membership
-         SET status = 'revoked', revoked_at = now()
-       WHERE id = ${id}::uuid AND status = 'live'
-       RETURNING id, tenant_id, identity_id, archetype, status
-    `);
+    let rows: readonly RawRow[];
+    try {
+      ({ rows } = await currentTx().execute<RawRow>(sql`
+        UPDATE membership
+           SET status = 'revoked', revoked_at = now()
+         WHERE id = ${id}::uuid AND status = 'live'
+         RETURNING id, tenant_id, identity_id, archetype, status
+      `));
+    } catch (error) {
+      if (isLastSaProtectedError(error)) throw new LastAdministratorProtected();
+      throw error;
+    }
     const row = rows[0];
     if (!row) throw new ResourceNotFound();
     return present(row);
@@ -68,12 +93,18 @@ export class MembershipService {
     const previous = existing.rows[0];
     if (!previous) throw new ResourceNotFound();
 
-    const { rows } = await currentTx().execute<RawRow>(sql`
-      UPDATE membership
-         SET archetype = ${archetype}
-       WHERE id = ${id}::uuid AND status = 'live'
-       RETURNING id, tenant_id, identity_id, archetype, status
-    `);
+    let rows: readonly RawRow[];
+    try {
+      ({ rows } = await currentTx().execute<RawRow>(sql`
+        UPDATE membership
+           SET archetype = ${archetype}
+         WHERE id = ${id}::uuid AND status = 'live'
+         RETURNING id, tenant_id, identity_id, archetype, status
+      `));
+    } catch (error) {
+      if (isLastSaProtectedError(error)) throw new LastAdministratorProtected();
+      throw error;
+    }
     const row = rows[0];
     if (!row) throw new ResourceNotFound();
     return { row: present(row), previousArchetype: previous.archetype };

@@ -6,6 +6,7 @@
 import { Body, Controller, HttpCode, Param, Post, Req } from '@nestjs/common';
 import { Audited } from '../../common/audit/interceptor';
 import { PlatformSurface } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { assertUuid } from './rfc';
 import { SeedAdministratorService, type SeedInvitationRow } from './seed.service';
 
@@ -21,6 +22,7 @@ export class SeedAdministratorController {
 
   @Post(':tenantId/seed-administrator')
   @HttpCode(201)
+  @Capability('invitation.issue_seed')
   // tenantOptional: true because the audited TARGET (the invitation) and the
   // audited TENANT (whose log it lands in, FR-033-style attribution) are two
   // different ids here — the same reason 001's plan.limits_changed uses this
