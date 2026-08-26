@@ -99,6 +99,13 @@ Every other epic depends on this one.
 
 > **Fixed:** source US09 was mislabeled with US08's title; US10 was missing
 > its EP01 segment. US10–US11 are portal-facing and depend on EP13 validation.
+> **US12 retired 2026-08-21.** As written, "define roles as permission sets per tenant"
+> is unimplementable against what `002-identity-membership` already shipped: `archetype`
+> is a fixed ten-value PostgreSQL enum, and Principle III forbids tenant-specific logic in
+> the product core. The only viable reading — "assign which of the fixed archetypes a
+> member holds" — is `US13-EP00-FND-AssignRoleToUser`, already delivered. Retired as a
+> duplicate rather than specified. See `004-authorization-entitlements/spec.md`,
+> Decision 4.
 
 ---
 
