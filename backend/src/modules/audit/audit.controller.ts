@@ -6,8 +6,8 @@
  * `currentTx()` to the active tenant, so passing one would be redundant at best and
  * a spoofable no-op at worst. Scope comes from the transaction, not from the query.
  *
- * `@RequireArchetypes('SA')` is enforced by TenantContextInterceptor, not by a
- * Guard — see permissions/guard.ts for why a Guard cannot do it here.
+ * `@Capability('audit.read_own_tenant')` is decided by `AuthorizationInterceptor`
+ * against `matrix.ts` — see common/authz/interceptor.ts (004, research.md D2).
  *
  * `@Audited({ action: 'audit.queried' })` is channel-gated by construction: the
  * append primitive itself skips channel-gated actions on an automated read
@@ -15,7 +15,7 @@
  * belongs in this controller.
  */
 import { Controller, Get, Query } from '@nestjs/common';
-import { RequireArchetypes } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { Audited } from '../../common/audit/interceptor';
 import { currentTx } from '../../common/tenant/middleware';
 import { resolveWindow, type ServedWindow } from './window';
@@ -32,7 +32,7 @@ export interface AuditEventsResponse {
 @Controller('audit')
 export class AuditController {
   @Get('events')
-  @RequireArchetypes('SA')
+  @Capability('audit.read_own_tenant')
   @Audited({ action: 'audit.queried', targetEntity: 'audit_event' })
   async list(@Query() query: Record<string, unknown>): Promise<AuditEventsResponse> {
     const { from, to, servedWindow } = resolveWindow(query.from, query.to);

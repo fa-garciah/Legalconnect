@@ -676,5 +676,6 @@ possible way to acquire an exhaustive test of it.
 - [x] Blocking CI coverage of refusal paths required (FR-012, SC-016)
 - [x] No weakening of 001/002 database grants or RLS (FR-026, SC-017)
 - [x] Zero open clarifications — **0 remain**
-- [ ] Every requirement is test-verifiable
+- [x] Every requirement is test-verifiable — 665 tests, 0 failures, 100% coverage on
+      `src/common/authz/**` (T065); see `quickstart-results.md`
 - [ ] Approved by Cosmic Chimps technical lead

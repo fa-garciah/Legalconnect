@@ -67,9 +67,9 @@ Every other epic depends on this one.
 | US15-EP00-FND-AuditPermissionChange | MP | Role/permission changes logged | FND |
 | **US16-EP00-FND-SeedFirstAdministrator** | PO | Issue the first SA invitation for a tenant with no members yet | FND |
 
-> **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation.
-> **Pending:** US16 → slice 002-identity-membership; US11–US15 → slice
-> 004-authorization-entitlements; US09 → IT2.
+> **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation; US13 and US15 by
+> slice 002-identity-membership; US11 and US14 by slice 004-authorization-entitlements.
+> **Pending:** US09 → IT2.
 >
 > **US16 added 2026-08-21**, closing Open Question 2 of spec 002. The permission
 > matrix of that spec correctly denies PO every membership capability — if CC staff
@@ -78,6 +78,15 @@ Every other epic depends on this one.
 > freshly provisioned tenant has no member who can invite the first one. US16 is the
 > narrowest resolution: one archetype (SA), available only while the tenant holds
 > zero live memberships, granting the operator nothing, and self-extinguishing.
+>
+> **US12 retired 2026-08-26** (moved here from EP01, where it was misplaced — US12 is
+> an EP00 story). As written, "define roles as permission sets per tenant" is
+> unimplementable against what `002-identity-membership` already shipped: `archetype`
+> is a fixed ten-value PostgreSQL enum, and Principle III forbids tenant-specific logic
+> in the product core. The only viable reading — "assign which of the fixed archetypes
+> a member holds" — is `US13-EP00-FND-AssignRoleToUser`, already delivered. Retired as
+> a duplicate rather than specified. See `004-authorization-entitlements/spec.md`,
+> Decision 4, and `plan.md` Open Item 1.
 
 ---
 
@@ -99,13 +108,6 @@ Every other epic depends on this one.
 
 > **Fixed:** source US09 was mislabeled with US08's title; US10 was missing
 > its EP01 segment. US10–US11 are portal-facing and depend on EP13 validation.
-> **US12 retired 2026-08-21.** As written, "define roles as permission sets per tenant"
-> is unimplementable against what `002-identity-membership` already shipped: `archetype`
-> is a fixed ten-value PostgreSQL enum, and Principle III forbids tenant-specific logic in
-> the product core. The only viable reading — "assign which of the fixed archetypes a
-> member holds" — is `US13-EP00-FND-AssignRoleToUser`, already delivered. Retired as a
-> duplicate rather than specified. See `004-authorization-entitlements/spec.md`,
-> Decision 4.
 
 ---
 

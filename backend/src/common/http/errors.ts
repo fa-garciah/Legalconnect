@@ -136,6 +136,50 @@ export class SamePlan extends HttpException {
   }
 }
 
+/**
+ * FR-006 (004). Distinct from `NotAuthorized`: the caller's archetype holds this
+ * capability, and their tenant's plan simply does not include it. The remedy is
+ * commercial (upgrade), not a role change, so the two must not share a code.
+ */
+export class EntitlementRequired extends HttpException {
+  constructor(capability: string) {
+    super(
+      { ...errorBody('entitlement_required', 'Your plan does not include this feature.'), capability },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+/**
+ * FR-024 (004). Names the limit reached — `value` is the plan's configured ceiling,
+ * never the tenant's current usage (contracts/refusal.md §2).
+ */
+export class LimitReached extends HttpException {
+  constructor(limit: { readonly key: string; readonly value: number }) {
+    super(
+      { ...errorBody('limit_reached', "Your plan's limit for this has been reached."), limit },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+/**
+ * FR-010 (004, research.md D5). A tenant may never be left with zero live `SA`
+ * memberships. Distinct from `NotAuthorized`: the caller may well hold the
+ * capability — the refusal is the invariant itself, not a role check.
+ */
+export class LastAdministratorProtected extends HttpException {
+  constructor() {
+    super(
+      errorBody(
+        'last_administrator_protected',
+        'This tenant must always retain at least one live administrator.',
+      ),
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
 export class LimitsExceeded extends HttpException {
   constructor(exceeded: ReadonlyArray<{ limit: string; current: number; target: number }>) {
     super(

@@ -153,9 +153,43 @@ A slice introducing a domain capability adds, in the same PR:
 - one row to `MATRIX`, which the compiler will demand anyway;
 - `@Capability(...)` on every route it adds;
 - the `assigned` resolver, **if** it is the slice that introduces the relationship that
-  kind resolves over (FR-015). It registers a provider under `SCOPE_RESOLVERS` from its
-  own module and edits no file under `common/authz/`.
+  kind resolves over (FR-015). See the registration shape below. It edits no file
+  under `common/authz/`.
 
 It does **not** add: a refusal reason, a status code, a body shape, an ordering, or a
 rule authored inside a controller. If a slice believes it needs one of those, the
 correct move is to amend this contract, not to work around it.
+
+### Registering the `assigned` resolver — as shipped
+
+`SCOPE_RESOLVERS` (`common/authz/scope.ts`) is the documented extension seam, but it is
+**not** a Nest multi-provider token in the Angular sense — Nest does not collect an
+array from repeated providers under one custom token the way it does for
+`APP_INTERCEPTOR`. What is actually shipped instead, verified against `scope.ts`
+(T012) and proved by `scope-port-extensibility.test.ts` (T055):
+
+- `resolverFor(kind)` reads a plain, process-local `Map<ScopeKind, ScopeResolver>`,
+  populated at module load for the three built-in kinds (`tenant`, `self`, `none`).
+- `registerScopeResolver(resolver)` is the one write path into that map. It is a
+  plain exported function — no DI required to call it.
+- A downstream slice's resolver is an ordinary `@Injectable()` implementing both
+  `ScopeResolver` and Nest's `OnModuleInit`, added to its **own** module's
+  `providers`. Its `onModuleInit()` calls `registerScopeResolver(this)`. Nest
+  constructs it — with whatever dependencies it declares, a repository among them —
+  and calls `onModuleInit()` once, during that module's bootstrap.
+
+```ts
+@Injectable()
+export class CaseAssignedScopeResolver implements ScopeResolver, OnModuleInit {
+  readonly kind = 'assigned' as const;
+  constructor(private readonly cases: CasesRepository) {}
+  onModuleInit(): void { registerScopeResolver(this); }
+  async resolve(request: ScopeRequest): Promise<boolean> { /* … */ }
+}
+```
+
+No shared array-valued provider, no ordering dependency between modules, no file
+under `common/authz/` touched. `SCOPE_RESOLVERS` remains exported as the named seam
+this section points to, even though nothing is literally provided *under* that
+token today — it documents where the extension point is, not a token a provider
+array is registered against.

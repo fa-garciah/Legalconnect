@@ -451,7 +451,7 @@ mechanisms, never per endpoint:
 | --------------------------------- | -------------------------------------- |
 | Tenant scope (P. II)              | Global interceptor                     |
 | Permissions per archetype (P. IV) | Global interceptor                     |
-| Tier entitlement                  | Global guard                           |
+| Tier entitlement                  | Global interceptor                     |
 | Audit event (P. V)                | Global interceptor over every mutation |
 
 An endpoint that requires applying any of these manually is a design violation:
@@ -462,8 +462,17 @@ reviewable act rather than a possible oversight.
 001 established that both must run as **interceptors**: NestJS Guards execute
 before Interceptors, and the resolved principal an archetype check needs is only
 available after the tenant-context interceptor has run. A Guard-based permission
-check therefore cannot see what it must evaluate. Entitlement checking remains a
-Guard because it depends on the tenant's plan rather than on the principal.
+check therefore cannot see what it must evaluate.
+
+**Correction (v1.4.1):** the third row said "Global guard", carried over
+unamended when v1.4.0 corrected the first two. The same defect applies for the
+same reason: entitlement depends on the tenant's **plan**, which does not exist
+until the tenant-context interceptor has resolved a principal, so a Guard
+evaluating it would find no tenant on every request. Slice 004 implemented
+`AuthorizationInterceptor` as a fourth global interceptor, nested inside the
+tenant and platform context interceptors and outside the audit interceptor,
+deciding permission, scope and entitlement together against one `decide()`
+function (`backend/src/common/authz/`).
 
 Framework scope in use: Modules, Controllers + DTOs, Providers/DI, Guards and
 Interceptors. Out of MVP scope: microservices, GraphQL, CQRS, WebSockets and
@@ -508,7 +517,7 @@ architecture with the non-negotiables already installed:
 1. Login against the IdP with MFA end-to-end. — slice 003
 2. Tenant interceptor + `SET LOCAL app.tenant_id` + one table with active RLS. — ✅ slice 001
 3. Audit interceptor writing to the append-only table. — ✅ slice 001
-4. Permission guard and entitlement guard operational. — partial in 001 (SA only, no entitlement check); completed in slice 004
+4. Permission guard and entitlement guard operational. — ✅ slice 004 (`AuthorizationInterceptor`; partial in 001, SA only, no entitlement check)
 5. Cross-tenant leak test green. — ✅ slice 001 on fixtures; against real data in slice 002
 6. Complete CI pipeline: secret scanning, dependency scanning, blocking coverage,
    RLS verification. — ✅ slice 001
@@ -664,10 +673,9 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
     If it turns out to be unavailable in the region, the choice is between the
     region and the provider, and this constitution is amended either way.
 
-11. **The 004 archetype matrix does not exist yet.** Today only SA is ever
-    granted anything, and no entitlement check exists at all — `plan.entitlements`
-    is written and read by nothing. Until slice 004 lands, every capability that
-    depends on a real archetype decision is either unavailable or gated to SA.
+Item 11 (the 004 archetype matrix did not exist yet — only SA was ever granted
+anything, and `plan.entitlements` was written and read by nothing) is **struck**:
+slice 004 shipped the full matrix, the entitlement mechanism, and the scope port.
 
 ---
 
@@ -693,10 +701,18 @@ schedule pressure in the project.
 
 ---
 
-**Version:** 1.4.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-21
+**Version:** 1.4.1 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-26
 
 ### Amendment History
 
+- **1.4.1** — Corrected the third row of the NestJS cross-cutting mechanism table:
+  "Tier entitlement → Global guard" is now "Global interceptor", the same
+  correction v1.4.0 applied to the first two rows and missed on this one. A Guard
+  cannot see the tenant's plan for the same reason it cannot see the resolved
+  principal — both are set by interceptors that run after every Guard. Slice 004
+  shipped `AuthorizationInterceptor`, deciding permission, scope and entitlement
+  together. Walking skeleton item 4 marked complete; Recognised Technical Debt
+  item 11 struck.
 - **1.4.0** — Closed two of the three `[PENDING]` items. **Identity provider:
   Amazon Cognito user pools, Essentials tier**, one shared pool and one app
   client, chosen for data residency in Mexico, absence of an additional vendor,

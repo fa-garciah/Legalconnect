@@ -14,6 +14,7 @@
  */
 import { Controller, Get, Query, Req } from '@nestjs/common';
 import { PlatformSurface } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { Audited } from '../../common/audit/interceptor';
 import { currentPlatformTx } from '../../common/db/platform-context';
 import { resolveWindow, type ServedWindow } from './window';
@@ -37,6 +38,7 @@ export interface PlatformAuditEventsResponse {
 @Controller('internal/platform/audit')
 export class PlatformAuditController {
   @Get()
+  @Capability('audit.read_platform')
   @Audited({ action: 'audit.queried', targetEntity: 'audit_event', platform: true })
   async list(
     @Query() query: Record<string, unknown>,

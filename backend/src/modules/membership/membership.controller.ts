@@ -5,13 +5,13 @@
  * `PATCH` routes rather than one with a discriminated body), and each of
  * these two writes a different action.
  *
- * `SA` for either operation; `MP` for revoke only — archetype change is
- * reserved to `SA` until slice 004 settles the global matrix (plan.md's note
- * on this).
+ * `SA` for either operation; `MP` for revoke only — decided by
+ * `AuthorizationInterceptor` against `matrix.ts` (004). Unchanged from what
+ * 002 shipped (Decision 6).
  */
 import { Body, Controller, HttpCode, Param, Patch, Req } from '@nestjs/common';
 import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
-import { RequireArchetypes } from '../../common/permissions/guard';
+import { Capability } from '../../common/authz/declare';
 import { assertUuid } from '../tenant/rfc';
 import { MembershipService, type MembershipRow } from './membership.service';
 
@@ -25,7 +25,7 @@ export class MembershipController {
 
   @Patch(':id/revoke')
   @HttpCode(200)
-  @RequireArchetypes('SA', 'MP')
+  @Capability('membership.revoke')
   @Audited({ action: 'membership.revoked', targetEntity: 'membership' })
   async revoke(@Param('id') id: string, @Req() req: AuditableRequest): Promise<MembershipRow> {
     const membershipId = assertUuid(id, 'membership id');
@@ -35,7 +35,7 @@ export class MembershipController {
 
   @Patch(':id/archetype')
   @HttpCode(200)
-  @RequireArchetypes('SA')
+  @Capability('membership.change_archetype')
   @Audited({ action: 'membership.archetype_changed', targetEntity: 'membership' })
   async changeArchetype(
     @Param('id') id: string,

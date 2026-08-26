@@ -56,6 +56,13 @@ export async function resolvePrincipal(
       membershipId: membership.id,
       tenantId: input.tenantId,
       archetype: membership.archetype,
+      // 004, research.md D7. `undefined` — every pre-004 fixture and test double — is
+      // treated the same as "no plan resolved," matching identityMfaEnrolledAt's
+      // pattern immediately above.
+      plan:
+        membership.planEntitlements !== undefined && membership.planLimits !== undefined
+          ? { entitlements: membership.planEntitlements, limits: membership.planLimits }
+          : null,
     },
   };
 }

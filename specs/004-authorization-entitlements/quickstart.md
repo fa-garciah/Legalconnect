@@ -82,6 +82,19 @@ npx tsc --noEmit
 # Expect: error naming the missing property in matrix.ts. That is FR-021.
 ```
 
+**Observed (T064, run by hand 2026-08-26)**, adding `'test.fr021_probe': { scope: 'none' }` to
+`CAPABILITIES` with no corresponding `MATRIX` row:
+
+```
+src/common/authz/matrix.ts(40,14): error TS2741: Property '"test.fr021_probe"' is
+missing in type '{ ... }' but required in type 'Readonly<Record<"audit.read_own_tenant"
+| ... | "test.fr021_probe", ReadonlySet<...>>>'.
+```
+
+The error names the missing capability by its literal id (`"test.fr021_probe"`) and
+points at `matrix.ts`'s own line — exactly the property TS2741 message FR-021 asks for.
+Reverted immediately after observation; `npx tsc --noEmit` is clean again.
+
 ---
 
 ## Scenario 2 — Every pair is asserted, none sampled (US2, SC-001, SC-010)
