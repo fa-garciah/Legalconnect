@@ -20,6 +20,10 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   'membership.revoke': ['SA', 'MP'],
   'membership.change_archetype': ['SA'],
   'plan.read_own_tenant': ['SA', 'MP', 'BM'],
+  // 017-firm-directory, rows 22-24 — extends 004's registry per FR-016.
+  'directory.assign_position': ['MP', 'SA'],
+  'directory.manage_catalog': ['MP', 'SA'],
+  'directory.read': ['MP', 'AA', 'PL', 'CM', 'BM', 'SA'],
 };
 
 /** Rows 9-10, `self` scope — not archetype-decided by anybody (research.md D8). */
@@ -73,7 +77,7 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
 
   it('0 capabilities are unasserted by this suite', () => {
     const asserted = new Set([...Object.keys(TENANT_ROWS), ...SELF_ROWS, ...PO_ROWS, ...EMPTY_ROWS]);
-    expect(asserted.size).toBe(21);
+    expect(asserted.size).toBe(24);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

@@ -44,6 +44,10 @@ const TENANTS = [
   { name: 'Bufete Beta, S.C.', rfc: 'BBE150720XY2', plan: 'esencial' },
 ] as const;
 
+// research.md D2 — the default catalog is real per-tenant rows at provisioning
+// time, not a shared constant.
+const DEFAULT_POSITIONS = ['Socio', 'Asociado Senior', 'Asociado', 'Pasante', 'Paralegal'] as const;
+
 async function main(): Promise<void> {
   loadEnvFile(join(__dirname, '..', '.env'));
 
@@ -93,6 +97,7 @@ async function main(): Promise<void> {
     console.log('SEED_TENANT_B=' + tenantIds[1]);
 
     await seedIdentitiesAndMemberships(tenantIds[0]!, tenantIds[1]!);
+    await seedDefaultPositionCatalog(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -163,6 +168,54 @@ async function seedIdentitiesAndMemberships(tenantA: string, tenantB: string): P
       );
     }
     console.log('seeded 2 pending invitations');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * T011 — 017/FR-009, research.md D2: every seeded tenant already has the
+ * 5-entry default position catalog, not just the two Iguala/identity fixtures.
+ * Runs on the migration connection, same precedent as seedIdentitiesAndMemberships
+ * — this is fixture setup, not a simulated MP/SA request.
+ */
+async function seedDefaultPositionCatalog(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      for (const name of DEFAULT_POSITIONS) {
+        await client.query(
+          `INSERT INTO position (tenant_id, name)
+           VALUES ($1, $2)
+           ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+          [tenantId, name],
+        );
+      }
+    }
+    console.log(`seeded ${DEFAULT_POSITIONS.length} default positions for each of 2 tenants`);
+
+    // One directory_entry per tenant, assigning identity `dual`'s membership the
+    // catalog's first entry — a directory_entry row is otherwise only ever created
+    // lazily by a real assignment (research.md D1), so without this the table would
+    // have no fixture data for isolation/no-context.test.ts's generic sweep to see.
+    for (const tenantId of [tenantA, tenantB]) {
+      await client.query(
+        `INSERT INTO directory_entry (membership_id, tenant_id, position_id)
+         SELECT m.id, $1, p.id
+           FROM membership m
+           JOIN identity i ON i.id = m.identity_id
+           JOIN position p ON p.tenant_id = $1 AND p.name = $2
+          WHERE i.subject = 'idp|dual-tenant-counsel' AND m.tenant_id = $1
+         ON CONFLICT (membership_id) DO UPDATE SET position_id = excluded.position_id`,
+        [tenantId, DEFAULT_POSITIONS[0]],
+      );
+    }
+    console.log('seeded 2 directory entries');
   } finally {
     await client.end();
   }

@@ -33,6 +33,11 @@ export const AUDIT_ACTIONS = [
   'invitation.revoked',
   'invitation.accepted',
   'invitation.refused',
+  // Slice 017 (FR-003). Neither is channel-gated — neither is a read of a
+  // monitorable log, the same reasoning the two gates above exist for.
+  'position.created',
+  'position.retired',
+  'directory.position_assigned',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -61,6 +66,9 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'invitation.revoked': 'invitation',
   'invitation.accepted': 'invitation',
   'invitation.refused': 'invitation',
+  'position.created': 'position',
+  'position.retired': 'position',
+  'directory.position_assigned': 'membership',
 };
 
 export type Channel = 'interactive' | 'automated';

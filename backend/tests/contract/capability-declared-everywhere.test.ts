@@ -26,7 +26,11 @@ interface RouteHandler {
   readonly isPlatform: boolean;
 }
 
-/** The 6 registered capabilities with no route today (data-model.md rows 5, 8, 18-21). */
+/**
+ * The registered capabilities with no route today (data-model.md rows 5, 8, 18-21,
+ * plus 017's rows 22-24 — directory.module.ts is still an empty shell at this point
+ * in 017's TDD sequence; its controllers land in later user-story tasks).
+ */
 const NO_ROUTE_YET: readonly CapabilityId[] = [
   'membership.read_tenant',
   'plan.read_own_tenant',
@@ -34,6 +38,9 @@ const NO_ROUTE_YET: readonly CapabilityId[] = [
   'identity.hard_delete',
   'membership.create_direct',
   'archetype.redefine',
+  'directory.assign_position',
+  'directory.manage_catalog',
+  'directory.read',
 ];
 
 describe('capability declared everywhere', () => {
@@ -86,13 +93,13 @@ describe('capability declared everywhere', () => {
     expect(undeclared).toEqual([]);
   });
 
-  it('the declared routes plus the registry rows with no endpoint account for all 21 capabilities', () => {
+  it('the declared routes plus the registry rows with no endpoint account for all 24 capabilities', () => {
     const handlers = routeHandlers();
     const declaredIds = new Set(handlers.map((h) => h.capability));
     const allIds = new Set(Object.keys(CAPABILITIES) as CapabilityId[]);
     const undeclaredInRegistry = [...allIds].filter((id) => !declaredIds.has(id));
 
-    expect(declaredIds.size + undeclaredInRegistry.length).toBe(21);
+    expect(declaredIds.size + undeclaredInRegistry.length).toBe(24);
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 

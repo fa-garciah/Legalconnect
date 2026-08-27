@@ -91,12 +91,12 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it('covers every action in the vocabulary — sixteen (001\'s seven plus 002\'s nine)', () => {
-    // Guards against an action being added to FR-014/FR-031 without a test reaching it.
-    expect(AUDIT_ACTIONS).toHaveLength(16);
+  it('covers every action in the vocabulary — nineteen (001\'s seven, 002\'s nine, 017\'s three)', () => {
+    // Guards against an action being added to FR-014/FR-031/017-FR-003 without a test reaching it.
+    expect(AUDIT_ACTIONS).toHaveLength(19);
     expect(GATED).toHaveLength(2);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
-    expect(UNCONDITIONAL).toHaveLength(16 - 2 - 4);
+    expect(UNCONDITIONAL).toHaveLength(19 - 2 - 4);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

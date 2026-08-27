@@ -56,6 +56,11 @@ export const CAPABILITIES = {
   'identity.hard_delete': { scope: 'none' },
   'membership.create_direct': { scope: 'none' },
   'archetype.redefine': { scope: 'none' },
+  // 017-firm-directory, rows 22-24 (FR-016 — extends this registry in the same
+  // change that introduces the capability, per contracts/refusal.md §6).
+  'directory.assign_position': { scope: 'tenant' },
+  'directory.manage_catalog': { scope: 'tenant' },
+  'directory.read': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

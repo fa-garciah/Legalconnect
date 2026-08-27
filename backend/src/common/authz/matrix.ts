@@ -60,4 +60,12 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   'identity.hard_delete': new Set([]),
   'membership.create_direct': new Set([]),
   'archetype.redefine': new Set([]),
+  // 017-firm-directory, rows 22-24. Position is an organizational fact the
+  // managing partner records, not a system-permission decision (017 spec.md,
+  // Decision 1) — MP holds it alongside SA, unlike row 7's SA-only archetype
+  // assignment. Row 24 is read by every internal archetype: everyone in the
+  // firm needs to know who else is in it.
+  'directory.assign_position': new Set(['MP', 'SA']),
+  'directory.manage_catalog': new Set(['MP', 'SA']),
+  'directory.read': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 };

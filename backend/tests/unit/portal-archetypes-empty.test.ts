@@ -20,8 +20,8 @@ describe('portal archetypes hold zero tenant-scoped capabilities', () => {
     (id) => capabilityDef(id).scope === 'tenant',
   );
 
-  it('there are 8 tenant-scoped capabilities in this registry (rows 1-8)', () => {
-    expect(tenantScopedIds).toHaveLength(8);
+  it('there are 11 tenant-scoped capabilities in this registry (rows 1-8, plus 017 rows 22-24)', () => {
+    expect(tenantScopedIds).toHaveLength(11);
   });
 
   for (const archetype of PORTAL_ARCHETYPES) {

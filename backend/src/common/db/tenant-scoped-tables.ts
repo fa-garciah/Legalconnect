@@ -36,6 +36,14 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
   // `identity` (slice 002) is deliberately NOT registered here: it carries no
   // tenant_id column at all and is scoped by app.identity_id instead
   // (research.md D4). It is covered by its own lockdown test, not this one.
+  {
+    table: 'position',
+    scopeColumn: 'tenant_id',
+  },
+  {
+    table: 'directory_entry',
+    scopeColumn: 'tenant_id',
+  },
 ];
 
 /** Tables that legitimately hold no tenant data and therefore carry no policy. */

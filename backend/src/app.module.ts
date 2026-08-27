@@ -11,6 +11,7 @@ import { PlanModule } from './modules/plan/plan.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { InvitationModule } from './modules/invitation/invitation.module';
 import { MembershipModule } from './modules/membership/membership.module';
+import { DirectoryModule } from './modules/directory/directory.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -52,6 +53,7 @@ import { MembershipModule } from './modules/membership/membership.module';
     IdentityModule,
     InvitationModule,
     MembershipModule,
+    DirectoryModule,
   ],
   providers: [
     { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },
