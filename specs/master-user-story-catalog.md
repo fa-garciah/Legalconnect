@@ -66,10 +66,20 @@ Every other epic depends on this one.
 | US14-EP00-FND-EnforceEntitlementByTier | PO | Tier gate enforced in backend | FND |
 | US15-EP00-FND-AuditPermissionChange | MP | Role/permission changes logged | FND |
 | **US16-EP00-FND-SeedFirstAdministrator** | PO | Issue the first SA invitation for a tenant with no members yet | FND |
+| **US17-EP00-FND-NavigateApplicationShell** | System User | One persistent menu and header every module renders into | FND |
+| **US18-EP00-FND-SeeLoadingState** | System User | A region backed by a network request shows it is loading | FND |
+| **US19-EP00-FND-SeeErrorState** | System User | A failed request shows a state offering retry, opaque or remedy-specific per cause | FND |
+| **US20-EP00-FND-SeeEmptyState** | System User | A successful response with zero records shows a clear empty state | FND |
 
 > **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation; US13 and US15 by
-> slice 002-identity-membership; US11 and US14 by slice 004-authorization-entitlements.
-> **Pending:** US09 → IT2.
+> slice 002-identity-membership; US11 and US14 by slice 004-authorization-entitlements;
+> US17–US20 by slice 016a-frontend-shell. **Pending:** US09 → IT2.
+>
+> **US17–US20 added 2026-08-26**, closing 016a-frontend-shell's own Principle I
+> traceability gap — the persistent navigation shell and its three feedback states
+> (loading, error, empty) are architecture every later frontend slice depends on, not
+> business capability any existing story already covered. Raises EP00 from 16 to 20
+> stories.
 >
 > **US16 added 2026-08-21**, closing Open Question 2 of spec 002. The permission
 > matrix of that spec correctly denies PO every membership capability — if CC staff
