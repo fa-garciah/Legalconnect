@@ -43,7 +43,29 @@ refuse a caller with no assignments, and the spec requires them to see an empty 
 
 Held by `MP`, `AA`, `PL`, `CM`, `SA`. Not `BM`.
 
-Query parameters `limit` and `cursor` — `common/http/pagination.ts` unchanged.
+Query parameters `limit` and `cursor` — `common/http/pagination.ts` unchanged — plus three
+filters added by [`019-frontend-cases`](../../019-frontend-cases/contracts/case-list-filters.md):
+
+| Parameter | Meaning |
+|---|---|
+| `q` | Case-insensitive substring of the **file number or the client's legal name**. Trimmed; an empty or whitespace-only value is absent, not a filter matching nothing. |
+| `matterTypeId` | Restrict to one matter type. |
+| `venueId` | Restrict to one venue. |
+
+All three are applied **inside the query, before the page boundary**, exactly as the
+assignment predicate is — so a page of 50 is 50 matching cases the caller may see, and
+`nextCursor` refers to the next page of those.
+
+**An unknown or foreign catalog id returns an empty page, not a refusal.** Refusing would let
+a caller probe which catalog ids exist in their tenant by the difference between `422` and
+`200`. A malformed uuid is `400 validation_failed` — a shape error, which discloses nothing.
+
+> **The `q` predicate is one parenthesised condition containing its own `OR`.** `AND` binds
+> tighter, so an unparenthesised version parses as
+> `(EXISTS(assignment) AND file_number ILIKE x) OR (legal_name ILIKE x)` — and that second
+> branch carries no assignment predicate, handing every matching case in the tenant to a
+> caller assigned to none of them. It returns a *superset*, so the filtering tests still pass.
+> `tests/integration/case-filter-scoping.test.ts` is what catches it.
 
 ```json
 // 200 — an AA assigned to two matters

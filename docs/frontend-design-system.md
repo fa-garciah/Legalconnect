@@ -66,3 +66,44 @@ prototype, they are byte-identical to each other, and they are a major version b
 Next, React, Tailwind and five component libraries. Everything worth taking from them is
 already here, with the version gaps resolved and recorded. One of the two copies should be
 deleted so nobody ports from the stale one by accident.
+
+---
+
+## Added by `019-frontend-cases` (2026-08-28)
+
+| Where | What |
+|---|---|
+| `frontend/src/cases/format.ts` | `formatCalendarDate` — the only correct way to render a date-only value in this codebase |
+| `frontend/src/authz/can.ts` | unchanged, now carrying nine mirrored rows |
+| `frontend/src/app/expedientes/` | the register table pattern: server-side filters, catalog-joined badges, three empty states |
+
+### Three rules this slice adds
+
+**A date-only value is never parsed into a `Date`.** `new Date('2026-03-04')` is UTC midnight;
+rendered in Mexico City it is **3 March**. Every date would be a day early, and only for users
+west of Greenwich — correct on a European developer's screen, wrong on every real one. Use
+`formatCalendarDate`. Its test pins the timezone to `America/Mexico_City` on purpose, because
+the bug passes in UTC.
+
+**A badge may only signal what a catalog declares.** Statuses, matter types and venues are
+per-tenant lists of free text. The product must never infer meaning from a name — a firm is
+free to call its final status *Archivado*. `019` fetches the status catalog once per screen and
+reads `isClosing`; there is no fourth colour and no string matching.
+
+**If an endpoint audits its reads, the screen must say so out loud.** `GET /tenant/cases/:id`
+records an access per call, so `019`'s detail panel disables `refetchOnWindowFocus`,
+`refetchOnMount` and `refetchOnReconnect` and sets `staleTime: Infinity`, with a comment
+saying not to restore the defaults for performance reasons — there is no performance problem,
+there is an audit-integrity one. And the register never fetches a record from a list row: no
+per-row fill, no prefetch on hover, no cache warming.
+
+### Two testing traps worth inheriting
+
+**A dialog is on screen before its content is.** `await findByRole('dialog')` resolves the
+instant it opens; the query that fills it has not resolved. `getByText` immediately after
+asserts against an empty shell. Use `findByText` for the first assertion inside a dialog.
+
+**Scope a row-action selector to its table.** `/^abrir /i` also matches the shell's "Abrir
+navegación" — the mobile menu button, which is visible below `lg` and comes first in the DOM.
+The desktop project hides it, so the bug only appears at the mobile viewport, where the test
+opens the navigation drawer and waits for content that was never coming.

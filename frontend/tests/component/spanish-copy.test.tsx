@@ -29,6 +29,8 @@ vi.mock('@/session/active-tenant', () => ({
   readActiveTenantClient: vi.fn().mockReturnValue({ status: 'active', tenantId: 'tenant-1' }),
 }));
 
+import { CaseFilters } from '@/app/expedientes/CaseFilters';
+import { CaseRow } from '@/app/expedientes/CaseRow';
 import { ClientFormDialog } from '@/app/clientes/ClientFormDialog';
 import { WithdrawDialog } from '@/app/clientes/WithdrawDialog';
 import { ClientFilters } from '@/app/clientes/ClientFilters';
@@ -147,5 +149,78 @@ describe('client screen copy is Spanish-only (018/FR-023, SC-009)', () => {
     );
     assertOnlySpanish(document.body);
     assertNoWireVocabulary(document.body);
+  });
+});
+
+/*
+ * 019/T059 — the case screens.
+ *
+ * The wire's vocabulary for a matter is richer than the client's and correspondingly easier
+ * to leak: `organization`, `active`, `retired`, and — the two most likely — `lead` and
+ * `support`, the roles on a case team. A Mexican firm reads *responsable* and *apoyo*.
+ */
+const CASE_WIRE_VOCABULARY =
+  /(lead|support|active|retired|closed|open|case|venue|matter|status|file number)/i;
+
+function assertNoCaseWireVocabulary(container: HTMLElement): void {
+  const text = container.textContent ?? '';
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(
+    CASE_WIRE_VOCABULARY,
+  );
+}
+
+const CASE_ITEM = {
+  id: 'c1',
+  fileNumber: 'EXP-2026-0042',
+  client: { id: 'cl1', legalName: 'Grupo Torres, S.A. de C.V.' },
+  status: { id: 'st1', name: 'En Proceso' },
+  matterType: { id: 'mt1', name: 'Mercantil' },
+  venue: { id: 'v1', name: 'Juzgado 4° Civil CDMX' },
+  venueCaseReference: '1234/2026',
+  openedOn: '2026-03-04',
+  closedOn: null,
+};
+
+describe('case screen copy is Spanish-only (019/FR-020, SC-008)', () => {
+  it('CaseFilters', () => {
+    const { container } = withQueryClient(
+      <CaseFilters
+        q=""
+        matterTypeId="all"
+        venueId="all"
+        onQChange={() => {}}
+        onMatterTypeChange={() => {}}
+        onVenueChange={() => {}}
+        matterTypes={[]}
+        venues={[]}
+      />,
+    );
+    assertOnlySpanish(container);
+    assertNoCaseWireVocabulary(container);
+  });
+
+  it('CaseRow — an open matter', () => {
+    const { container } = render(
+      <table>
+        <tbody>
+          <CaseRow item={CASE_ITEM} closing="false" onOpen={() => {}} />
+        </tbody>
+      </table>,
+    );
+    assertOnlySpanish(container);
+    assertNoCaseWireVocabulary(container);
+  });
+
+  it('CaseRow — a matter with nothing catalogued', () => {
+    // The dash path. A row of absent values must still read as Spanish rather than as blanks.
+    const { container } = render(
+      <table>
+        <tbody>
+          <CaseRow item={{ ...CASE_ITEM, matterType: null, venue: null }} closing="true" />
+        </tbody>
+      </table>,
+    );
+    assertOnlySpanish(container);
+    assertNoCaseWireVocabulary(container);
   });
 });

@@ -31,4 +31,26 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   // Row 28 — withdraw AND restore, deliberately one row (006/FR-004a): whoever may take a
   // client out of circulation is exactly whoever may put them back.
   'client.deactivate': new Set<Subject>(['MP', 'BM', 'SA']),
+
+  /*
+   * Rows 29-34, added by `019-frontend-cases`. `BM` holds none of the case rows: Principle
+   * VI draws its line at matter *content*, and a case is content — billing sees the client
+   * register and not the caseload.
+   *
+   * **Two of these are `assigned`-scoped, and the mirror cannot say so.** It answers "may
+   * this archetype ever", which is the only question a control needs in order to decide
+   * whether to draw itself. Whether *this* caller may reach *this* case is the server's, and
+   * it answers `404` — indistinguishable from a case that does not exist. A control drawn
+   * for an `AA` who turns out not to be on the matter is correct behaviour.
+   */
+  // Row 29. `tenant` scope; the result set is narrowed by assignment inside the query.
+  'case.read_list': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // Row 30 — `assigned`.
+  'case.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // Row 31. `tenant`, because there is no case to be assigned to at the moment of creation.
+  'case.create': new Set<Subject>(['MP', 'CM', 'SA']),
+  // Row 32 — `assigned`. `PL` reads and opens matters and moves none of them.
+  'case.change_status': new Set<Subject>(['MP', 'AA', 'CM', 'SA']),
+  // Row 34 — the only case row `BM` holds. Reading the firm's own catalogs is not content.
+  'case.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 };

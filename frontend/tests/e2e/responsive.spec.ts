@@ -127,4 +127,76 @@ test.describe('the shell is usable at every configured viewport', () => {
 
     expect(await pageScrollsSideways(page)).toBe(false);
   });
+
+  test('the case register does not scroll the page sideways', async ({ page }) => {
+    /*
+     * 019/SC-009, and the harder case of the two. The client directory is a card grid that
+     * reflows; this is a **six-column table** beside a 288px fixed rail. On a phone it is
+     * comfortably wider than the viewport, which is exactly why it lives in its own scroll
+     * container rather than pushing the body out.
+     */
+    await page.goto('/expedientes');
+    await expect(
+      page.getByRole('table').or(page.getByTestId('empty-state')).or(page.getByTestId('error-state')),
+    ).toBeVisible({ timeout: 15_000 });
+
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  test('the case filters stay usable at both viewports', async ({ page }) => {
+    // Three controls that sit in a row on a wide screen and stack on a narrow one. Either
+    // way all three must be operable, not merely present.
+    await page.goto('/expedientes');
+    await expect(
+      page.getByRole('table').or(page.getByTestId('empty-state')).or(page.getByTestId('error-state')),
+    ).toBeVisible({ timeout: 15_000 });
+
+    const search = page.getByRole('searchbox', { name: /buscar/i });
+    await expect(search).toBeVisible();
+    await search.fill('EXP');
+    await expect(search).toHaveValue('EXP');
+
+    await expect(page.getByRole('combobox', { name: 'Tipo' })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Juzgado' })).toBeVisible();
+  });
+
+  test('the case detail panel fits the viewport', async ({ page }) => {
+    await page.goto('/expedientes');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    /*
+     * Scoped to the table. Unscoped, `/^abrir /i` also matches the header's "Abrir
+     * navegación" — the mobile menu button, which is visible below `lg` and comes first in
+     * the DOM. The test then opens the navigation drawer and waits forever for a case team
+     * that was never going to appear. Found by the mobile project; the desktop one hides
+     * that button, so it passed.
+     */
+    const open = page.getByRole('table').getByRole('button', { name: /^abrir /i }).first();
+    test.skip(!(await open.isVisible()), 'this archetype holds no case.read, or there are no matters');
+    await open.click();
+
+    const panel = page.getByRole('dialog');
+    await expect(panel).toBeVisible();
+    await expect(panel.getByTestId('case-team')).toBeVisible({ timeout: 10_000 });
+
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  test('the new-matter form fits the viewport', async ({ page }) => {
+    await page.goto('/expedientes');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    const create = page.getByRole('button', { name: /nuevo expediente/i });
+    test.skip(!(await create.isVisible()), 'this archetype holds no case.create');
+    await create.click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // The form is the tallest thing in the slice — seven fields — and the one most likely
+    // to overflow rather than scroll inside itself.
+    await expect(dialog.getByLabel(/número de expediente/i)).toBeVisible();
+    await expect(dialog.getByRole('button', { name: /^guardar$/i })).toBeVisible();
+
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
 });

@@ -163,11 +163,19 @@ test.describe('the client directory against a running backend', () => {
       await expect(nav).toBeVisible();
     }
 
-    const expedientes = nav.getByTestId('nav-item-expedientes');
-    await expect(expedientes).toBeVisible();
-    await expect(expedientes).toHaveAttribute('data-unavailable', 'true');
+    /*
+     * `documentos`, not `expedientes`.
+     *
+     * This test originally used `expedientes` as its unavailable example, and slice `019`
+     * built that screen and flipped the flag — so the assertion started failing for the best
+     * possible reason. Pointed at a section that genuinely has no route yet; `007` shipped
+     * the document API and four of its frontend tasks remain.
+     */
+    const unbuilt = nav.getByTestId('nav-item-documentos');
+    await expect(unbuilt).toBeVisible();
+    await expect(unbuilt).toHaveAttribute('data-unavailable', 'true');
     // Not an anchor, so there is nothing to click through to and nothing to tab onto.
-    expect(await expedientes.evaluate((el) => el.tagName)).toBe('SPAN');
+    expect(await unbuilt.evaluate((el) => el.tagName)).toBe('SPAN');
 
     // And the one that IS built is a link, marked as the current page.
     await expect(nav.getByTestId('nav-item-clientes')).toHaveAttribute('aria-current', 'page');

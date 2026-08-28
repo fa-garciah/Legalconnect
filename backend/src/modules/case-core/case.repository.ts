@@ -109,6 +109,14 @@ export interface ListCasesInput {
   /** Decision 2 — `MP`/`SA` see every case in the tenant, so no assignment filter applies. */
   readonly unrestricted: boolean;
   readonly membershipId: string;
+  /*
+   * 019 — the three filters. All optional; all applied inside the WHERE, before the LIMIT.
+   * See `019/contracts/case-list-filters.md`.
+   */
+  /** Trimmed by the service. Matches the file number OR the client's legal name. */
+  readonly q?: string | undefined;
+  readonly matterTypeId?: string | undefined;
+  readonly venueId?: string | undefined;
 }
 
 @Injectable()
@@ -128,6 +136,19 @@ export class CaseRepository {
    *
    * No `tenant_id` predicate — `case_file_own_tenant` and `case_assignment_own_tenant`
    * scope both sides of the sub-select.
+   *
+   * **019 added three filters to this array, and the shape matters more than it looks.**
+   * They are further entries in `conditions`, joined with `AND` by the same `sql.join`,
+   * evaluated in the same `WHERE`, before the same `LIMIT`. In particular the `q` predicate
+   * is ONE parenthesised condition containing its own `OR`, because `AND` binds tighter:
+   *
+   *     EXISTS(assignment) AND file_number ILIKE x OR legal_name ILIKE x
+   *
+   * parses as `(EXISTS(...) AND file_number ILIKE x) OR (legal_name ILIKE x)`, and that
+   * second branch has no assignment predicate at all — every matching case in the tenant
+   * goes to a caller assigned to none of them. It returns a SUPERSET, so every test asking
+   * "did I get the right rows" still passes. `tests/integration/case-filter-scoping.test.ts`
+   * is the one that does not.
    */
   async list(input: ListCasesInput): Promise<Page<CaseRow>> {
     const conditions: SQL[] = [];
@@ -145,6 +166,24 @@ export class CaseRepository {
       conditions.push(
         sql`(c.created_at, c.id) < (${input.cursor.occurredAt}::timestamptz, ${input.cursor.id}::uuid)`,
       );
+    }
+
+    if (input.q) {
+      // The parentheses are load-bearing — see the note above. `ILIKE '%x%'` rather than a
+      // prefix match, for the reason `ClientRepository.list` already gives: a firm looking
+      // for a matter knows a fragment, not a beginning.
+      conditions.push(sql`(
+        c.file_number ILIKE '%' || ${input.q} || '%'
+        OR cl.legal_name ILIKE '%' || ${input.q} || '%'
+      )`);
+    }
+
+    if (input.matterTypeId) {
+      conditions.push(sql`c.matter_type_id = ${input.matterTypeId}::uuid`);
+    }
+
+    if (input.venueId) {
+      conditions.push(sql`c.venue_id = ${input.venueId}::uuid`);
     }
 
     const where = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;

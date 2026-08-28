@@ -61,6 +61,41 @@ export function normaliseOptionalDate(raw: unknown, field: string): string | nul
   return raw;
 }
 
+/**
+ * 019 — the shape of a uuid, for the two catalog filters.
+ *
+ * `assertUuidish` below checks only that a string is non-empty, which is enough for a body
+ * field whose value is looked up and refused if absent. A *filter* is different: an id that
+ * does not exist is deliberately NOT a refusal (contract §4), so a malformed value would
+ * otherwise sail past validation and reach the `::uuid` cast, where Postgres raises and the
+ * caller gets a 500 for what is plainly a bad request.
+ */
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * An optional uuid-shaped filter value. Absent stays absent; malformed is a `400`.
+ *
+ * Shape only — whether the id exists, or belongs to this firm, is not asked. Answering that
+ * would let a caller enumerate a firm's catalog by the difference between two status codes.
+ */
+function optionalUuidFilter(raw: unknown, field: string): string | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  const value = String(raw).trim();
+  if (value.length === 0) return undefined;
+  if (!UUID_SHAPE.test(value)) throw new ValidationFailed(`${field} must be a valid id.`);
+  return value;
+}
+
+/**
+ * The free-text filter. Trimmed, and **whitespace-only is absent rather than a filter
+ * matching nothing** — clearing the search box must restore the register, not empty it.
+ */
+function optionalSearch(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 function assertUuidish(raw: unknown, field: string): string {
   if (typeof raw !== 'string' || raw.trim().length === 0) {
     throw new ValidationFailed(`${field} is required.`);
@@ -89,6 +124,11 @@ export class CaseService {
       cursor,
       unrestricted: principal.archetype === 'MP' || principal.archetype === 'SA',
       membershipId: principal.membershipId,
+      // 019's three filters. They narrow the caller's own register and never widen it —
+      // `unrestricted` above is what decides its extent, and nothing here touches that.
+      q: optionalSearch(query.q),
+      matterTypeId: optionalUuidFilter(query.matterTypeId, 'matterTypeId'),
+      venueId: optionalUuidFilter(query.venueId, 'venueId'),
     });
   }
 

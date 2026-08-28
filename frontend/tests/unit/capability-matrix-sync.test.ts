@@ -62,6 +62,27 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'client.create': new Set(['MP', 'PL', 'BM', 'SA']),
   'client.update': new Set(['MP', 'PL', 'BM', 'SA']),
   'client.deactivate': new Set(['MP', 'BM', 'SA']),
+
+  /*
+   * Rows 29-34, from 006/spec.md's Capability Matrix. Read across each row of that table and
+   * take the ✅ columns; ❌ columns are absent here rather than present-and-false, because
+   * the registry denies by default.
+   *
+   *   | 29 | Read the case list         | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ |
+   *   | 30 | Read one case              | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ |
+   *   | 31 | Create a case              | MP ✅ AA ❌ PL ❌ CM ✅ BM ❌ SA ✅ |
+   *   | 32 | Change a case status       | MP ✅ AA ✅ PL ❌ CM ✅ BM ❌ SA ✅ |
+   *   | 34 | Read the case catalogs     | MP ✅ AA ✅ PL ✅ CM ✅ BM ✅ SA ✅ |
+   *
+   * Row 33 (`case.manage_team`) is deliberately absent: `019` displays a case team and does
+   * not edit one, so no control is keyed to it and the mirror must not carry a row nothing
+   * reads.
+   */
+  'case.read_list': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'case.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'case.create': new Set(['MP', 'CM', 'SA']),
+  'case.change_status': new Set(['MP', 'AA', 'CM', 'SA']),
+  'case.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {
