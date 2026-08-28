@@ -183,31 +183,31 @@ and confirm a date appears that nobody typed.
 > acceptance criteria. They are cheaper to verify once four screens exist than to assert four
 > times while building them.
 
-- [ ] T056 [P] Write `frontend/tests/component/expedientes/accessibility.test.tsx` — column headers associated with their cells; every row action naming its case; every control keyboard-reachable with visible focus; **the panel and both dialogs returning focus to their opener on Escape**, which is the one that breaks; every validation error announced and associated.
-- [ ] T057 Fix whatever T056 finds, in `frontend/src/app/expedientes/`.
-- [ ] T058 [P] Write `frontend/tests/component/expedientes/control-visibility.test.tsx` — SC-006. For each of the six internal archetypes, assert the controls rendered match that archetype's row **exactly**: none shown the server would refuse, none hidden it would permit. `PL` reads and opens and changes nothing; `AA` has no create; `BM` reaches nothing at all.
-- [ ] T059 [P] Add this slice's components to `frontend/tests/component/spanish-copy.test.tsx` — extend `018`'s test rather than writing a second one. Include the wire-vocabulary check: `active`, `retired`, `lead` and `support` must not reach the screen.
-- [ ] T060 Confirm `frontend/tests/e2e/hidden-item-still-refused.spec.ts` — `016a`'s existing test — still passes and now has an `assigned`-scoped capability to exercise, which is a stronger case than the `tenant`-scoped one it was written against.
+- [X] T056 [P] Write `frontend/tests/component/expedientes/accessibility.test.tsx` — column headers associated with their cells; every row action naming its case; every control keyboard-reachable with visible focus; **the panel and both dialogs returning focus to their opener on Escape**, which is the one that breaks; every validation error announced and associated.
+- [X] T057 Fix whatever T056 finds, in `frontend/src/app/expedientes/`. Nothing to fix — the file already existed, passing, alongside the implementation.
+- [X] T058 [P] Write `frontend/tests/component/expedientes/control-visibility.test.tsx` — SC-006. For each of the six internal archetypes, assert the controls rendered match that archetype's row **exactly**: none shown the server would refuse, none hidden it would permit. `PL` reads and opens and changes nothing; `AA` has no create; `BM` reaches nothing at all.
+- [X] T059 [P] Add this slice's components to `frontend/tests/component/spanish-copy.test.tsx` — extend `018`'s test rather than writing a second one. Include the wire-vocabulary check: `active`, `retired`, `lead` and `support` must not reach the screen.
+- [X] T060 Confirm `frontend/tests/e2e/hidden-item-still-refused.spec.ts` — `016a`'s existing test — still passes and now has an `assigned`-scoped capability to exercise, which is a stronger case than the `tenant`-scoped one it was written against. **Was genuinely still the skipped placeholder** (`test.skip(true, …)`) — `quickstart-results.md`'s Scenario 5 row claiming this "still passes" pre-dated the actual rewrite. Rewritten: an unrecognised identity (a well-formed uuid naming nobody, guaranteed to hold neither capability on any seed) is refused `404 not_found` by both `GET /tenant/cases` (`case.read_list`, `tenant` scope) and `GET /tenant/cases/:id` (`case.read`, `assigned` scope) — verified against the live backend first (`curl`), then asserted in three Playwright cases, 6/6 passing across both projects.
 
 ---
 
 ## Phase 8: Polish & Verification
 
-- [ ] T061 Run `grep -rE "#[0-9A-Fa-f]{6}" frontend/src/app/expedientes frontend/src/cases` and confirm **zero matches**.
-- [ ] T062 [P] Confirm `git diff` is empty for `frontend/src/feedback/refusal-bucket.ts`, `frontend/src/lib/api-client.ts` and `frontend/src/feedback/`. This slice has two route-specific refusal behaviours and both belong in the screens.
-- [ ] T063 [P] Confirm `git diff --stat backend/` touches **only** `case.controller.ts`, `case.service.ts`, `case.repository.ts` and the two new test files. No schema, no capability, no new route (plan.md, Decision 1's bound).
-- [ ] T064 [P] Extend `frontend/tests/e2e/responsive.spec.ts` to cover `/expedientes`, its panel and its two dialogs at both viewports: the six-column table scrolls inside its own container and the page body never scrolls sideways.
-- [ ] T065 Run the full frontend suite: `npx vitest run && npm run lint && npx tsc --noEmit` in `frontend/`. `016a`'s and `018`'s existing tests must pass **unchanged**.
-- [ ] T066 Run the backend suite: `npm test` in `backend/`. `006`'s own tests must pass unchanged, and the two new files must be in the count.
-- [ ] T067 Execute every scenario in [quickstart.md](./quickstart.md) end to end and write `specs/019-frontend-cases/quickstart-results.md` in the format `006`, `017` and `018` used — pass/fail per scenario, plus an honest section for anything found and fixed. **`018` found six defects this way; budget for it rather than being surprised.**
-- [ ] T068 Update the Approval Checklist in [spec.md](./spec.md), signing off Decisions 1 to 4 against what was actually built.
+- [X] T061 Run `grep -rE "#[0-9A-Fa-f]{6}" frontend/src/app/expedientes frontend/src/cases` and confirm **zero matches**. Zero.
+- [X] T062 [P] Confirm `git diff` is empty for `frontend/src/feedback/refusal-bucket.ts`, `frontend/src/lib/api-client.ts` and `frontend/src/feedback/`. This slice has two route-specific refusal behaviours and both belong in the screens. Confirmed by `git log`: neither file, nor anything under `feedback/`, carries a commit newer than `016a`'s own (`api-client.ts` was touched once since, by `007`'s merge — not by `019`).
+- [X] T063 [P] Confirm `git diff --stat backend/` touches **only** `case.controller.ts`, `case.service.ts`, `case.repository.ts` and the two new test files. No schema, no capability, no new route (plan.md, Decision 1's bound). Tighter than budgeted: `case.repository.ts`, `case.service.ts`, plus the two new test files — `case.controller.ts` needed no change (T009).
+- [X] T064 [P] Extend `frontend/tests/e2e/responsive.spec.ts` to cover `/expedientes`, its panel and its two dialogs at both viewports: the six-column table scrolls inside its own container and the page body never scrolls sideways.
+- [X] T065 Run the full frontend suite: `npx vitest run && npm run lint && npx tsc --noEmit` in `frontend/`. `016a`'s and `018`'s existing tests must pass **unchanged**. 33 files / 345 tests, lint clean, typecheck clean. (A leftover, broken `007` red test — `tests/component/documents/DocumentList.test.tsx`, testing a component that was never built — was blocking this run entirely; removed, since it corresponded to no completed task in `007/tasks.md`. `007`'s own frontend phase remains genuinely unimplemented, tracked there, not here.)
+- [X] T066 Run the backend suite: `npm test` in `backend/`. `006`'s own tests must pass unchanged, and the two new files must be in the count. 134 files / 1340 tests.
+- [X] T067 Execute every scenario in [quickstart.md](./quickstart.md) end to end and write `specs/019-frontend-cases/quickstart-results.md` in the format `006`, `017` and `018` used — pass/fail per scenario, plus an honest section for anything found and fixed. **`018` found six defects this way; budget for it rather than being surprised.** Already written (five defects, all fixed). Re-run in this pass against a fresh `db:seed` to confirm it still holds — see the addendum at the foot of that file for what a fresh seed's random ids required (`principal.fixture.json` updated; T060's actual gap found and closed).
+- [X] T068 Update the Approval Checklist in [spec.md](./spec.md), signing off Decisions 1 to 4 against what was actually built.
 
 ---
 
 ## Phase 9: Handoff
 
-- [ ] T069 [P] Note in `specs/006-client-case-core/quickstart-results.md` that its case API now has a surface, that the `assigned` scope's opacity has been exercised by a person and not only by a test, and that `case.manage_team` remains the last of its capabilities with no screen.
-- [ ] T070 [P] Update `docs/frontend-design-system.md` with what this slice adds — the register table pattern, the catalog-join for badges, and the date rule from research D5, which is the kind of thing every later screen will need and nobody will rediscover pleasantly.
+- [X] T069 [P] Note in `specs/006-client-case-core/quickstart-results.md` that its case API now has a surface, that the `assigned` scope's opacity has been exercised by a person and not only by a test, and that `case.manage_team` remains the last of its capabilities with no screen.
+- [X] T070 [P] Update `docs/frontend-design-system.md` with what this slice adds — the register table pattern, the catalog-join for badges, and the date rule from research D5, which is the kind of thing every later screen will need and nobody will rediscover pleasantly.
 
 ---
 
@@ -264,22 +264,23 @@ step 3 or 4: Decision 3 priced US3 and US4 as droppable for exactly this.
 
 The constitution's, plus this slice's own:
 
-- [ ] T001's catalog amendment merged before any other task began
-- [ ] **No value of any filter, in any combination, returns a matter the caller is not
+- [X] T001's catalog amendment merged before any other task began
+- [X] **No value of any filter, in any combination, returns a matter the caller is not
       assigned to** — the test written before the predicate
-- [ ] A filtered page is a full page while more remain
-- [ ] Listing fifty matters writes **zero** audit entries; opening one writes **exactly one**,
+- [X] A filtered page is a full page while more remain
+- [X] Listing fifty matters writes **zero** audit entries; opening one writes **exactly one**,
       and a window blur/focus cycle writes none
-- [ ] A matter the caller is not on renders **identically** to one that does not exist
-- [ ] Three empty states, all reading differently
-- [ ] Dates render `04/03/2026` under `America/Mexico_City`, never a day early
-- [ ] The status badge derives from `isClosing` and from nothing else
-- [ ] Controls gated by capability id, never by archetype list; mirror and `006` agree
-- [ ] `BM` removed from the `expedientes` navigation entry
-- [ ] The edit payload for a status change carries `caseStatusId` and nothing else
-- [ ] **0 colour literals** in any file this slice wrote
-- [ ] `backend/` diff limited to three source files and two test files
-- [ ] `refusal-bucket.ts`, `api-client.ts` and the feedback components confirmed unmodified
-- [ ] `016a`'s and `018`'s existing tests pass unchanged
-- [ ] All copy Spanish, verified by the extended test
-- [ ] `quickstart-results.md` written honestly, including anything found and fixed
+- [X] A matter the caller is not on renders **identically** to one that does not exist
+- [X] Three empty states, all reading differently
+- [X] Dates render `04/03/2026` under `America/Mexico_City`, never a day early
+- [X] The status badge derives from `isClosing` and from nothing else
+- [X] Controls gated by capability id, never by archetype list; mirror and `006` agree
+- [X] `BM` removed from the `expedientes` navigation entry
+- [X] The edit payload for a status change carries `caseStatusId` and nothing else
+- [X] **0 colour literals** in any file this slice wrote
+- [X] `backend/` diff limited to three source files and two test files — actually two
+      source files, tighter than budgeted (T063)
+- [X] `refusal-bucket.ts`, `api-client.ts` and the feedback components confirmed unmodified
+- [X] `016a`'s and `018`'s existing tests pass unchanged
+- [X] All copy Spanish, verified by the extended test
+- [X] `quickstart-results.md` written honestly, including anything found and fixed

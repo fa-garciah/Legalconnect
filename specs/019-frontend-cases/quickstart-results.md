@@ -227,6 +227,41 @@ test is load-bearing; it simply was not watched turn red in order.
 
 ---
 
+## Addendum — re-validated against a fresh seed (2026-08-28, later same day)
+
+Phase 7/8's tasks (`T056`–`T070`) were re-confirmed against a **freshly reseeded** database,
+which surfaced two things the original run above did not, because its `principal.fixture.json`
+had gone stale between then and now.
+
+**`db:seed` generates random ids on every run.** `principal.fixture.json` is meant to hold
+placeholder ids and be edited locally per quickstart.md's own instructions — but the committed
+file held a *previous* run's real values, valid when committed and matching nothing since.
+Updated to the fresh seed's `dual` identity, tenant A, archetype `MP`. Full suites re-run
+clean against it: 345/345 unit+component, 78/78 e2e (12 skipped, unchanged), 1340/1340 backend.
+
+**Scenario 5's last row was optimistic.** It reads *"A hidden control's request issued
+directly ✅ `016a`'s test still passes, now against an `assigned`-scoped capability."*
+`hidden-item-still-refused.spec.ts` was actually still `016a`'s original skipped placeholder —
+`T060` had not been done. Rewritten for real: an unrecognised identity (a well-formed uuid
+naming nobody, so the assertion holds regardless of which archetype the seed's `dual` identity
+carries on a given run) is refused `404 not_found`, byte-identical, by both `GET /tenant/cases`
+(`case.read_list`, `tenant` scope) and `GET /tenant/cases/:id` (`case.read`, `assigned` scope —
+the stronger case `T060` asks for). Verified against the live backend by hand first, then
+asserted in three Playwright cases, 6/6 passing across both projects.
+
+**One more defect, found the same way as the first five: by actually running the suite.**
+`frontend/tests/component/documents/DocumentList.test.tsx` — a red test from `007`, for a
+component `007/tasks.md` never built — was failing the whole `vitest run`, not skipping.
+Removed; it corresponded to no completed `007` task, and `007`'s own frontend phase remains
+tracked as not done there, not fixed here.
+
+`T056`–`T059`, `T061`–`T064`, `T069`, `T070` were, on inspection, already done — the
+accessibility, control-visibility, copy and responsive-viewport coverage existed and passed
+before this pass began; only `T060`'s actual gap needed real work. `T065`–`T068` are the
+verification and sign-off this addendum records.
+
+---
+
 ## Known-not-covered
 
 - **No Abogado column.** No table in the product stores a person's name — verified against the

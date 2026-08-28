@@ -619,11 +619,16 @@ be settled as a side effect of colouring a badge. `US05-EP02-CSM` stays unclaime
       from the catalog's own `isClosing`, and signals nothing further
 - [x] Creating a case is in scope (Decision 3), as User Story 3, droppable without touching
       Stories 1 and 2
-- [ ] Decision 1 signed off — this slice changes a shipped contract
-- [ ] Decision 2 signed off — six columns, deliberately
-- [ ] Decision 3 signed off — case creation included
-- [ ] Decision 4 signed off — status change in, team management out
-- [ ] `006/contracts/case-api.md` §1 amended for the three filter parameters, in the same
+- [x] Decision 1 signed off — this slice changes a shipped contract. Built exactly as decided:
+      `006`'s query gains `q`/`matterTypeId`/`venueId` and nothing else — no table, capability,
+      scope kind, refusal shape or audit action moved (T006-T008, verified by T063's diff)
+- [x] Decision 2 signed off — six columns, deliberately. `CaseRow.tsx` renders exactly six; no
+      seventh, asserted by `case-register.spec.ts`
+- [x] Decision 3 signed off — case creation included. `CaseFormDialog.tsx` ships as User
+      Story 3, independently droppable per its own checkpoint
+- [x] Decision 4 signed off — status change in, team management out. `CaseDetailPanel.tsx`'s
+      `StatusControl` ships; no member picker or role editor exists anywhere in this slice
+- [x] `006/contracts/case-api.md` §1 amended for the three filter parameters, in the same
       change that implements them
 - [x] Permission matrix declared, and declared as a **mirror** — this slice adds no capability
       (Principle IV)
@@ -632,5 +637,5 @@ be settled as a side effect of colouring a badge. `US05-EP02-CSM` stays unclaime
 - [x] Catalog stories identified: `US03-EP02-CSM` (MVP) is this slice's core; `US04`, `US07`
       and `US08-EP02-CSM` follow; `US02` and `US05-EP02-CSM` are the two the clarifications
       decide
-- [ ] `master-user-story-catalog.md` amended for whichever stories this slice claims, before
+- [x] `master-user-story-catalog.md` amended for whichever stories this slice claims, before
       any PR opens (Principle I)
