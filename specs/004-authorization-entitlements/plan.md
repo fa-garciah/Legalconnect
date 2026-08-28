@@ -295,7 +295,11 @@ Ordered by when an answer is needed. **None blocks `/speckit-tasks`.**
    property the portal epic needs. **If rejected**, the alternative is to amend 002 so a
    portal archetype cannot be invited at all — a larger change, in a different slice.
 
-3. **Scope refusal: 403 or 404?** *(research.md D6)* A 403 on an entity the caller is not
+3. **Scope refusal: 403 or 404?** — **RESOLVED 2026-08-27: 404**, by slice
+   `006-client-case-core`'s Decision 4, which is the slice this item named as the one where
+   the answer becomes observable. FR-017 and US5 scenario 3 above were amended in the same
+   change, exactly as this item required. The remaining text is kept for the reasoning.
+   *(research.md D6)* A 403 on an entity the caller is not
    assigned to confirms the entity exists. For a firm running an ethical wall, that
    confirmation may itself be the protected fact. **Recommend 404**, and recommend it be
    decided by someone who can speak to the professional-privilege consequence rather than

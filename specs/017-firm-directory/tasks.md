@@ -124,32 +124,32 @@ actor, subject, previous and new value.
 
 > **NOTE: Write these FIRST, run them, and see them FAIL before implementation.**
 
-- [ ] T012 [P] [US1] Write `backend/tests/contract/assign-position.test.ts` — the six
+- [X] T012 [P] [US1] Write `backend/tests/contract/assign-position.test.ts` — the six
       acceptance scenarios of spec.md User Story 1: successful assignment + audit
       shape; refusal naming an absent catalog position (`422
       position_not_in_catalog`); cross-tenant refusal (`404`, recorded); "never
       assigned" vs. "assigned-then-retired" distinguishable on read; refusal for a
       non-MP/SA archetype (`403`); position unchanged after an unrelated archetype
       change (004). **Run it; see it fail.**
-- [ ] T013 [P] [US1] Write `backend/tests/unit/directory-entry-independence.test.ts`
+- [X] T013 [P] [US1] Write `backend/tests/unit/directory-entry-independence.test.ts`
       (SC-009) — a pure test of the repository/service layer: changing position leaves
       a fixture archetype field untouched, and vice versa, without touching the
       database. **Run it; see it fail.**
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Add `PositionNotInCatalog` (422) to `backend/src/common/http/errors.ts`,
+- [X] T014 [US1] Add `PositionNotInCatalog` (422) to `backend/src/common/http/errors.ts`,
       following the existing class shape. **MODIFIES a file 001 owns.**
-- [ ] T015 [US1] Implement `backend/src/modules/directory/directory-entry.repository.ts`
+- [X] T015 [US1] Implement `backend/src/modules/directory/directory-entry.repository.ts`
       — upsert-on-first-assignment (research.md D1), and the position-validity check
       (FR-010): the named `positionId` must resolve under RLS to a row in the caller's
       own tenant's catalog (active or retired — retired is still "in the catalog," just
       not newly assignable, checked separately)
-- [ ] T016 [US1] Implement `backend/src/modules/directory/directory-entry.service.ts` —
+- [X] T016 [US1] Implement `backend/src/modules/directory/directory-entry.service.ts` —
       FR-010's two-part check (exists in tenant's catalog; is `active` for a *new*
       assignment), throwing `PositionNotInCatalog` for either failure, and the
       before/after audit metadata (004/FR-009's pattern)
-- [ ] T017 [US1] Implement `PATCH /tenant/directory/entries/:membershipId/position` in
+- [X] T017 [US1] Implement `PATCH /tenant/directory/entries/:membershipId/position` in
       `backend/src/modules/directory/directory.controller.ts`, declaring
       `@Capability('directory.assign_position')` and
       `@Audited({ action: 'directory.position_assigned', targetEntity: 'membership' })`
@@ -171,28 +171,28 @@ newly assigned.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T018 [P] [US2] Write `backend/tests/contract/position-catalog.test.ts` — the five
+- [X] T018 [P] [US2] Write `backend/tests/contract/position-catalog.test.ts` — the five
       acceptance scenarios of spec.md User Story 2, plus the two D6 collision cases
       from quickstart.md Scenario 2 (duplicate active name refused with `409`; the same
       name succeeds after the original is retired). **Run it; see it fail.**
-- [ ] T019 [P] [US2] Write `backend/tests/unit/position-name-collision.test.ts` — the
+- [X] T019 [P] [US2] Write `backend/tests/unit/position-name-collision.test.ts` — the
       collision predicate in isolation: case- and whitespace-insensitive match against
       *active* entries only, never against retired ones. **Run it; see it fail.**
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Add `PositionAlreadyExists` (409) and reuse the existing
+- [X] T020 [US2] Add `PositionAlreadyExists` (409) and reuse the existing
       `AlreadyRevoked`-shaped pattern for an already-retired position
       (`PositionAlreadyRetired`, 409) to `backend/src/common/http/errors.ts`.
       **MODIFIES a file 001 owns.**
-- [ ] T021 [US2] Implement `backend/src/modules/directory/position.repository.ts` —
+- [X] T021 [US2] Implement `backend/src/modules/directory/position.repository.ts` —
       create, retire, list-including-retired, all RLS-scoped by construction (no
       hand-written tenant filter, per 001's own discipline)
-- [ ] T022 [US2] Implement `backend/src/modules/directory/position.service.ts` —
+- [X] T022 [US2] Implement `backend/src/modules/directory/position.service.ts` —
       research.md D6's collision check ahead of insert (the unique index is the
       backstop, not the primary UX; a friendly `409` beats a raw constraint-violation
       500, the same pattern 001's RFC uniqueness uses)
-- [ ] T023 [US2] Implement `POST /tenant/directory/positions`,
+- [X] T023 [US2] Implement `POST /tenant/directory/positions`,
       `PATCH /tenant/directory/positions/:id/retire` and
       `GET /tenant/directory/positions` in `position.controller.ts`
       (`backend/src/modules/directory/`), declaring `@Capability('directory.
@@ -216,7 +216,7 @@ tenant B.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T024 [P] [US3] Write `backend/tests/contract/directory-read.test.ts` — the five
+- [X] T024 [P] [US3] Write `backend/tests/contract/directory-read.test.ts` — the five
       acceptance scenarios of spec.md User Story 3: every internal archetype reads
       successfully with 0 foreign-tenant entries; a revoked membership absent from the
       listing; each of the four portal archetypes refused individually (mirroring
@@ -225,10 +225,10 @@ tenant B.
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Implement the `LEFT JOIN membership -> directory_entry -> position`
+- [X] T025 [US3] Implement the `LEFT JOIN membership -> directory_entry -> position`
       query in `directory-entry.repository.ts` (extends T015), filtered to
       `membership.status = 'live'`, using `common/http/pagination.ts` verbatim (FR-013)
-- [ ] T026 [US3] Implement `GET /tenant/directory` in `directory.controller.ts`,
+- [X] T026 [US3] Implement `GET /tenant/directory` in `directory.controller.ts`,
       declaring `@Capability('directory.read')`
 
 **Checkpoint**: All three user stories are independently functional. 006/007/013 have a
@@ -241,26 +241,70 @@ real read capability to consume.
 **Purpose**: The grant audit extension, the inherited-suite guarantee, and the
 documentation this slice's planning surfaced.
 
-- [ ] T027 Extend `backend/tests/integration/grants-lockdown.test.ts` (004's T061
+- [X] T027 Extend `backend/tests/integration/grants-lockdown.test.ts` (004's T061
       pattern) with `position`/`directory_entry` assertions: `lc_app` holds exactly
       `SELECT, INSERT, UPDATE` on each, never `DELETE` (FR-004/FR-007's "never
       hard-deleted" as an absent grant)
-- [ ] T028 Add `US11-EP10-CFG-AssignMemberPosition`, `US12-EP10-CFG-
+- [X] T028 Add `US11-EP10-CFG-AssignMemberPosition`, `US12-EP10-CFG-
       DefinePositionCatalog` and `US13-EP10-CFG-ViewFirmDirectory` to
       `specs/master-user-story-catalog.md`'s EP10-CFG table (Principle I) — reconcile
       the resulting EP10-CFG count against the catalogue's actual current state, per
       spec.md's own Approval Checklist note, not this document's arithmetic
-- [ ] T029 Run `npm run test:isolation && npm run test:rls && npm run verify:role &&
+- [X] T029 Run `npm run test:isolation && npm run test:rls && npm run verify:role &&
       npm run test:contract` — confirm 001/002/004's suites pass unedited; `git diff
       --stat backend/drizzle/0006_grants.sql` empty
-- [ ] T030 Run `npm test -- --coverage`; confirm `src/common/tenant/**`,
+- [X] T030 Run `npm test -- --coverage`; confirm `src/common/tenant/**`,
       `src/common/audit/**` and `src/common/authz/**` remain at 100%
-- [ ] T031 [P] Execute every scenario in [quickstart.md](./quickstart.md) end to end and
+- [X] T031 [P] Execute every scenario in [quickstart.md](./quickstart.md) end to end and
       record results in `specs/017-firm-directory/quickstart-results.md`, following
       004's format
-- [ ] T032 [P] Update `specs/017-firm-directory/spec.md`'s Approval Checklist — tick
+- [X] T032 [P] Update `specs/017-firm-directory/spec.md`'s Approval Checklist — tick
       *Every requirement is test-verifiable* once T030 passes, leaving approval itself
       for the technical lead
+
+---
+
+## Phase 7: FR-009's production half (added 2026-08-26, after T031)
+
+**Purpose**: Close the gap T031 surfaced. Phases 1-6 seeded the default catalog in
+`drizzle/seed.ts` only, which is all this document originally scoped. A tenant
+provisioned through the **production** path — `POST /internal/platform/tenants` — still
+started with an empty catalog, so **SC-008** ("0 manual setup steps required before the
+first assignment") did not hold there, and **FR-009** was satisfied for dev/CI only.
+
+**Approach**: research.md D2's own instruction — "the same insert runs wherever 001's
+tenant-provisioning path already writes a tenant's first rows — extending that write,
+not adding a second provisioning mechanism." `lc_platform` holds no grant on `position`,
+so this needs the narrow platform extension **002 already established in
+`0016_platform_role_seed_grants.sql`**: one `FOR INSERT` policy with a restricting
+`WITH CHECK`, one `GRANT INSERT`, and the matching update to the lockdown test that
+freezes the platform role's reach. No `SELECT`, no `UPDATE`, no `DELETE` — the platform
+role seeds a catalog and can never read, edit or remove one.
+
+- [X] T033 [P] Write `backend/tests/contract/provision-seeds-catalog.test.ts` — a tenant
+      provisioned through `POST /internal/platform/tenants` already holds the 5-entry
+      default catalog, read back through `GET /tenant/directory/positions` by a real
+      member of that new tenant (SC-008, 0 setup steps); and the platform role can
+      neither read, update nor delete any position. **Run it; see it fail.**
+- [X] T034 Write `backend/drizzle/0022_position_platform_seed.sql` —
+      `position_platform_seed_insert` (`FOR INSERT TO lc_platform WITH CHECK (status =
+      'active' AND retired_at IS NULL)`) and `GRANT INSERT ON position TO lc_platform`,
+      following `0016`'s exact pattern. Adds no column, weakens no existing grant
+      (FR-015). *(TDD exemption 1)*
+- [X] T035 Extract the default catalog to
+      `backend/src/modules/directory/position-catalog.seed.ts` and consume it from BOTH
+      `drizzle/seed.ts` (T011) and `ProvisionService`, so the dev seed and the
+      production seed cannot drift. **MODIFIES two files 001 owns.**
+- [X] T036 Extend `backend/tests/integration/platform-scope.test.ts` (002's own lockdown)
+      — six tables now, `position` insert-only, still 0 `DELETE` anywhere.
+      **MODIFIES a file 002 owns.**
+- [X] T037 Run `npm run db:migrate`; re-run the full suite, quickstart Scenario 5 and the
+      coverage gate; update `quickstart-results.md` and `spec.md`'s implementation note
+      to record FR-009 as closed on both paths.
+
+**Checkpoint**: FR-009 and SC-008 hold on the production provisioning path as well as
+in dev/CI, and the platform role's reach is still exactly as narrow as `0016` left it
+plus one insert-only table.
 
 ---
 

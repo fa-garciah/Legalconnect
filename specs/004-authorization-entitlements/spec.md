@@ -252,7 +252,7 @@ archetype. Assert that a client-supplied claim of assignment changes nothing.
 
 1. **Given** a capability declared at `tenant` scope and a caller acting inside their own tenant, **When** it is invoked, **Then** scope is satisfied.
 2. **Given** a capability declared at `self` scope and a caller targeting another person's record, **When** it is invoked, **Then** it is refused on scope.
-3. **Given** a capability declared at `assigned` scope and a caller holding no live assignment to the target, **When** it is invoked, **Then** it is refused on scope, and the refusal is distinguishable from a permission refusal and from an entitlement refusal.
+3. **Given** a capability declared at `assigned` scope and a caller holding no live assignment to the target, **When** it is invoked, **Then** it is refused on scope, and that refusal is distinguishable from a permission refusal and from an entitlement refusal **in the audit trail and in the `Decision` type — not on the wire**, where it is byte-identical to a `404` for a nonexistent resource *(amended 2026-08-27 by slice `006-client-case-core`, FR-017 above)*.
 4. **Given** a caller who supplies a claim of assignment in the request, **When** the decision is taken, **Then** the claim is ignored and scope is resolved from stored relationships.
 5. **Given** a caller who loses an assignment, **When** their next request against that entity arrives, **Then** it is refused, with no grace period and nothing carried over from the session.
 6. **Given** a capability declared at `assigned` scope and no resolver registered for it, **When** it is invoked, **Then** it is refused rather than defaulting to permitted.
@@ -321,6 +321,14 @@ where the vocabulary requires one, and none where it does not.
 - **FR-015**: Scope resolution MUST be pluggable. This slice owns the port and the resolvers for `tenant`, `self` and `none`; the `assigned` resolver is supplied by the slice that owns the assignment, in the same PR that introduces it.
 - **FR-016**: Losing an assignment MUST take effect on the next request. Scope MUST NOT be cached in the session, for the same reason as FR-004.
 - **FR-017**: A scope refusal MUST be distinguishable from a permission refusal and from an entitlement refusal. Three distinct remedies: get assigned, change role, upgrade plan.
+  - **Amended 2026-08-27 by slice `006-client-case-core` (its Decision 4).** For scope kind
+    `assigned` the distinction is drawn in the audit trail and in this module's internal
+    `Decision` type, **not on the wire**. An `assigned` scope refusal is byte-identical to
+    a `404 not_found` for a resource that does not exist. This was `plan.md` Open Item 3's
+    own recommendation and it names this amendment as the cost of taking it: a 403 saying
+    "you are not assigned to this" confirms the matter exists, which in a firm running an
+    ethical wall is the leak the wall was built to prevent. Kinds `self` and `none` are
+    unaffected — FR-017 stands unchanged for them.
 
 **Closing the default**
 
