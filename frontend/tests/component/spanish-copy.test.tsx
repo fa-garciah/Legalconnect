@@ -1,10 +1,18 @@
 /**
- * T050 — SC-010. Every string literal rendered by the shell's own components is
+ * T050 (016a) — SC-010. Every string literal rendered by the shell's own components is
  * checked for accidental English copy — a fixed brand-token allow-list plus a small
  * English-function-word detector catches a fallback more reliably than eyeballing.
+ *
+ * **Extended by 018/T047**, not duplicated. `018`'s client screens are the first business
+ * screens in the product, and they are where English leaks in: the wire's vocabulary is
+ * English (`organization`, `person`, `active`, `inactive`), the components came from an
+ * English-language prototype, and a label that reads "Active" instead of "Activo" looks
+ * entirely plausible in review. A second copy test beside this one would have drifted from
+ * it within a slice, so this file grew instead.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Header } from '@/shell/Header';
 import { NavigationMenu } from '@/shell/NavigationMenu';
 import { LoadingState } from '@/feedback/LoadingState';
@@ -13,6 +21,18 @@ import { EmptyState } from '@/feedback/EmptyState';
 import type { ActiveMembership } from '@/session/types';
 import type { NavigationItem } from '@/shell/navigation-items';
 import type { ClassifiedRefusal } from '@/feedback/refusal-bucket';
+
+vi.mock('@/session/principal', () => ({
+  getPrincipal: vi.fn().mockResolvedValue({ identityId: 'identity-1', memberships: [] }),
+}));
+vi.mock('@/session/active-tenant', () => ({
+  readActiveTenantClient: vi.fn().mockReturnValue({ status: 'active', tenantId: 'tenant-1' }),
+}));
+
+import { ClientFormDialog } from '@/app/clientes/ClientFormDialog';
+import { WithdrawDialog } from '@/app/clientes/WithdrawDialog';
+import { ClientFilters } from '@/app/clientes/ClientFilters';
+import type { Client } from '@/clients/types';
 
 const ACTIVE: ActiveMembership = { tenantId: 'tenant-a', tenantName: 'Despacho Alfa, S.C.', archetype: 'SA' };
 const ITEMS: readonly NavigationItem[] = [{ id: 'a', label: 'Módulo A', href: '/a' }];
@@ -63,5 +83,69 @@ describe('shell copy is Spanish-only (SC-010)', () => {
   it('EmptyState', () => {
     const { container } = render(<EmptyState guidance="Crea tu primer caso para comenzar." />);
     assertOnlySpanish(container);
+  });
+});
+
+/*
+ * 018/T047 — the client screens.
+ *
+ * The wire's own vocabulary is English and it is one careless interpolation away from the
+ * screen: `organization`, `person`, `active`, `inactive`. `inactive` is the sharpest of the
+ * four, because the correct Spanish is not a translation of it — the domain's word is
+ * *retirado*, "withdrawn", and a screen showing "Inactivo" would pass a naive check while
+ * still using the wire's concept instead of the firm's.
+ */
+const WIRE_VOCABULARY = /(organization|person|active|inactive|client|status|name|save|cancel|edit|search)/i;
+
+function assertNoWireVocabulary(container: HTMLElement): void {
+  const text = container.textContent ?? '';
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(WIRE_VOCABULARY);
+}
+
+function withQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
+
+const CLIENT: Client = {
+  id: 'c1',
+  kind: 'organization',
+  legalName: 'Grupo Torres, S.A. de C.V.',
+  rfc: 'GTO120315AB1',
+  status: 'active',
+};
+
+describe('client screen copy is Spanish-only (018/FR-023, SC-009)', () => {
+  it('ClientFilters', () => {
+    const { container } = withQueryClient(
+      <ClientFilters q="" status="all" onQChange={() => {}} onStatusChange={() => {}} />,
+    );
+    assertOnlySpanish(container);
+    assertNoWireVocabulary(container);
+  });
+
+  it('ClientFormDialog — create', () => {
+    withQueryClient(<ClientFormDialog open mode="create" onClose={() => {}} onSaved={() => {}} />);
+    // The dialog portals out of the container, so the assertion is made against the body.
+    assertOnlySpanish(document.body);
+    assertNoWireVocabulary(document.body);
+  });
+
+  it('ClientFormDialog — edit, where kind is rendered as text', () => {
+    // The one place a wire value is turned into visible copy rather than being a form
+    // value: `organization` has to reach the screen as "Organización".
+    withQueryClient(
+      <ClientFormDialog open mode="edit" client={CLIENT} onClose={() => {}} onSaved={() => {}} />,
+    );
+    assertOnlySpanish(document.body);
+    assertNoWireVocabulary(document.body);
+  });
+
+  it('WithdrawDialog — the confirmation', () => {
+    withQueryClient(
+      <WithdrawDialog open action="withdraw" client={CLIENT} onClose={() => {}} onDone={() => {}} />,
+    );
+    assertOnlySpanish(document.body);
+    assertNoWireVocabulary(document.body);
   });
 });
