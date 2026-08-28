@@ -99,6 +99,28 @@ describe('identity/membership grant lockdown', () => {
     });
   });
 
+  it("T027 (017): lc_app holds exactly SELECT, INSERT, UPDATE on position — never DELETE (FR-007)", async () => {
+    await withTenant(app, tenantA, async () => {
+      const { rows } = await app.query<{ id: string }>(`SELECT id FROM position WHERE tenant_id = $1 LIMIT 1`, [
+        tenantA,
+      ]);
+      const id = rows[0]?.id;
+      expect(id, 'seed must have created at least one position for tenant A').toBeTruthy();
+
+      await expect(app.query(`DELETE FROM position WHERE id = $1`, [id])).rejects.toThrow(/permission denied/i);
+    });
+  });
+
+  it("T027 (017): lc_app holds exactly SELECT, INSERT, UPDATE on directory_entry — never DELETE (FR-004)", async () => {
+    await withTenant(app, tenantA, async () => {
+      // The permission check happens at the table level before any row is matched,
+      // so this throws even if tenant A currently has zero directory_entry rows.
+      await expect(app.query(`DELETE FROM directory_entry WHERE tenant_id = $1`, [tenantA])).rejects.toThrow(
+        /permission denied/i,
+      );
+    });
+  });
+
   it('lc_app cannot UPDATE the immutable columns of invitation (expires_at, issued_at)', async () => {
     await withTenant(app, tenantA, async () => {
       const { rows } = await app.query<{ id: string }>(

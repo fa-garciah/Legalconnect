@@ -335,9 +335,9 @@ bulk-provisioning of a firm's existing org chart from an external source.
 
 - [x] Both `[NEEDS CLARIFICATION]` items closed — Decision 1 (MP + SA) and Decision 2 (position-only MVP), 2026-08-26
 - [x] No implementation or technology detail in this document
-- [ ] Every requirement is test-verifiable
+- [x] Every requirement is test-verifiable
 - [x] Cross-tenant leak test defined and accepted (Principle II) — Story 1 scenario 3, Story 2 scenario 2, Story 3 scenario 1, SC-003 and SC-005
 - [x] Audit events enumerated per operation (Principle V) — FR-003, SC-001
 - [x] Capability Matrix extension declared and added to 004's registry in the same change (Principle IV, FR-016, `004/FR-021`)
 - [x] Tier classification declared (Tier Entitlements) — cross-cutting
-- [ ] US11–US13-EP10-CFG added to `master-user-story-catalog.md` (Principle I), and the catalog-wide total reconciled against the file itself rather than this document's arithmetic
+- [x] US11–US13-EP10-CFG added to `master-user-story-catalog.md` (Principle I), and the catalog-wide total reconciled against the file itself rather than this document's arithmetic

@@ -31,7 +31,7 @@ vendor role.
 | EP07 | JCN | Judicial Connectors | 9 | Existing — **out of MVP, Fase 2** |
 | EP08 | TTK | Time Tracking | 13 | Existing — **scope conflict open** |
 | EP09 | BIL | Billing | 12 | Existing |
-| EP10 | CFG | System Configuration | 10 | Existing |
+| EP10 | CFG | System Configuration | 13 | Existing + 3 new |
 | EP11 | PMG | Profile Management | 3 | Existing |
 | EP12 | ASC | Account Security | 19 | **REWRITTEN** — was 2 US; +US18–US19 on 2026-08-21 |
 | EP13 | PTL | Client Portal | 10 | Renamed from CommunicationChannel — **unvalidated** |
@@ -39,7 +39,7 @@ vendor role.
 | EP15 | QTE | Quote Management | 6 | **NEW** — fills numbering gap, referenced by EP16 |
 | EP16 | CCT | Cost Center | 4 | Existing — **DRAFT** |
 
-**Total: 172 user stories.**
+**Total: 175 user stories.**
 
 ---
 
@@ -300,11 +300,22 @@ Every other epic depends on this one.
 | US08-EP10-CFG-ConfigureNotifications | SA | Email and WhatsApp templates and triggers | IT2 |
 | US09-EP10-CFG-ConfigureKPIDashboards | MP | Default KPIs and alert thresholds | IT3 |
 | US10-EP10-CFG-ConfigureTimeTrackingRules | AA | Time increments and rounding rules | IT3 |
+| **US11-EP10-CFG-AssignMemberPosition** | MP | Record which catalog position a live member holds | 017 |
+| **US12-EP10-CFG-DefinePositionCatalog** | MP | Add and retire the firm's own position catalog | 017 |
+| **US13-EP10-CFG-ViewFirmDirectory** | MP | Browse the firm's own directory of members and positions | 017 |
 
 > **US01–US03 overlap EP00 and EP12.** Ownership is now split by slice: the
 > mechanism is slices 002 and 004, the administrative UI is slice 014. Behaviour
 > belongs to the mechanism, presentation to the UI. **US08 is a scope conflict**
 > (WhatsApp).
+>
+> **US11–US13 added 2026-08-27**, delivered by slice 017-firm-directory. Position
+> (the firm's own hierarchy label) is deliberately tenant-configurable, the mirror
+> image of 004's fixed, compile-time archetype matrix — see 017/spec.md, "The
+> Deliberate Asymmetry With 004." Archetype column lists MP because Decision 1 of
+> 017/spec.md grants position writes to MP alongside SA; SA holds US11–US12
+> as well, and all six internal archetypes (MP, AA, PL, CM, BM, SA) hold US13.
+> Raises EP10-CFG from 10 to 13 stories and the catalogue total from 172 to 175.
 
 ---
 

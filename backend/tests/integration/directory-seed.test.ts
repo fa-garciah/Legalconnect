@@ -26,10 +26,15 @@ describe('the default position catalog seed', () => {
     await migration.end();
   });
 
-  it('tenant A\'s catalog contains exactly the 5 default entries, all active', async () => {
+  // Checked as a SUBSET, not exact equality: US2's own contract tests
+  // (position-catalog.test.ts) legitimately add further, uniquely-named entries to
+  // these same two long-lived seeded tenants over the life of a full test run — the
+  // invariant this asserts is that the seed itself landed and stayed active, not
+  // that nothing else was ever added to the catalog afterward.
+  it('tenant A\'s catalog contains the 5 default entries, all active', async () => {
     const { rows } = await migration.query<{ name: string; status: string }>(
-      `SELECT name, status FROM position WHERE tenant_id = $1 ORDER BY name`,
-      [tenants.a],
+      `SELECT name, status FROM position WHERE tenant_id = $1 AND name = ANY($2)`,
+      [tenants.a, DEFAULT_SEED],
     );
     expect(rows.map((r) => r.name).sort()).toEqual([...DEFAULT_SEED].sort());
     expect(rows.every((r) => r.status === 'active')).toBe(true);
@@ -37,8 +42,8 @@ describe('the default position catalog seed', () => {
 
   it('tenant B has its own, isolated copy of the same 5 default entries', async () => {
     const { rows } = await migration.query<{ name: string }>(
-      `SELECT name FROM position WHERE tenant_id = $1 ORDER BY name`,
-      [tenants.b],
+      `SELECT name FROM position WHERE tenant_id = $1 AND name = ANY($2)`,
+      [tenants.b, DEFAULT_SEED],
     );
     expect(rows.map((r) => r.name).sort()).toEqual([...DEFAULT_SEED].sort());
   });

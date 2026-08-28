@@ -27,9 +27,10 @@ interface RouteHandler {
 }
 
 /**
- * The registered capabilities with no route today (data-model.md rows 5, 8, 18-21,
- * plus 017's rows 22-24 — directory.module.ts is still an empty shell at this point
- * in 017's TDD sequence; its controllers land in later user-story tasks).
+ * The registered capabilities with no route today (data-model.md rows 5, 8, 18-21).
+ * 017's rows 22-24 (directory.assign_position, directory.manage_catalog,
+ * directory.read) are NOT here — directory.module.ts's controllers declare all
+ * three (directory.controller.ts, position.controller.ts).
  */
 const NO_ROUTE_YET: readonly CapabilityId[] = [
   'membership.read_tenant',
@@ -38,9 +39,6 @@ const NO_ROUTE_YET: readonly CapabilityId[] = [
   'identity.hard_delete',
   'membership.create_direct',
   'archetype.redefine',
-  'directory.assign_position',
-  'directory.manage_catalog',
-  'directory.read',
 ];
 
 describe('capability declared everywhere', () => {

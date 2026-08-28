@@ -180,6 +180,47 @@ export class LastAdministratorProtected extends HttpException {
   }
 }
 
+/**
+ * FR-010 (017). A position must be chosen from the tenant's own catalog, never typed
+ * freely at assignment time — this is the one refusal 017 adds beyond 004's four
+ * reasons (contracts/directory-api.md). Also answers for a RETIRED position: FR-008
+ * lets a retired entry remain valid on an existing directory entry, but never lets it
+ * be newly assigned, and the same code covers both so a caller cannot distinguish
+ * "retired" from "never existed" for a position in their own catalog.
+ */
+export class PositionNotInCatalog extends HttpException {
+  constructor() {
+    super(
+      errorBody('position_not_in_catalog', "The position must be chosen from the tenant's own catalog."),
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
+  }
+}
+
+/**
+ * research.md D6 (017). Case- and whitespace-insensitive collision against an
+ * ACTIVE position only — a retired name is free to reuse (D4's retire-then-recreate
+ * pattern).
+ */
+export class PositionAlreadyExists extends HttpException {
+  constructor() {
+    super(
+      errorBody('position_already_exists', 'An active position with that name already exists.'),
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+/**
+ * contracts/directory-api.md — idempotent-mutation-on-an-already-final-state,
+ * the same shape as `AlreadyDeactivated`/`AlreadyRevoked`.
+ */
+export class PositionAlreadyRetired extends HttpException {
+  constructor() {
+    super(errorBody('already_retired', 'The position is already retired.'), HttpStatus.CONFLICT);
+  }
+}
+
 export class LimitsExceeded extends HttpException {
   constructor(exceeded: ReadonlyArray<{ limit: string; current: number; target: number }>) {
     super(
