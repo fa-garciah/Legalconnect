@@ -27,7 +27,7 @@ describe('017 directory audit actions', () => {
     expect(TARGET_ENTITY_BY_ACTION['directory.position_assigned']).toBe('membership');
   });
 
-  it('AUDIT_ACTIONS holds exactly 19 actions (16 inherited + 3 new)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(19);
+  it('AUDIT_ACTIONS holds exactly 31 actions (16 from 001/002, 3 from 017, 12 from 006)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(31);
   });
 });

@@ -28,9 +28,9 @@ interface RouteHandler {
 
 /**
  * The registered capabilities with no route today (data-model.md rows 5, 8, 18-21).
- * 017's rows 22-24 (directory.assign_position, directory.manage_catalog,
- * directory.read) are NOT here — directory.module.ts's controllers declare all
- * three (directory.controller.ts, position.controller.ts).
+ * 017's rows 22-24 are NOT here: each gained its route as its user story landed
+ * (T017, T023, T026), which is what this list existing at all is meant to make
+ * visible.
  */
 const NO_ROUTE_YET: readonly CapabilityId[] = [
   'membership.read_tenant',
@@ -91,13 +91,16 @@ describe('capability declared everywhere', () => {
     expect(undeclared).toEqual([]);
   });
 
-  it('the declared routes plus the registry rows with no endpoint account for all 24 capabilities', () => {
+  it('the declared routes plus the registry rows with no endpoint account for all 35 capabilities', () => {
     const handlers = routeHandlers();
     const declaredIds = new Set(handlers.map((h) => h.capability));
     const allIds = new Set(Object.keys(CAPABILITIES) as CapabilityId[]);
     const undeclaredInRegistry = [...allIds].filter((id) => !declaredIds.has(id));
 
-    expect(declaredIds.size + undeclaredInRegistry.length).toBe(24);
+    // 21 (004) + 3 (017) + 11 (006). This number is a census, not an assertion about any
+    // one slice, so every slice that extends the registry moves it — 017 took it from 21
+    // to 24, and 006 takes it to 35.
+    expect(declaredIds.size + undeclaredInRegistry.length).toBe(35);
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 

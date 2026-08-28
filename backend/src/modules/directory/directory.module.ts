@@ -4,19 +4,19 @@
  */
 import { Module } from '@nestjs/common';
 import { DirectoryController } from './directory.controller';
+import { DirectoryEntryRepository } from './directory-entry.repository';
 import { DirectoryEntryService } from './directory-entry.service';
-import { DIRECTORY_ENTRY_REPOSITORY, DbDirectoryEntryRepository } from './directory-entry.repository';
 import { PositionController } from './position.controller';
-import { PositionService } from './position.service';
 import { PositionRepository } from './position.repository';
+import { PositionService } from './position.service';
 
 @Module({
   controllers: [DirectoryController, PositionController],
   providers: [
+    DirectoryEntryRepository,
     DirectoryEntryService,
-    { provide: DIRECTORY_ENTRY_REPOSITORY, useClass: DbDirectoryEntryRepository },
-    PositionService,
     PositionRepository,
+    PositionService,
   ],
 })
 export class DirectoryModule {}

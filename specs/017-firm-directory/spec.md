@@ -335,9 +335,30 @@ bulk-provisioning of a firm's existing org chart from an external source.
 
 - [x] Both `[NEEDS CLARIFICATION]` items closed — Decision 1 (MP + SA) and Decision 2 (position-only MVP), 2026-08-26
 - [x] No implementation or technology detail in this document
-- [x] Every requirement is test-verifiable
+- [x] Every requirement is test-verifiable — ticked 2026-08-26 on T030: 98 files / 786 tests / 0 failures, blocking coverage (`tenant`, `audit`, `authz`) 100% on all four measures. Evidence in [quickstart-results.md](./quickstart-results.md). **Approval itself remains for the technical lead.**
 - [x] Cross-tenant leak test defined and accepted (Principle II) — Story 1 scenario 3, Story 2 scenario 2, Story 3 scenario 1, SC-003 and SC-005
 - [x] Audit events enumerated per operation (Principle V) — FR-003, SC-001
 - [x] Capability Matrix extension declared and added to 004's registry in the same change (Principle IV, FR-016, `004/FR-021`)
 - [x] Tier classification declared (Tier Entitlements) — cross-cutting
-- [x] US11–US13-EP10-CFG added to `master-user-story-catalog.md` (Principle I), and the catalog-wide total reconciled against the file itself rather than this document's arithmetic
+- [x] US11–US13-EP10-CFG added to `master-user-story-catalog.md` (Principle I), and the catalog-wide total reconciled against the file itself rather than this document's arithmetic — done 2026-08-26 on T028. `EP10-CFG` 10 → 13. The catalogue-wide total was **counted from the epic tables** rather than carried forward: 168, not the 172 the header claimed. The 7-row gap predates this slice (`EP00` lists 16 and holds 15 after 004's Decision 4; `EP02` 13/10; `EP06` 9/8; `EP12` 19/17) and is recorded as a reconciliation note in the catalogue itself — this slice corrected only the total and its own `EP10` row, leaving the four stale per-epic figures for the slices that own them.
+
+## Implementation notes (2026-08-26)
+
+Two findings from building this slice are recorded in
+[quickstart-results.md](./quickstart-results.md) rather than changing any requirement
+here:
+
+- **`GET /tenant/directory` needed one explicit tenant predicate**, because 002's
+  second, identity-scoped SELECT policy on `membership` ORs with the tenant-scoped one
+  and would otherwise have shown a dual-tenant reader their own row from another firm.
+  Found and fixed during implementation; SC-005 holds.
+- **FR-009 is closed on both paths** (T033–T037). The first pass seeded the catalog in
+  the dev/CI seed only, leaving a tenant provisioned through
+  `POST /internal/platform/tenants` empty and SC-008 unmet on the path a real firm is
+  actually created by. Closed by following research.md D2 literally — the catalog is now
+  written on the same platform transaction as the tenant row — and by the narrow
+  platform extension 002 had already established in `0016`: one `FOR INSERT` policy with
+  a restricting `WITH CHECK`, one `GRANT INSERT`, and nothing else. The platform role can
+  seed a catalog and still cannot read, edit or delete one, nor touch `directory_entry`
+  at all. `platform-scope.test.ts` — the lockdown that freezes that reach — grew from
+  five tables to six and now asserts the new extension's narrowness directly.

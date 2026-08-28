@@ -13,7 +13,7 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { Reflector } from '@nestjs/core';
 import { Observable, firstValueFrom, from } from 'rxjs';
 import { capabilityDef, type CapabilityId } from './capability';
-import { CAPABILITY } from './declare';
+import { CAPABILITY, SCOPE_TARGET } from './declare';
 import { decide } from './decide';
 import { refusalToHttp } from './refusal';
 import type { ScopeRequest } from './scope';
@@ -26,6 +26,7 @@ import type { ActivePrincipal } from '../tenant/principal';
 
 interface IncomingRequest {
   readonly headers: Record<string, string | string[] | undefined>;
+  readonly params?: Record<string, string | undefined>;
 }
 
 interface Caller {
@@ -80,11 +81,23 @@ export class AuthorizationInterceptor implements NestInterceptor {
       // A future capability resolving `tenant` scope against an entity that carries
       // its own tenant id would populate this from that entity instead.
       targetTenantId: caller.principal?.tenantId ?? null,
-      // Neither of today's two `self`-scoped routes names a target id — accepting an
-      // invitation has no prior identity to compare against, and reading one's own
-      // memberships takes no id parameter at all (research.md D8). `null` is the
-      // correct, and only, value until a `self`-scoped capability names one.
-      targetId: null,
+      // The id of the entity a scope resolver must decide about, read from the route's
+      // own `@ScopeTarget` declaration.
+      //
+      // This was `null` unconditionally until 006-client-case-core (its FR-013,
+      // research.md D2), and that was correct for as long as it lasted: 004's two
+      // `self`-scoped routes name no target — accepting an invitation has no prior
+      // identity to compare against, and reading one's own memberships takes no id
+      // parameter at all (research.md D8) — and `tenant` scope is decided from the
+      // principal alone. 017 added three more `tenant` rows and did not change that.
+      //
+      // The first `assigned`-scoped capability is what ends it: a resolver cannot answer
+      // "are you on THIS case" without being told which case. A route that declares
+      // `assigned` scope and no `@ScopeTarget` fails the build
+      // (tests/contract/scope-target-declared.test.ts), because at runtime it would look
+      // identical to a correct refusal — `undefined` here makes the resolver fail closed,
+      // and FR-016 makes that byte-identical to a nonexistent resource.
+      targetId: this.scopeTargetOf(context, request),
     };
 
     const decision = await decide({
@@ -102,6 +115,26 @@ export class AuthorizationInterceptor implements NestInterceptor {
     }
 
     return firstValueFrom(next.handle() as Observable<unknown>);
+  }
+
+  /**
+   * The scoped entity's id, per 006's `@ScopeTarget` declaration.
+   *
+   * Returns `null` when the route declares no target — every `tenant`, `self` and `none`
+   * capability, which is 32 of the 35 rows — and `null` again when it declares one that
+   * the request does not carry. The second case is unreachable through Nest's router
+   * (a declared `:caseId` is always present on a matched route) and is handled anyway
+   * rather than coerced: `null` makes the resolver fail closed, which is the safe
+   * direction, and `String(undefined)` would hand it the literal text "undefined" to
+   * compare against a uuid.
+   */
+  private scopeTargetOf(context: ExecutionContext, request: IncomingRequest): string | null {
+    const paramName = this.reflector.getAllAndOverride<string | undefined>(SCOPE_TARGET, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!paramName) return null;
+    return request.params?.[paramName] ?? null;
   }
 
   /**

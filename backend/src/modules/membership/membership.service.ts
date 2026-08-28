@@ -8,6 +8,8 @@ import { sql } from 'drizzle-orm';
 import { currentTx } from '../../common/tenant/middleware';
 import { AlreadyRevoked, LastAdministratorProtected, ResourceNotFound } from '../../common/http/errors';
 import { normaliseArchetype } from '../invitation/validate';
+import { closeAssignmentsForMembership } from '../case-core/close-assignments';
+import type { AuditSource } from '../../common/db/schema';
 import type { Archetype } from '../../common/tenant/principal';
 
 /**
@@ -27,6 +29,12 @@ function sqlstateOf(error: unknown): unknown {
 
 function isLastSaProtectedError(error: unknown): boolean {
   return sqlstateOf(error) === LAST_SA_PROTECTED_SQLSTATE;
+}
+
+export interface RevocationResult {
+  readonly row: MembershipRow;
+  /** 006/FR-012a — the cases this revocation took the member off, for the audit trail. */
+  readonly closedAssignmentCaseIds: readonly string[];
 }
 
 export interface MembershipRow {
@@ -57,7 +65,19 @@ const present = (row: RawRow): MembershipRow => ({
 
 @Injectable()
 export class MembershipService {
-  async revoke(id: string): Promise<MembershipRow> {
+  /**
+   * 006/FR-012a — revocation also closes the membership's live case assignments, on THIS
+   * transaction, so the two cannot come apart.
+   *
+   * Without it a revoked member keeps appearing on every case team they were on, since
+   * that read shows live assignments and nothing else knew to end them. The alternative —
+   * joining `membership` at read time — would put that join on the `assigned` resolver's
+   * hot path too, which 006/research.md D1 deliberately kept clear.
+   *
+   * The direction of the import is the one 017 established: 001's `ProvisionService`
+   * already calls into the directory module the same way, on its own transaction.
+   */
+  async revoke(id: string, source: AuditSource): Promise<RevocationResult> {
     const existing = await currentTx().execute<{ status: 'live' | 'revoked' }>(sql`
       SELECT status FROM membership WHERE id = ${id}::uuid
     `);
@@ -78,7 +98,13 @@ export class MembershipService {
     }
     const row = rows[0];
     if (!row) throw new ResourceNotFound();
-    return present(row);
+
+    // After the revocation succeeded, and inside the same transaction: if the UPDATE above
+    // had thrown (the last-SA invariant), nothing here runs and no assignment is closed
+    // for a membership that is still live.
+    const closed = await closeAssignmentsForMembership(row.id, source);
+
+    return { row: present(row), closedAssignmentCaseIds: closed.map((c) => c.caseId) };
   }
 
   async changeArchetype(

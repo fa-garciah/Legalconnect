@@ -1,0 +1,31 @@
+{
+  "workflow": "speckit",
+  "specName": "Clients, Cases & Case Teams",
+  "branch": "017_firm_directory",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-28T01:03:22.512Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-28T01:17:41.226Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-28T01:31:10.903Z"
+    }
+  ],
+  "telemetryInstanceId": "e17c56d5-2731-4539-aa48-f8a8124351e5"
+}

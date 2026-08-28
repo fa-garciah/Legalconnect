@@ -91,12 +91,16 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it('covers every action in the vocabulary — nineteen (001\'s seven, 002\'s nine, 017\'s three)', () => {
-    // Guards against an action being added to FR-014/FR-031/017-FR-003 without a test reaching it.
-    expect(AUDIT_ACTIONS).toHaveLength(19);
-    expect(GATED).toHaveLength(2);
+  it("covers every action in the vocabulary — thirty-one (001's seven, 002's nine, 017's three, 006's twelve)", () => {
+    // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024
+    // without a test reaching it.
+    expect(AUDIT_ACTIONS).toHaveLength(31);
+    // 006/FR-023 adds `case.read` to 001's two. Principle V requires recording ACCESS to
+    // cases and not only their modification, and the gate is what keeps a monitoring job
+    // from inflating the log it watches.
+    expect(GATED).toHaveLength(3);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
-    expect(UNCONDITIONAL).toHaveLength(19 - 2 - 4);
+    expect(UNCONDITIONAL).toHaveLength(31 - 3 - 4);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

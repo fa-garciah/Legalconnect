@@ -99,26 +99,90 @@ describe('identity/membership grant lockdown', () => {
     });
   });
 
-  it("T027 (017): lc_app holds exactly SELECT, INSERT, UPDATE on position — never DELETE (FR-007)", async () => {
-    await withTenant(app, tenantA, async () => {
-      const { rows } = await app.query<{ id: string }>(`SELECT id FROM position WHERE tenant_id = $1 LIMIT 1`, [
-        tenantA,
+  it("T027 (017): lc_app holds exactly SELECT, INSERT, UPDATE on position and directory_entry — never DELETE", async () => {
+    // FR-004/FR-007's "never hard-deleted" is the ABSENT grant, the same discipline
+    // 001 established for tenant and 002 for membership/invitation. Asserted against
+    // the catalog rather than by attempting a delete, so a future migration that
+    // added the privilege fails here even if no code ever calls it.
+    const migration = await connectAs('migration');
+    try {
+      const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
+        `SELECT table_name, privilege_type
+           FROM information_schema.role_table_grants
+          WHERE grantee = 'lc_app' AND table_name IN ('position', 'directory_entry')
+          ORDER BY table_name, privilege_type`,
+      );
+      expect(rows.map((r) => `${r.table_name}:${r.privilege_type}`)).toEqual([
+        'directory_entry:INSERT',
+        'directory_entry:SELECT',
+        'directory_entry:UPDATE',
+        'position:INSERT',
+        'position:SELECT',
+        'position:UPDATE',
       ]);
-      const id = rows[0]?.id;
-      expect(id, 'seed must have created at least one position for tenant A').toBeTruthy();
-
-      await expect(app.query(`DELETE FROM position WHERE id = $1`, [id])).rejects.toThrow(/permission denied/i);
-    });
+    } finally {
+      await migration.end();
+    }
   });
 
-  it("T027 (017): lc_app holds exactly SELECT, INSERT, UPDATE on directory_entry — never DELETE (FR-004)", async () => {
+  it('T027 (017): the missing DELETE is real — lc_app is refused at the database, not by a missing method', async () => {
     await withTenant(app, tenantA, async () => {
-      // The permission check happens at the table level before any row is matched,
-      // so this throws even if tenant A currently has zero directory_entry rows.
-      await expect(app.query(`DELETE FROM directory_entry WHERE tenant_id = $1`, [tenantA])).rejects.toThrow(
+      await expect(app.query(`DELETE FROM position WHERE tenant_id = $1`, [tenantA])).rejects.toThrow(
         /permission denied/i,
       );
     });
+    await withTenant(app, tenantA, async () => {
+      await expect(
+        app.query(`DELETE FROM directory_entry WHERE tenant_id = $1`, [tenantA]),
+      ).rejects.toThrow(/permission denied/i);
+    });
+  });
+
+  it('T027 (017): no role the application can reach holds DELETE on either new table (FR-004, FR-007)', async () => {
+    // "every role the application can reach", in 0006_grants.sql's own words — the
+    // owner's implicit privileges are not a grant the application can use, and are
+    // what DDL runs as.
+    const migration = await connectAs('migration');
+    try {
+      const { rows } = await migration.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM information_schema.role_table_grants
+          WHERE table_name IN ('position', 'directory_entry')
+            AND privilege_type = 'DELETE'
+            AND grantee IN ('lc_app', 'lc_platform', 'lc_audit_writer', 'lc_retention')`,
+      );
+      expect(Number(rows[0]!.n)).toBe(0);
+    } finally {
+      await migration.end();
+    }
+  });
+
+  it("T027 (017): FR-015 — the two new tables added grants, and weakened none of 001/002/004's", async () => {
+    const migration = await connectAs('migration');
+    try {
+      // lc_app on the pre-existing tables, exactly as 001/002/004 left them.
+      const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
+        `SELECT table_name, privilege_type
+           FROM information_schema.role_table_grants
+          WHERE grantee = 'lc_app'
+            AND table_name IN ('tenant', 'plan', 'audit_event', 'identity', 'membership', 'invitation')
+          ORDER BY table_name, privilege_type`,
+      );
+      expect(rows.map((r) => `${r.table_name}:${r.privilege_type}`)).toEqual([
+        'audit_event:INSERT',
+        'audit_event:SELECT',
+        'identity:SELECT',
+        'invitation:INSERT',
+        'invitation:SELECT',
+        // No table-wide invitation:UPDATE — 002 granted it per COLUMN, which is what
+        // the immutable-columns test below exercises from the other direction.
+        'membership:SELECT',
+        'membership:UPDATE',
+        'plan:SELECT',
+        'tenant:SELECT',
+      ]);
+    } finally {
+      await migration.end();
+    }
   });
 
   it('lc_app cannot UPDATE the immutable columns of invitation (expires_at, issued_at)', async () => {

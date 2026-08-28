@@ -23,15 +23,15 @@ vendor role.
 |---|---|---|---|---|
 | EP00 | FND | Platform Foundation | 16 | **NEW** — was missing entirely; +US16 on 2026-08-21 |
 | EP01 | DSH | Dashboard | 11 | Existing |
-| EP02 | CSM | Case Management | 13 | Existing + 3 new |
-| EP03 | CLM | Client Management | 6 | Existing |
+| EP02 | CSM | Case Management | 14 | Existing + 3 new; +US14 and US08 retitled (006) |
+| EP03 | CLM | Client Management | 7 | Existing + US07 (006) |
 | EP04 | DOC | Document Management | 16 | Existing |
 | EP05 | CAL | Calendar & Scheduling | 10 | Renamed from ViewUpcomingEvents |
 | EP06 | KPI | KPI Dashboard | 9 | Renamed from ViewOverallKPIs + 1 new |
 | EP07 | JCN | Judicial Connectors | 9 | Existing — **out of MVP, Fase 2** |
 | EP08 | TTK | Time Tracking | 13 | Existing — **scope conflict open** |
 | EP09 | BIL | Billing | 12 | Existing |
-| EP10 | CFG | System Configuration | 13 | Existing + 3 new |
+| EP10 | CFG | System Configuration | 16 | Existing + 3 new (017) + 3 new (006) |
 | EP11 | PMG | Profile Management | 3 | Existing |
 | EP12 | ASC | Account Security | 19 | **REWRITTEN** — was 2 US; +US18–US19 on 2026-08-21 |
 | EP13 | PTL | Client Portal | 10 | Renamed from CommunicationChannel — **unvalidated** |
@@ -39,7 +39,24 @@ vendor role.
 | EP15 | QTE | Quote Management | 6 | **NEW** — fills numbering gap, referenced by EP16 |
 | EP16 | CCT | Cost Center | 4 | Existing — **DRAFT** |
 
-**Total: 175 user stories.**
+**Total: 173 user stories** — 168 as counted on 2026-08-26, plus the 5 slice
+`006-client-case-core` adds (`US14-EP02`, `US07-EP03`, `US14`–`US16-EP10`). `US08-EP02` was
+retitled, not added, so it does not move the total.
+
+> **Reconciliation note (2026-08-26, slice 006).** Slice 006 corrected the total and its
+> own three epic rows (`EP02` 13→14, `EP03` 6→7, `EP10` 13→16), following exactly the scope
+> 017 set below: a slice fixes the catalogue-wide total and the rows it touches, and leaves
+> the rest to whoever owns them. It did **not** re-derive `EP00`, `EP06` or `EP12`, whose
+> figures were already known stale before this slice.
+
+> **Reconciliation note (2026-08-26, slice 017).** The previous header read 172, and
+> the `US` column above still sums to 175 after this slice's +3. Counting the actual
+> rows in the epic tables gives 168. The 7-row gap predates this slice: `EP00` lists
+> 16 and holds 15 (004's Decision 4 retired `US12-EP00-FND`), `EP02` lists 13 and
+> holds 10, `EP06` lists 9 and holds 8, `EP12` lists 19 and holds 17. Slice 017 did
+> not re-derive those four figures — it verified and corrected only the catalogue-wide
+> total and its own `EP10` row, exactly as `017/spec.md`'s Approval Checklist note
+> asked. The four stale per-epic figures are left for the slice that owns them.
 
 ---
 
@@ -132,15 +149,27 @@ Every other epic depends on this one.
 | US05-EP02-CSM-IdentifyUrgentCases | CM | "Urgent" status badge | IT2 |
 | US06-EP02-CSM-SortCases | AA | Sort by any column | IT2 |
 | US07-EP02-CSM-MonitorCaseStatus | PL | Status: In Process / On Hold / Concluded | IT3 |
-| US08-EP02-CSM-ViewAssignedAttorney | CM | Assigned attorney per case | IT3 |
+| US08-EP02-CSM-ViewCaseTeam | CM | Every member assigned to a case, with their role on it | 006 |
 | US09-EP02-CSM-ViewUpcomingDeadlines | PL | Next three deadlines per case | MVP |
 | US10-EP02-CSM-ViewAssociatedTasks | CM | Task count and status per case | MVP |
 | **US11-EP02-CSM-ViewCaseActivityFeed** | CM | Activity log of case, documents and notes | MVP |
 | **US12-EP02-CSM-FilterActivityByMonth** | CM | Filter case activity by month | MVP |
 | **US13-EP02-CSM-GenerateClientActivityReport** | MP | Client-facing activity report per case | IT2 |
+| **US14-EP02-CSM-AssignCaseTeamMember** | MP | Put a firm member on a matter, with a role, and take them off it | 006 |
 
 > **US11–US13 are new**, derived from "Actividad por Expediente" in the
 > 23 Apr 2026 session, which had no epic assigned.
+
+> **Amended 2026-08-26 by slice `006-client-case-core`** (Principle I), three changes:
+>
+> - **`US14` is new.** `US08` covered only *reading* who is on a matter. Assigning and
+>   unassigning had no story at all, while being the story slice 006 exists for — it is
+>   what supplies `004`'s `assigned` scope resolver, deferred there by design.
+> - **`US08` was retitled** from `ViewAssignedAttorney`. It read "Assigned attorney",
+>   singular, which is precisely what the prototype could express (one free-text name on
+>   the case) and what 006 replaces with a team of many, each carrying a role.
+> - **`US08` moved `IT3` → `006`.** The read side of case teams ships with the write side;
+>   leaving it in IT3 would have described a field that already existed.
 
 ---
 
@@ -149,11 +178,22 @@ Every other epic depends on this one.
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
 | US01-EP03-CLM-ViewClientSummaryMetrics | MP | Total / active / new-this-month | IT2 |
-| US02-EP03-CLM-SearchAndFilterClients | AA | Search and filter by name or status | MVP |
-| US03-EP03-CLM-AddOrUpdateClientProfile | PL | Quick-add and edit client profiles | MVP |
-| US04-EP03-CLM-ViewAndManageClientCases | CM | Cases per client | MVP |
+| US02-EP03-CLM-SearchAndFilterClients | AA | Search and filter by name or status | 006 |
+| US03-EP03-CLM-AddOrUpdateClientProfile | PL | Quick-add and edit client profiles | 006 |
+| US04-EP03-CLM-ViewAndManageClientCases | CM | Cases per client | 006 |
 | US05-EP03-CLM-ViewBillingStatusIndicators | BM | Outstanding invoices beside client record | IT2 |
 | US06-EP03-CLM-ConfigureDashboardColumns | SA | Configurable columns and fields | IT2 |
+| **US07-EP03-CLM-RestoreWithdrawnClient** | MP | Restore a client withdrawn in error | 006 |
+
+> **Amended 2026-08-26 by slice `006-client-case-core`** (Principle I):
+>
+> - **`US07` is new.** Withdrawal had no inverse, so a mis-click permanently barred a party
+>   from ever having a new matter opened against them — and merging duplicate clients is out
+>   of scope, so the duplicate that remedy forces would be permanent too. Restoration is
+>   governed by the capability that withdraws, so it adds no permission question.
+> - **`US02`, `US03`, `US04` moved `MVP` → `006`**, the slice that delivers them. `US03`'s
+>   `PL` archetype is honoured: `PL` creates and updates clients in 006's matrix and does
+>   not withdraw them.
 
 ---
 
@@ -300,22 +340,31 @@ Every other epic depends on this one.
 | US08-EP10-CFG-ConfigureNotifications | SA | Email and WhatsApp templates and triggers | IT2 |
 | US09-EP10-CFG-ConfigureKPIDashboards | MP | Default KPIs and alert thresholds | IT3 |
 | US10-EP10-CFG-ConfigureTimeTrackingRules | AA | Time increments and rounding rules | IT3 |
-| **US11-EP10-CFG-AssignMemberPosition** | MP | Record which catalog position a live member holds | 017 |
-| **US12-EP10-CFG-DefinePositionCatalog** | MP | Add and retire the firm's own position catalog | 017 |
-| **US13-EP10-CFG-ViewFirmDirectory** | MP | Browse the firm's own directory of members and positions | 017 |
+| US11-EP10-CFG-AssignMemberPosition | MP | Record which position a firm member holds | 017 |
+| US12-EP10-CFG-DefinePositionCatalog | MP | Maintain the firm's own set of positions | 017 |
+| US13-EP10-CFG-ViewFirmDirectory | AA | Browse the firm's own directory | 017 |
+| **US14-EP10-CFG-DefineCaseStatusCatalog** | MP | Maintain the firm's own case statuses, and declare which of them end a matter | 006 |
+| **US15-EP10-CFG-DefineMatterTypeCatalog** | MP | Maintain the firm's own matter types | 006 |
+| **US16-EP10-CFG-DefineVenueCatalog** | MP | Maintain the firm's own courts and venues | 006 |
+
+> **US14–US16 added 2026-08-26 by slice `006-client-case-core`** (Principle I). The
+> conceptual model assumed case status, matter type and venue lived in the firm directory;
+> **017 as built ships only the position catalog**, so these three were nobody's until now.
+> They are consumed exclusively by `Case`, which 006 also owns, so 006 owns them — see its
+> Decision 1. `US14` carries one thing the other two do not: a firm declares which of its
+> own statuses ends a matter, because the product cannot know that from a name it did not
+> choose.
+
+> **US11–US13 added 2026-08-26 by slice 017-firm-directory** (Principle I). Position
+> is the firm's own organizational hierarchy, deliberately tenant-configurable — the
+> mirror image of 004's fixed archetype matrix, and the row Principle III exists to
+> permit. `MP` holds US11–US12 alongside `SA`; US13 is read by all six internal
+> archetypes.
 
 > **US01–US03 overlap EP00 and EP12.** Ownership is now split by slice: the
 > mechanism is slices 002 and 004, the administrative UI is slice 014. Behaviour
 > belongs to the mechanism, presentation to the UI. **US08 is a scope conflict**
 > (WhatsApp).
->
-> **US11–US13 added 2026-08-27**, delivered by slice 017-firm-directory. Position
-> (the firm's own hierarchy label) is deliberately tenant-configurable, the mirror
-> image of 004's fixed, compile-time archetype matrix — see 017/spec.md, "The
-> Deliberate Asymmetry With 004." Archetype column lists MP because Decision 1 of
-> 017/spec.md grants position writes to MP alongside SA; SA holds US11–US12
-> as well, and all six internal archetypes (MP, AA, PL, CM, BM, SA) hold US13.
-> Raises EP10-CFG from 10 to 13 stories and the catalogue total from 172 to 175.
 
 ---
 

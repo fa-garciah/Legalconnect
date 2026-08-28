@@ -264,6 +264,50 @@ documentation this slice's planning surfaced.
 
 ---
 
+## Phase 7: FR-009's production half (added 2026-08-26, after T031)
+
+**Purpose**: Close the gap T031 surfaced. Phases 1-6 seeded the default catalog in
+`drizzle/seed.ts` only, which is all this document originally scoped. A tenant
+provisioned through the **production** path — `POST /internal/platform/tenants` — still
+started with an empty catalog, so **SC-008** ("0 manual setup steps required before the
+first assignment") did not hold there, and **FR-009** was satisfied for dev/CI only.
+
+**Approach**: research.md D2's own instruction — "the same insert runs wherever 001's
+tenant-provisioning path already writes a tenant's first rows — extending that write,
+not adding a second provisioning mechanism." `lc_platform` holds no grant on `position`,
+so this needs the narrow platform extension **002 already established in
+`0016_platform_role_seed_grants.sql`**: one `FOR INSERT` policy with a restricting
+`WITH CHECK`, one `GRANT INSERT`, and the matching update to the lockdown test that
+freezes the platform role's reach. No `SELECT`, no `UPDATE`, no `DELETE` — the platform
+role seeds a catalog and can never read, edit or remove one.
+
+- [X] T033 [P] Write `backend/tests/contract/provision-seeds-catalog.test.ts` — a tenant
+      provisioned through `POST /internal/platform/tenants` already holds the 5-entry
+      default catalog, read back through `GET /tenant/directory/positions` by a real
+      member of that new tenant (SC-008, 0 setup steps); and the platform role can
+      neither read, update nor delete any position. **Run it; see it fail.**
+- [X] T034 Write `backend/drizzle/0022_position_platform_seed.sql` —
+      `position_platform_seed_insert` (`FOR INSERT TO lc_platform WITH CHECK (status =
+      'active' AND retired_at IS NULL)`) and `GRANT INSERT ON position TO lc_platform`,
+      following `0016`'s exact pattern. Adds no column, weakens no existing grant
+      (FR-015). *(TDD exemption 1)*
+- [X] T035 Extract the default catalog to
+      `backend/src/modules/directory/position-catalog.seed.ts` and consume it from BOTH
+      `drizzle/seed.ts` (T011) and `ProvisionService`, so the dev seed and the
+      production seed cannot drift. **MODIFIES two files 001 owns.**
+- [X] T036 Extend `backend/tests/integration/platform-scope.test.ts` (002's own lockdown)
+      — six tables now, `position` insert-only, still 0 `DELETE` anywhere.
+      **MODIFIES a file 002 owns.**
+- [X] T037 Run `npm run db:migrate`; re-run the full suite, quickstart Scenario 5 and the
+      coverage gate; update `quickstart-results.md` and `spec.md`'s implementation note
+      to record FR-009 as closed on both paths.
+
+**Checkpoint**: FR-009 and SC-008 hold on the production provisioning path as well as
+in dev/CI, and the platform role's reach is still exactly as narrow as `0016` left it
+plus one insert-only table.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -38,14 +38,52 @@ export const AUDIT_ACTIONS = [
   'position.created',
   'position.retired',
   'directory.position_assigned',
+  // Slice 006 (FR-022 to FR-024). Eleven mutations plus one ACCESS record.
+  'client.created',
+  'client.updated',
+  'client.deactivated',
+  // FR-004a. Its own action rather than a `client.updated` carrying a status field: the
+  // withdraw/restore round trip has to be legible in the trail, and a status change
+  // buried in an update's metadata is not.
+  'client.reactivated',
+  'case.created',
+  // FR-023. The one ACCESS record in this slice, and the first anywhere in the product.
+  // Principle V requires recording every access to CASES, not only their modification,
+  // and this is the slice that first owns an entity that clause names. Channel-gated
+  // below, for the reason the two 001 gates exist.
+  'case.read',
+  'case.status_changed',
+  'case.team_member_assigned',
+  // Also written by the revocation cascade (FR-012a), deliberately reusing this action
+  // rather than adding a distinct one: the event is the same — a person came off a
+  // matter — and the entry's actor plus the neighbouring `membership.revoked` in the same
+  // transaction already name the cause (research.md D8).
+  'case.team_member_unassigned',
+  // Three actions for three catalogs, with `target_entity` naming which one. Nine would be
+  // vocabulary growth with no read that benefits: the audit surface already filters by
+  // target entity, so `case.catalog_entry_retired` + `venue` answers "who retired a court".
+  'case.catalog_entry_created',
+  // FR-008a. Only ever carries `case_status` — `is_closing` is the sole editable field on
+  // any catalog entry, and only that catalog has it.
+  'case.catalog_entry_updated',
+  'case.catalog_entry_retired',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-/** Actions written only when `source.channel === 'interactive'`. */
+/**
+ * Actions written only when `source.channel === 'interactive'`.
+ *
+ * `case.read` joins 001's two (006/FR-023). Principle V wants a record that a PERSON
+ * opened a matter; an ungated read action would let a monitoring job inflate the log it
+ * watches, which is the whole reason the first two gates exist. The case LIST read is not
+ * here because it is not audited at all — it returns only rows the caller is already
+ * scoped to and discloses no matter's contents (006/spec.md, Resolved Decisions).
+ */
 export const CHANNEL_GATED_ACTIONS: ReadonlySet<AuditAction> = new Set<AuditAction>([
   'audit.queried',
   'tenant.registry_read',
+  'case.read',
 ]);
 
 export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
@@ -69,6 +107,25 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'position.created': 'position',
   'position.retired': 'position',
   'directory.position_assigned': 'membership',
+  // Slice 006. The relation is `case_file` (CASE is reserved — 006/research.md D4), and
+  // the target entity names the relation so an audit read can join to it.
+  'client.created': 'client',
+  'client.updated': 'client',
+  'client.deactivated': 'client',
+  'client.reactivated': 'client',
+  'case.created': 'case_file',
+  'case.read': 'case_file',
+  'case.status_changed': 'case_file',
+  // The subject of a team change is the MEMBERSHIP whose place on the matter changed, not
+  // the case — the same choice `directory.position_assigned` above makes for the analogous
+  // change. The case is carried in the entry's metadata.
+  'case.team_member_assigned': 'membership',
+  'case.team_member_unassigned': 'membership',
+  // Set per call — one action serves all three catalogs, and the target entity is what
+  // distinguishes `case_status` from `matter_type` from `venue` (006/research.md D8).
+  'case.catalog_entry_created': 'unknown',
+  'case.catalog_entry_updated': 'case_status',
+  'case.catalog_entry_retired': 'unknown',
 };
 
 export type Channel = 'interactive' | 'automated';
