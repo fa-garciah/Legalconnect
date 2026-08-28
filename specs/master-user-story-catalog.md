@@ -142,14 +142,14 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP02-CSM-CreateNewCase | CM | Create case in under 2 min from intake | MVP |
-| US02-EP02-CSM-FilterCases | CM | Filter by number, client, type, court, date, attorney, status | IT2 |
-| US03-EP02-CSM-ViewCaseList | CM | Tabular case list with key columns | MVP |
-| US04-EP02-CSM-ViewCaseDetails | AA | Detail panel on row selection | IT2 |
+| US01-EP02-CSM-CreateNewCase | CM | Create case in under 2 min from intake | 006 + 019 |
+| US02-EP02-CSM-FilterCases | CM | Filter by number, client, type, court, date, attorney, status | 019 (partial) |
+| US03-EP02-CSM-ViewCaseList | CM | Tabular case list with key columns | 006 + 019 |
+| US04-EP02-CSM-ViewCaseDetails | AA | Detail panel on row selection | 006 + 019 |
 | US05-EP02-CSM-IdentifyUrgentCases | CM | "Urgent" status badge | IT2 |
 | US06-EP02-CSM-SortCases | AA | Sort by any column | IT2 |
-| US07-EP02-CSM-MonitorCaseStatus | PL | Status: In Process / On Hold / Concluded | IT3 |
-| US08-EP02-CSM-ViewCaseTeam | CM | Every member assigned to a case, with their role on it | 006 |
+| US07-EP02-CSM-MonitorCaseStatus | PL | Status: In Process / On Hold / Concluded | 006 + 019 |
+| US08-EP02-CSM-ViewCaseTeam | CM | Every member assigned to a case, with their role on it | 006 + 019 |
 | US09-EP02-CSM-ViewUpcomingDeadlines | PL | Next three deadlines per case | MVP |
 | US10-EP02-CSM-ViewAssociatedTasks | CM | Task count and status per case | MVP |
 | **US11-EP02-CSM-ViewCaseActivityFeed** | CM | Activity log of case, documents and notes | MVP |
@@ -159,6 +159,40 @@ Every other epic depends on this one.
 
 > **US11–US13 are new**, derived from "Actividad por Expediente" in the
 > 23 Apr 2026 session, which had no epic assigned.
+
+> **Amended 2026-08-28 by slice `019-frontend-cases`** (Principle I).
+>
+> Six rows re-attributed under the joint-delivery convention `018` introduced for `EP03`:
+> `006` built the API, `019` builds the interface, and a story is delivered when a person can
+> do the thing. `US01`, `US03`, `US04`, `US07` and `US08` now read `006 + 019`.
+>
+> **`US02-EP02-CSM-FilterCases` reads `019 (partial)`, and the qualifier is deliberate.**
+> The row asks for filtering by "number, client, type, court, date, attorney, status". `019`
+> delivers **number, client, type and court**. It does not deliver date, attorney or status,
+> and each is withheld for its own reason rather than for lack of time:
+>
+> - **attorney** — there is nothing to filter by. No table in this product stores a person's
+>   name; `identity` holds an email and `membership` holds an archetype. This is the same
+>   finding that removed the *Abogado* column from the screen (`019` spec, Q2). It becomes
+>   possible when slice `003` ships identity.
+> - **date** and **status** — buildable today, simply not asked for by the reference design
+>   the slice was given. They are three more predicates in the same array, and the slice that
+>   wants them should say so.
+>
+> The row is left open rather than split into a second id, for the reason `018` gave: the
+> firm asked for "filter cases", not for "filter cases (four of seven ways)".
+>
+> **`US05-EP02-CSM-IdentifyUrgentCases` stays unclaimed**, and this is worth recording. It
+> asks for an "Urgent" status badge. Case statuses are a per-tenant catalogue of free text
+> whose only declared semantic is whether a status closes a matter — there is nowhere in
+> `006` for urgency to live, and the product must not infer it from a firm happening to name
+> a status *Urgente*. Delivering this row needs a product decision about what urgency means
+> and who declares it, which `019` deliberately did not make on a badge's behalf.
+>
+> **`US06`** (sorting) and **`US14`** (assign a team member) also stay unclaimed — see `019`'s
+> Out of Scope for both.
+>
+> The catalogue-wide total is unchanged: 0 stories added, 6 rows re-attributed.
 
 > **Amended 2026-08-26 by slice `006-client-case-core`** (Principle I), three changes:
 >

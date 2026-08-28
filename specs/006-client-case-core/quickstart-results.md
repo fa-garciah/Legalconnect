@@ -323,3 +323,62 @@ own tests could not observe:
 - Filtering before the page boundary (SC-007a) holds end to end. `018` asserts it does not
   re-filter the response, because that would shorten pages while `nextCursor` still promised
   more — a defect only observable on the browser side.
+
+---
+
+## Follow-up: the case API has a surface, and the `assigned` scope has met a person (2026-08-28)
+
+[`019-frontend-cases`](../019-frontend-cases/spec.md) built the case register against this
+slice's API. Recorded here so the gap between what `006` ships and what anyone can reach
+stays visible.
+
+**Rendered** — five of the seven case capabilities:
+
+| Row | Capability | Surface |
+|---|---|---|
+| 29 | `case.read_list` | `/expedientes`, the register — filtered, paged |
+| 30 | `case.read` | a panel over the register, carrying the case team |
+| 31 | `case.create` | "Nuevo expediente" and its form |
+| 32 | `case.change_status` | the status control on an opened matter |
+| 34 | `case.read_catalog` | the two filter selects, the form's three pickers, and the badge |
+
+**Not rendered**: `case.manage_team` (row 33) and `case.manage_catalog` (row 35).
+`case.manage_team` is now **the last `assigned`-scoped capability with no screen**, and it is
+the interesting one left: it is where the scope's second property becomes visible — you must
+be on a matter to change who else is.
+
+### The opacity story finally read to a human being
+
+`004` declared the `assigned` scope. This slice implemented it, and the rule that a matter
+you are not on answers `404` byte-identically to one that does not exist. Every test of that
+until now compared response bodies.
+
+`019` asserts it from the reader's side, and the assertion is worth copying: it renders the
+panel for a fabricated case id and for a real unassigned one and compares the **rendered
+output**, not two separate "shows an error" claims. It also asserts the copy contains none of
+*asignado*, *permiso*, *acceso*, *autorizado* — because the failure mode is not malice, it is
+helpfulness. Someone finds the generic message unhelpful, writes *"no tienes acceso a este
+expediente"*, and in one sentence tells a caller that a matter they cannot see exists.
+
+### Three things `019` confirmed about this API from the other side of the wire
+
+- **Not auditing the list was the right call, and it is fragile.** `019` had to state a
+  prohibition — no per-row fetch, no prefetch on hover, no cache warming — because every one
+  of those is an ordinary frontend technique and every one would turn a page view into fifty
+  recorded accesses. Verified end to end: listing writes **zero** entries, opening one writes
+  **exactly one**, and a window blur/focus cycle writes **none**. That last one needed four
+  query options set against their defaults.
+- **`closedOn` being output-only is load-bearing.** The natural implementation of a status
+  change spreads the loaded record into the payload and earns a `400` every time. `019`'s
+  `changeCaseStatus` takes an id rather than an object so that it is a compile error.
+- **`client_not_available` returning one refusal for three causes works** — and needs saying
+  on the frontend too. `019`'s form shows one message and a test asserts it never mentions
+  *otro despacho*, *no existe* or *inactivo*.
+
+### One documentation drift found
+
+`contracts/catalog-api.md` §1 still names the capability **`case_catalog.read`**. The shipped
+id is **`case.read_catalog`** — renamed during `006`'s own implementation to satisfy the
+registry's shape rule, and the contract was not updated with it. `019` mirrored the real id;
+the document is what is stale. Left for whoever touches that contract next, noted so the next
+reader does not mirror the wrong name.

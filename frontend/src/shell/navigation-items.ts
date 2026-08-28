@@ -73,10 +73,16 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     label: 'Expedientes',
     href: '/expedientes',
     icon: 'briefcase',
-    // `006` shipped the whole case API — including the product's first `assigned`-scope
-    // capability — and no slice has rendered it yet.
-    requiredArchetypes: INTERNAL,
-    available: false,
+    /*
+     * The five archetypes holding `case.read_list` (006/spec.md row 29).
+     *
+     * **`BM` was here and has been removed** — `018` added this entry as a placeholder with
+     * all six internal archetypes because no capability existed to narrow it against. One
+     * does now, and billing holds none of rows 29-33: Principle VI draws its line at matter
+     * content, and a case is content.
+     */
+    requiredArchetypes: ['MP', 'AA', 'PL', 'CM', 'SA'],
+    available: true,
   },
   {
     id: 'clientes',

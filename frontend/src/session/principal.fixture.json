@@ -1,10 +1,10 @@
 {
-  "identityId": "00000000-0000-4000-8000-000000000001",
+  "identityId": "2c182405-130e-4429-b459-6b17e97d84e1",
   "memberships": [
     {
-      "tenantId": "00000000-0000-4000-8000-0000000000a1",
+      "tenantId": "e6a93afe-ac5f-44e2-9b08-ed18f24a83f7",
       "tenantName": "Despacho Alfa, S.C.",
-      "archetype": "SA"
+      "archetype": "MP"
     }
   ]
 }
