@@ -20,6 +20,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from 'pg';
+import { DEFAULT_POSITION_CATALOG } from '../src/modules/directory/position-catalog.seed';
+import {
+  DEFAULT_CASE_STATUSES,
+  DEFAULT_MATTER_TYPES,
+} from '../src/modules/case-core/catalogs/case-catalog.seed';
 
 function loadEnvFile(path: string): void {
   if (!existsSync(path)) return;
@@ -43,6 +48,15 @@ const TENANTS = [
   { name: 'Despacho Alfa, S.C.', rfc: 'DAL091203AB1', plan: 'profesional' },
   { name: 'Bufete Beta, S.C.', rfc: 'BBE150720XY2', plan: 'esencial' },
 ] as const;
+
+// research.md D2 — the default catalog is real per-tenant rows at provisioning
+// time, not a constant read back at request time.
+//
+// T035: imported from the module `ProvisionService` uses, rather than re-declared
+// here. The two lists were separate before, which meant this seed and the production
+// provisioning path could drift apart without any test noticing — directory-seed.test.ts
+// would have gone on checking THIS copy while real firms were built from the other.
+const DEFAULT_POSITIONS = DEFAULT_POSITION_CATALOG;
 
 async function main(): Promise<void> {
   loadEnvFile(join(__dirname, '..', '.env'));
@@ -93,6 +107,8 @@ async function main(): Promise<void> {
     console.log('SEED_TENANT_B=' + tenantIds[1]);
 
     await seedIdentitiesAndMemberships(tenantIds[0]!, tenantIds[1]!);
+    await seedDefaultPositionCatalog(tenantIds[0]!, tenantIds[1]!);
+    await seedCaseCore(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -163,6 +179,192 @@ async function seedIdentitiesAndMemberships(tenantA: string, tenantB: string): P
       );
     }
     console.log('seeded 2 pending invitations');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * T011 — 017/FR-009, research.md D2: every seeded tenant already has the
+ * 5-entry default position catalog, not just the two Iguala/identity fixtures.
+ * Runs on the migration connection, same precedent as seedIdentitiesAndMemberships
+ * — this is fixture setup, not a simulated MP/SA request.
+ */
+async function seedDefaultPositionCatalog(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      for (const name of DEFAULT_POSITIONS) {
+        await client.query(
+          `INSERT INTO position (tenant_id, name)
+           VALUES ($1, $2)
+           ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+          [tenantId, name],
+        );
+      }
+    }
+    console.log(`seeded ${DEFAULT_POSITIONS.length} default positions for each of 2 tenants`);
+
+    // One directory_entry per tenant, assigning identity `dual`'s membership the
+    // catalog's first entry — a directory_entry row is otherwise only ever created
+    // lazily by a real assignment (research.md D1), so without this the table would
+    // have no fixture data for isolation/no-context.test.ts's generic sweep to see.
+    for (const tenantId of [tenantA, tenantB]) {
+      await client.query(
+        `INSERT INTO directory_entry (membership_id, tenant_id, position_id)
+         SELECT m.id, $1, p.id
+           FROM membership m
+           JOIN identity i ON i.id = m.identity_id
+           JOIN position p ON p.tenant_id = $1 AND p.name = $2
+          WHERE i.subject = 'idp|dual-tenant-counsel' AND m.tenant_id = $1
+         ON CONFLICT (membership_id) DO UPDATE SET position_id = excluded.position_id`,
+        [tenantId, DEFAULT_POSITIONS[0]],
+      );
+    }
+    console.log('seeded 2 directory entries');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 006-client-case-core. The three catalogs, two clients and three cases per tenant, with
+ * assignments arranged so the scope scenarios have something to refuse.
+ *
+ * Runs on the MIGRATION connection for the same reason `seedIdentitiesAndMemberships`
+ * does: this is fixture setup, not a simulated user journey. `lc_app` would need an active
+ * tenant context for every statement, and `lc_platform` holds INSERT-only on the catalogs
+ * and nothing at all on client/case/assignment — which is the point of those grants.
+ *
+ * The important shape here is the ASSIGNMENT arrangement. `quickstart.md` Scenario 3 needs
+ * one case the seeded `AA`-equivalent is on and one they are not, in the same tenant, so
+ * that "refused because unassigned" can be told apart from "refused because cross-tenant"
+ * only by knowing which is which — which is exactly what FR-016 says a caller must not be
+ * able to do from the response.
+ */
+async function seedCaseCore(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      for (const status of DEFAULT_CASE_STATUSES) {
+        await client.query(
+          `INSERT INTO case_status (tenant_id, name, is_closing)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+          [tenantId, status.name, status.isClosing],
+        );
+      }
+      for (const name of DEFAULT_MATTER_TYPES) {
+        await client.query(
+          `INSERT INTO matter_type (tenant_id, name) VALUES ($1, $2)
+           ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+          [tenantId, name],
+        );
+      }
+      // Production seeds ZERO venues, deliberately: a firm's courts depend on its
+      // jurisdiction, and any list this product shipped would be wrong for most firms
+      // (research.md D7). That decision lives in `case-catalog.seed.ts` and is unchanged.
+      //
+      // The dev/CI seed nonetheless writes ONE, because `no-context.test.ts` sweeps every
+      // tenant-scoped table and asserts each is visible while a tenant is active — the
+      // control that makes its "zero rows after release" result meaningful rather than
+      // vacuous. An empty `venue` would pass that sweep for the wrong reason, and a table
+      // that is always empty in test is a table whose isolation is never actually proven.
+      //
+      // This is fixture setup, exactly like the clients and cases below. It does not make
+      // the product opinionated about Mexican courts.
+      await client.query(
+        `INSERT INTO venue (tenant_id, name) VALUES ($1, $2)
+         ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+        [tenantId, 'Juzgado Primero de Distrito'],
+      );
+    }
+    console.log('seeded case catalogs for 2 tenants (1 fixture venue each; production seeds none)');
+
+    for (const [index, tenantId] of [tenantA, tenantB].entries()) {
+      const suffix = index === 0 ? 'A' : 'B';
+      const fileNumbers = [`EXP-2026-000${index}1`, `EXP-2026-000${index}2`, `EXP-2026-000${index}3`];
+
+      // Re-runnable, like every other block in this file. `client` has no natural key to
+      // conflict on — two clients may legitimately share a legal name (FR-002) — so the
+      // guard is an explicit lookup rather than ON CONFLICT.
+      const { rows: existingClients } = await client.query<{ id: string }>(
+        `SELECT id FROM client WHERE tenant_id = $1 AND legal_name = $2`,
+        [tenantId, `Grupo Torres ${suffix}, S.A. de C.V.`],
+      );
+      let orgClientId = existingClients[0]?.id;
+      if (!orgClientId) {
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO client (tenant_id, kind, legal_name, rfc)
+           VALUES ($1, 'organization', $2, $3), ($1, 'person', $4, NULL)
+           RETURNING id`,
+          [
+            tenantId,
+            `Grupo Torres ${suffix}, S.A. de C.V.`,
+            `GTO12031${index}AB1`,
+            `Juan Pérez ${suffix}`,
+          ],
+        );
+        orgClientId = rows[0]!.id;
+      }
+
+      const { rows: statusRows } = await client.query<{ id: string }>(
+        `SELECT id FROM case_status WHERE tenant_id = $1 AND name = 'En Proceso'`,
+        [tenantId],
+      );
+      const statusId = statusRows[0]!.id;
+
+      for (const fileNumber of fileNumbers) {
+        await client.query(
+          `INSERT INTO case_file (tenant_id, client_id, file_number, case_status_id)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (tenant_id, (lower(trim(file_number)))) DO NOTHING`,
+          [tenantId, orgClientId, fileNumber, statusId],
+        );
+      }
+
+      const { rows: caseRows } = await client.query<{ id: string }>(
+        `SELECT id FROM case_file WHERE tenant_id = $1 AND file_number = ANY($2::text[])
+          ORDER BY file_number`,
+        [tenantId, fileNumbers],
+      );
+
+      // The dual-tenant identity's membership in this tenant — MP in A, IC in B. Assigned
+      // to the FIRST case and deliberately not to the second, which is what makes the
+      // opacity scenario meaningful. The third is left unstaffed (Decision 3's transient
+      // zero-assignment state, seeded so it is a real fixture rather than a hypothetical).
+      const { rows: membershipRows } = await client.query<{ id: string }>(
+        `SELECT m.id FROM membership m
+           JOIN identity i ON i.id = m.identity_id
+          WHERE i.subject = 'idp|dual-tenant-counsel' AND m.tenant_id = $1`,
+        [tenantId],
+      );
+      const membershipId = membershipRows[0]?.id;
+      if (membershipId) {
+        await client.query(
+          `INSERT INTO case_assignment (case_id, membership_id, tenant_id, role_on_case)
+           VALUES ($1, $2, $3, 'lead')
+           ON CONFLICT (case_id, membership_id) WHERE unassigned_at IS NULL DO NOTHING`,
+          [caseRows[0]!.id, membershipId, tenantId],
+        );
+      }
+
+      console.log(`SEED_CASE_ASSIGNED_${suffix}=${caseRows[0]!.id}`);
+      console.log(`SEED_CASE_UNASSIGNED_${suffix}=${caseRows[1]!.id}`);
+      console.log(`SEED_CASE_UNSTAFFED_${suffix}=${caseRows[2]!.id}`);
+      if (membershipId) console.log(`SEED_MEMBERSHIP_${suffix}=${membershipId}`);
+    }
+    console.log('seeded 2 clients and 3 cases per tenant');
   } finally {
     await client.end();
   }

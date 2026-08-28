@@ -72,6 +72,21 @@ export default defineConfig({
           functions: 100,
           lines: 100,
         },
+        // 006-client-case-core, T004. The `assigned` scope resolver is an authorization
+        // component that happens to live in a domain module — it is the same kind of code
+        // as `src/common/authz/**` above, and belongs on the same blocking list.
+        //
+        // Deliberately this ONE FILE, not `src/modules/case-core/**`. 017 set no such bar
+        // for `src/modules/directory/**`, and imposing 100% on a whole domain module would
+        // be a new standard this slice invented for itself rather than one the constitution
+        // asks for. The constitution's blocking list is about isolation and authorization,
+        // which is exactly this file and not its neighbours.
+        'src/modules/case-core/assigned-scope.resolver.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
       },
     },
   },

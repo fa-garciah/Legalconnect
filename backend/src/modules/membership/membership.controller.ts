@@ -10,6 +10,8 @@
  * 002 shipped (Decision 6).
  */
 import { Body, Controller, HttpCode, Param, Patch, Req } from '@nestjs/common';
+import { buildSource } from '../../common/audit/source';
+import { firstHeaderValue } from '../../common/http/header';
 import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
 import { Capability } from '../../common/authz/declare';
 import { assertUuid } from '../tenant/rfc';
@@ -17,6 +19,8 @@ import { MembershipService, type MembershipRow } from './membership.service';
 
 interface AuditableRequest {
   auditTargetId?: string | null;
+  headers?: Record<string, string | string[] | undefined>;
+  ip?: string;
 }
 
 @Controller('tenant/memberships')
@@ -30,7 +34,30 @@ export class MembershipController {
   async revoke(@Param('id') id: string, @Req() req: AuditableRequest): Promise<MembershipRow> {
     const membershipId = assertUuid(id, 'membership id');
     req.auditTargetId = membershipId;
-    return this.memberships.revoke(membershipId);
+
+    // 006/FR-012a. The cascade writes its own `case.team_member_unassigned` entries, one
+    // per closed assignment (SC-005 — exactly one entry per mutation), so it needs the
+    // same `source` this route's own `@Audited` entry will carry. Built here because the
+    // request is here; the service has no access to headers.
+    const source = buildSource({
+      channel: firstHeaderValue(req.headers, 'x-channel'),
+      userAgent: firstHeaderValue(req.headers, 'user-agent'),
+      ip: req.ip,
+    });
+
+    const { row, closedAssignmentCaseIds } = await this.memberships.revoke(membershipId, source);
+
+    // A count, not the ids: those are already on the cascade's own entries, one each, and
+    // repeating them here would duplicate the trail rather than add to it. The count is
+    // what makes `membership.revoked` self-explanatory when read alone — "this revocation
+    // also took them off 3 matters".
+    if (closedAssignmentCaseIds.length > 0) {
+      addAuditMetadata(req as object, { closedCaseAssignments: closedAssignmentCaseIds.length });
+    }
+
+    // The wire shape is unchanged from what 002 shipped — the cascade is a side effect the
+    // caller neither asked for nor needs to see.
+    return row;
   }
 
   @Patch(':id/archetype')

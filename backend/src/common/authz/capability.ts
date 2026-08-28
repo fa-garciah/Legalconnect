@@ -25,8 +25,8 @@ export interface CapabilityDef {
 }
 
 /**
- * The twenty-one capabilities (data-model.md). Ids are `module.verb`, matching the
- * `audit_event.action` vocabulary's shape.
+ * The thirty-five capabilities (004's 1-21, 017's 22-24, 006's 25-35). Ids are
+ * `module.verb`, matching the `audit_event.action` vocabulary's shape.
  *
  * No capability carries a `tier` or `limit` key at launch — plan.md Open Item 4. The
  * mechanism is built and tested; the commercial mapping awaits an owner. Rows 5 and 8
@@ -56,6 +56,40 @@ export const CAPABILITIES = {
   'identity.hard_delete': { scope: 'none' },
   'membership.create_direct': { scope: 'none' },
   'archetype.redefine': { scope: 'none' },
+  // 017-firm-directory, rows 22-24 (FR-016 — extends this registry in the same
+  // change that introduces the capability, per contracts/refusal.md §6).
+  'directory.assign_position': { scope: 'tenant' },
+  'directory.manage_catalog': { scope: 'tenant' },
+  'directory.read': { scope: 'tenant' },
+  // 006-client-case-core, rows 25-35 (FR-025 — extends this registry in the same change
+  // that introduces the capability, per 004/FR-021).
+  //
+  // Rows 30, 32 and 33 are the FIRST capabilities in the product to resolve at `assigned`
+  // scope. Until this slice the kind was declared here and unreachable: no resolver was
+  // registered, and `decide()` refused it fail-closed. `modules/case-core` supplies the
+  // resolver through `scope.ts`'s exported registration seam.
+  //
+  // Row 29 (`case.read_list`) is `tenant`, NOT `assigned`, and that is load-bearing rather
+  // than an oversight. A scope resolver returns a boolean, so an `assigned`-scoped list
+  // would REFUSE a caller with no assignments — while the spec requires them to receive an
+  // empty list (FR-014, research.md D3). The scope check permits the call; the result set
+  // is filtered by assignment inside the query. Do not "tidy" this row to `assigned`.
+  //
+  // Row 31 (`case.create`) is `tenant` for a different reason: there is no case to be
+  // assigned to at the moment of creation (FR-015 names this exception explicitly).
+  'client.read': { scope: 'tenant' },
+  'client.create': { scope: 'tenant' },
+  'client.update': { scope: 'tenant' },
+  // Also governs restoration (FR-004a): whoever may withdraw a client may restore one, so
+  // the two routes share this row rather than splitting a permission nobody asked to split.
+  'client.deactivate': { scope: 'tenant' },
+  'case.read_list': { scope: 'tenant' },
+  'case.read': { scope: 'assigned' },
+  'case.create': { scope: 'tenant' },
+  'case.change_status': { scope: 'assigned' },
+  'case.manage_team': { scope: 'assigned' },
+  'case.read_catalog': { scope: 'tenant' },
+  'case.manage_catalog': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

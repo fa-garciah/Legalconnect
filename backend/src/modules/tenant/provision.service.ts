@@ -5,12 +5,22 @@
  * created state. That is delivered by the enclosing platform transaction rather than by
  * cleanup code — there is no compensating delete to write, and no DELETE grant to write
  * it with.
+ *
+ * T035 (017/FR-009) — a new tenant's first rows now include its default position
+ * catalog, written on this same transaction. research.md D2 asked for exactly this:
+ * "the same insert runs wherever 001's tenant-provisioning path already writes a
+ * tenant's first rows — extending that write, not adding a second provisioning
+ * mechanism." Because it is the same transaction, SC-008 ("0 manual setup steps") and
+ * US3 scenario 5 ("no partially created state") hold together: a tenant either exists
+ * with its catalog, or does not exist.
  */
 import { Injectable } from '@nestjs/common';
 import { RfcAlreadyRegistered, ValidationFailed } from '../../common/http/errors';
 import { currentPlatformTx } from '../../common/db/platform-context';
 import { normaliseName, normalisePlanCode, normaliseRfc } from './rfc';
 import { TenantRepository, UNIQUE_VIOLATION, type TenantRow } from './tenant.repository';
+import { seedDefaultPositionCatalog } from '../directory/position-catalog.seed';
+import { seedDefaultCaseCatalogs } from '../case-core/catalogs/case-catalog.seed';
 
 interface RawInput {
   readonly name?: unknown;
@@ -46,7 +56,15 @@ export class ProvisionService {
     const planCode = normalisePlanCode(input.planCode);
 
     try {
-      return await this.tenants.insert(currentPlatformTx(), { name, rfc, planCode });
+      const tx = currentPlatformTx();
+      const tenant = await this.tenants.insert(tx, { name, rfc, planCode });
+      // FR-009 — inside the same transaction, so the two cannot come apart.
+      await seedDefaultPositionCatalog(tx, tenant.id);
+      // 006/FR-021 — the same transaction again, so a tenant provisioned after that slice
+      // receives all FOUR catalogs through one provisioning operation, not two. A firm
+      // either exists with its whole vocabulary or does not exist.
+      await seedDefaultCaseCatalogs(tx, tenant.id);
+      return tenant;
     } catch (error) {
       // Mapped from the DATABASE's unique violation, not from a prior existence check.
       // A read-then-write would pass a sequential duplicate test and still let two
