@@ -178,12 +178,37 @@ Every other epic depends on this one.
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
 | US01-EP03-CLM-ViewClientSummaryMetrics | MP | Total / active / new-this-month | IT2 |
-| US02-EP03-CLM-SearchAndFilterClients | AA | Search and filter by name or status | 006 |
-| US03-EP03-CLM-AddOrUpdateClientProfile | PL | Quick-add and edit client profiles | 006 |
+| US02-EP03-CLM-SearchAndFilterClients | AA | Search and filter by name or status | 006 + 018 |
+| US03-EP03-CLM-AddOrUpdateClientProfile | PL | Quick-add and edit client profiles | 006 + 018 |
 | US04-EP03-CLM-ViewAndManageClientCases | CM | Cases per client | 006 |
 | US05-EP03-CLM-ViewBillingStatusIndicators | BM | Outstanding invoices beside client record | IT2 |
 | US06-EP03-CLM-ConfigureDashboardColumns | SA | Configurable columns and fields | IT2 |
-| **US07-EP03-CLM-RestoreWithdrawnClient** | MP | Restore a client withdrawn in error | 006 |
+| **US07-EP03-CLM-RestoreWithdrawnClient** | MP | Restore a client withdrawn in error | 006 + 018 |
+
+> **Amended 2026-08-28 by slice `018-frontend-clients`** (Principle I) — and this one
+> introduces a **convention this catalogue has not used before**, so read it once.
+>
+> Three rows now read `006 + 018` rather than naming a single slice. They are **jointly
+> delivered**: `006` built the API, `018` builds the screen.
+>
+> **Why the split is real and not bookkeeping.** Every one of these three describes
+> something a *person* does — searching clients, quick-adding a profile, restoring one
+> withdrawn by mistake. `006` moved them to itself when it shipped their endpoints, which
+> was right at the time and is now half true: an API nobody can reach does not let a
+> paralegal quick-add a client. A story is delivered when a user can do the thing, and
+> neither slice achieves that alone.
+>
+> **The rule this sets for later slices.** When a capability's API and its interface land
+> in different slices, the row names both rather than being claimed by whichever shipped
+> first — and rather than minting a second, UI-only id. Duplicating the id would imply the
+> firm asked for "search clients (API)" and "search clients (screen)" as separate wants.
+> It did not.
+>
+> **Not applied retroactively.** Rows belonging to slices that shipped API and interface
+> together, or that have no interface yet, are untouched. `US04-EP03-CLM` stays at `006`
+> because `018` does not build a cases-per-client view — see `018`'s Out of Scope.
+>
+> The catalogue-wide total is unchanged: 0 stories added, 3 rows re-attributed.
 
 > **Amended 2026-08-26 by slice `006-client-case-core`** (Principle I):
 >

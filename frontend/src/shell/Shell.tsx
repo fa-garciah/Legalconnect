@@ -9,7 +9,8 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from './Header';
-import { NavigationMenu } from './NavigationMenu';
+import { Sidebar } from './Sidebar';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { NavigationItem } from './navigation-items';
 import { writeActiveTenantClient, type ActiveTenant } from '../session/active-tenant';
 import type { Principal } from '../session/types';
@@ -39,6 +40,7 @@ function resolveActiveTenant(raw: ActiveTenant, principal: Principal): ActiveTen
 
 export function Shell({ principal, initialActiveTenant, items, children }: ShellProps): React.JSX.Element {
   const [rawActiveTenant, setRawActiveTenant] = useState<ActiveTenant>(initialActiveTenant);
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const activeTenant = resolveActiveTenant(rawActiveTenant, principal);
@@ -79,16 +81,55 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
     );
   }
 
+  // The person the rail names. Until `003` ships authentication there is no account to
+  // read a name from, so the active firm's own name stands in — which is at least true.
+  const displayName = activeMembership.tenantName;
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header
-        activeMembership={activeMembership}
-        memberships={principal.memberships}
-        onSwitchTenant={handleSwitchTenant}
-      />
-      <div className="flex flex-1">
-        <NavigationMenu items={items} archetype={activeMembership.archetype} />
-        <main className="flex-1 p-4">{children}</main>
+    <div className="min-h-screen bg-secondary/40">
+      {/*
+       * The rail. Fixed and always present from `lg` up; below that it is the drawer
+       * further down, opened from the header's menu button.
+       */}
+      <div className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r lg:block">
+        <Sidebar items={items} activeMembership={activeMembership} displayName={displayName} />
+      </div>
+
+      <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
+        <SheetContent side="left" className="w-[280px] p-0">
+          {/* Radix requires an accessible name on a dialog; the rail's own brand is visual. */}
+          <SheetTitle className="sr-only">Navegación</SheetTitle>
+          <Sidebar
+            items={items}
+            activeMembership={activeMembership}
+            displayName={displayName}
+            navTestId="shell-nav-mobile"
+            onNavigate={() => setNavigationOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <div className="flex min-h-screen flex-col lg:pl-72">
+        <Header
+          activeMembership={activeMembership}
+          memberships={principal.memberships}
+          onSwitchTenant={handleSwitchTenant}
+          onOpenNavigation={() => setNavigationOpen(true)}
+        />
+        {/*
+         * `min-w-0` added by 018/T055, and it is load-bearing rather than defensive.
+         *
+         * A flex item defaults to `min-width: auto`, which refuses to shrink below its
+         * content's minimum. `016a` ships no business screen, so this region never held
+         * anything wide and the default was invisible. `018` puts a wide client grid here.
+         * Content that is meant to scroll inside its own container stretches this element
+         * instead, and the PAGE scrolls sideways — dragging the header and the navigation
+         * off screen with no obvious way back (measured at the mobile viewport: 772px of
+         * content in a 412px window).
+         *
+         * `tests/e2e/responsive.spec.ts` covers it at both viewports.
+         */}
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

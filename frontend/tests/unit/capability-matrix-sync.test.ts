@@ -2,10 +2,21 @@
  * T018 — FR-025: `capability-matrix.ts` must stay a faithful build-time mirror of
  * `004/spec.md`'s Capability Matrix, never a second source of truth (research.md D1).
  *
- * `FOUR_ZERO_FOUR_MATRIX_FIXTURE` below is transcribed by hand from
- * `specs/004-authorization-entitlements/spec.md`'s Capability Matrix table, dated
- * against this slice's own creation (2026-08-26). If 004's matrix changes, this
- * fixture is updated in the same PR as the row of `capability-matrix.ts` it backs.
+ * `FOUR_ZERO_FOUR_MATRIX_FIXTURE` below is transcribed by hand from the specs' Capability
+ * Matrix tables, dated against this slice's own creation (2026-08-26). If a matrix
+ * changes, this fixture is updated in the same PR as the row of `capability-matrix.ts` it
+ * backs.
+ *
+ * 018/T017 extended it with rows 25-28. The task named `004/spec.md` as the source; the
+ * rows are not there. `004` owns rows 1-21 and the registry's *shape*, and later slices
+ * extend the registry under `004/FR-021` — `017` added 22-24, `006` added 25-35. So the
+ * client rows were transcribed from `006/spec.md`'s Capability Matrix, which is where they
+ * are actually declared. The fixture's name is kept because what it means has not changed:
+ * this is the specification side of the comparison, whichever spec wrote the row.
+ *
+ * The transcription is by hand, from the spec, on purpose. Copying it from
+ * `capability-matrix.ts` — or generating both from one file — would produce a test that
+ * agrees with itself no matter what either says.
  */
 import { describe, expect, it } from 'vitest';
 import { CAPABILITY_MATRIX } from '@/authz/capability-matrix';
@@ -36,6 +47,21 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'identity.hard_delete': new Set([]),
   'membership.create_direct': new Set([]),
   'archetype.redefine': new Set([]),
+
+  /*
+   * Rows 25-28, from 006/spec.md's Capability Matrix. Read across each row of that table
+   * and take the ✅ columns; the ❌ columns are absent here rather than present-and-false,
+   * because the registry denies by default.
+   *
+   *   | 25 | Read a client       | MP ✅ AA ✅ PL ✅ CM ✅ BM ✅ SA ✅ PO ❌ |
+   *   | 26 | Create a client     | MP ✅ AA ❌ PL ✅ CM ❌ BM ✅ SA ✅ PO ❌ |
+   *   | 27 | Update a client     | MP ✅ AA ❌ PL ✅ CM ❌ BM ✅ SA ✅ PO ❌ |
+   *   | 28 | Deactivate a client | MP ✅ AA ❌ PL ❌ CM ❌ BM ✅ SA ✅ PO ❌ |
+   */
+  'client.read': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
+  'client.create': new Set(['MP', 'PL', 'BM', 'SA']),
+  'client.update': new Set(['MP', 'PL', 'BM', 'SA']),
+  'client.deactivate': new Set(['MP', 'BM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

@@ -1,26 +1,178 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/*
+ * 018-frontend-clients — the design system's theme.
+ *
+ * This file IS the version migration. research.md D1: the 49 vendored components in
+ * `src/components/ui/` are stock and unmodified, contain no `@apply`, and reference only
+ * token utilities — `bg-primary`, `border-input`, `ring-ring`. Under the previous major
+ * version those utilities came from a JavaScript config; here they come from the `@theme`
+ * block below. The utility names are identical either way, which is why the components
+ * needed no editing and this file needed rewriting.
+ *
+ * Get a token name wrong and that component renders unstyled — not throwing, not empty,
+ * just quietly wrong. `tests/component/theme-tokens.test.tsx` exists for exactly that.
+ *
+ * `tw-animate-css` replaces the prototype's animation plugin, which targets the previous
+ * version's plugin API and does not load here (research D2). Six utilities depend on it:
+ * animate-in, animate-out, animate-accordion-down, animate-accordion-up,
+ * animate-caret-blink, animate-pulse.
+ */
+
+/*
+ * The dark variant. Was a config key under the previous version; here it is declared.
+ * Every ported component carries `dark:` classes and none of them would ever activate
+ * without this line.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ---------------------------------------------------------------------------
+ * The palette.
+ *
+ * research.md D3, and the one part of this slice that is written rather than copied.
+ *
+ * The prototype's own theme variables are the VENDOR DEFAULTS — its `--primary` is a
+ * near-black. Its actual brand never reached its theme at all: `#3730A3` appears fifty
+ * times as `bg-[#3730A3] hover:bg-[#2D2582]`, an inline override on components that
+ * already supported `bg-primary`.
+ *
+ * So these values were extracted from its markup and put where they belong. The rendered
+ * result is the prototype's; what changed is that a palette change is now one edit here
+ * instead of ninety-two across the app — and that `variant="default"` is already branded,
+ * so no screen in this slice writes a colour literal (contracts/design-system.md §3.4).
+ *
+ * Confirmed as the decided brand rather than a generator's placeholder, 2026-08-28.
+ * ---------------------------------------------------------------------------
+ */
 :root {
+  /* Brand. #3730A3 indigo, with #2D2582 as its pressed/hover partner. */
+  --brand: #3730a3;
+  --brand-hover: #2d2582;
+  --brand-tint: #eef2ff;
+
+  /* Surfaces. */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+
+  /* Semantic roles. */
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f4f4f5;
+  --muted-foreground: #6b7280;
+  --accent: var(--brand-tint);
+  --accent-foreground: var(--brand);
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* Structure. `ring` follows the brand so focus is visibly ours (FR-025). */
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: var(--brand);
+
+  /* The prototype derived three corner sizes from one value; so do we. */
+  --radius: 0.5rem;
 }
 
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #171717;
+  --card-foreground: #ededed;
+  --popover: #171717;
+  --popover-foreground: #ededed;
+
+  --primary: #6366f1;
+  --primary-foreground: #0a0a0a;
+  --secondary: #27272a;
+  --secondary-foreground: #ededed;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #ededed;
+  --destructive: #ef4444;
+  --destructive-foreground: #0a0a0a;
+
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #6366f1;
+}
+
+/*
+ * The tokens Tailwind generates utilities from. A `--color-x` here is what makes
+ * `bg-x`, `text-x`, `border-x` and `ring-x` exist at all.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /*
+   * Accordion keyframes. These lived in the prototype's JS config rather than in its
+   * animation plugin, so they move here with the rest of the theme — `accordion.tsx`
+   * references `animate-accordion-down` / `-up` and would silently not animate without
+   * them.
+   */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
 }

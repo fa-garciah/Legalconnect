@@ -76,3 +76,47 @@ npx playwright test tests/e2e/shell-render.spec.ts \
 npx tsc --noEmit                                         # clean
 npx eslint .                                              # clean
 ```
+
+---
+
+## Follow-up: the two empty registries were filled by `018` (2026-08-28)
+
+`016a` shipped `src/shell/navigation-items.ts` and `src/authz/capability-matrix.ts`
+deliberately empty, each with a comment saying a domain slice would add its own entry
+alongside its screen. [`018-frontend-clients`](../018-frontend-clients/spec.md) is that
+slice, and it is worth recording that the design worked as written rather than leaving it
+as folklore.
+
+**What `018` added, and what it cost:**
+
+| Seam | `016a` shipped | `018` added | Changes to `016a`'s code |
+|---|---|---|---|
+| `navigation-items.ts` | An empty array and `filterNavigationItems` | One entry, `clientes`, with six archetypes | none |
+| `capability-matrix.ts` | An empty record | Four rows, 25-28, from `006/spec.md` | none |
+| `capability-matrix-sync.test.ts` | A hand-transcribed `004` fixture | Four more rows, transcribed by hand from the spec | none |
+| `QueryBoundary`, `ErrorState`, `EmptyState`, `LoadingState` | Four primitives | Nothing — used as-is, no fifth state | none |
+| `refusal-bucket.ts` | The classifier | Nothing. `018`'s one route-specific behaviour (a `409` refreshing the record) lives in the screen, not here | none |
+
+The prediction that mattered most held: **`018` added no fifth feedback state and did not
+touch the classifier.** research D3's line — that a security module must not carry per-route
+knowledge — survived contact with a slice that had a per-route case, because the slice put
+that case in the screen where it belongs.
+
+**One thing `016a` got wrong, and it could not have known.** `Shell.tsx`'s `<main>` is a flex
+item without `min-w-0`, so it refuses to shrink below its content. With no business screen
+there was never content wide enough to notice. `018`'s client grid made the whole page scroll
+sideways on a phone — 772 px of content in a 412 px window — dragging the header and
+navigation off screen. Fixed by adding `min-w-0`, now covered at both viewports by
+`tests/e2e/responsive.spec.ts`.
+
+**And one change that was not a fix.** After `018` closed, the product owner supplied the
+intended layout, and `Shell.tsx`, `Header.tsx` and `NavigationMenu.tsx` were restyled into a
+fixed left rail with a drawer below `lg`. The structure `016a` specified survived it intact —
+one shell mounted once around every route, the active firm named at all times with its switch
+beside it, items filtered by archetype through the same `filterNavigationItems`. What changed
+is how it looks and where the brand sits. Recorded so the next reader knows the divergence is
+deliberate rather than drift.
+
+Two of `016a`'s own deferred e2e scenarios now have a real screen to exercise and should be
+revisited: `three-states-distinguishable.spec.ts` and `error-freshness.spec.ts` are both
+still skipped, and `/clientes` is the screen they were waiting for.

@@ -284,3 +284,42 @@ build if an `assigned` route omits `@ScopeTarget`, or declares one it does not n
 module, the same shape `interceptor-platform-tenant-guard.test.ts` already uses for the
 other defensive branch in that file. Both halves are load-bearing: the gate prevents the
 situation, and the fallback makes it survivable if the gate is ever bypassed.
+
+---
+
+## Follow-up: four of the eleven capabilities now have a screen (2026-08-28)
+
+[`018-frontend-clients`](../018-frontend-clients/spec.md) built the client screens against
+this slice's API. Recorded here so the gap between what `006` ships and what anyone can
+actually reach stays visible.
+
+**Rendered** — rows 25-28, all four client capabilities:
+
+| Row | Capability | Surface |
+|---|---|---|
+| 25 | `client.read` | `/clientes`, the directory, filtered and paged |
+| 26 | `client.create` | "Nuevo cliente" and the form |
+| 27 | `client.update` | "Editar" and the same form |
+| 28 | `client.deactivate` | "Retirar" and "Restaurar", one row for both per FR-004a |
+
+**Not rendered** — rows 29-35, the seven case capabilities:
+
+`case.read_list`, `case.read`, `case.create`, `case.change_status`, `case.manage_team`,
+`case.read_catalog`, `case.manage_catalog`. No screen reaches any of them.
+
+**The part worth flagging.** Rows 30, 32 and 33 are the product's first `assigned`-scope
+capabilities — the scope kind `004` declared and this slice was the first to implement,
+including the opacity requirement that an `assigned` refusal be byte-identical to a `404`.
+That resolver is tested at 100% here and has **no user-facing exercise at all**. The first
+slice to build case screens will be the first to find out whether the opacity story reads
+correctly to a person rather than merely to a test.
+
+**Two things `018` confirmed about this API from the other side of the wire**, which `006`'s
+own tests could not observe:
+
+- The `PATCH`-refuses-`kind` decision is load-bearing and easy to violate. The natural
+  browser implementation spreads the loaded record into the payload and earns a `400` on
+  every save. `018` assembles the payload from a closed list and has a named test for it.
+- Filtering before the page boundary (SC-007a) holds end to end. `018` asserts it does not
+  re-filter the response, because that would shorten pages while `nextCursor` still promised
+  more — a defect only observable on the browser side.
