@@ -27,6 +27,21 @@ jobs:
           --health-cmd "pg_isready -U lc_migration -d legalconnect"
           --health-interval 5s --health-timeout 5s --health-retries 12
 
+      # 007-document-management, research.md D6. The document suites exercise real
+      # S3-API behaviour — signing, expiry, cross-tenant pre-signed URL isolation —
+      # against MinIO rather than a mock, so CI needs the same service local dev runs.
+      # Without it the whole document tier fails here while passing on a developer's
+      # machine, which is the worst way for a gate to be wrong.
+      minio:
+        image: minio/minio:edge-cicd
+        env:
+          MINIO_ROOT_USER: lc_minio_ci
+          MINIO_ROOT_PASSWORD: lc_minio_ci_password
+        ports: ['9000:9000']
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+
     env:
       DATABASE_URL_MIGRATION: postgresql://lc_migration:lc_migration_ci@localhost:5432/legalconnect
       DATABASE_URL_APP: postgresql://lc_app:lc_app_ci@localhost:5432/legalconnect
@@ -35,6 +50,27 @@ jobs:
       LC_APP_PASSWORD: lc_app_ci
       LC_PLATFORM_PASSWORD: lc_platform_ci
       LC_RETENTION_PASSWORD: lc_retention_ci
+      PORT: '3000'
+      # 001's deployment constraint: the platform surface authenticates nothing before
+      # slice 003, so it binds to loopback. CI sets it explicitly rather than relying on
+      # main.ts's default, so the value under test is the value documented.
+      PLATFORM_BIND_HOST: 127.0.0.1
+      # Every key `.env.example` declares must be set here — `check:env` below asserts
+      # exactly that, so CI proves the documented set is sufficient to run the
+      # application rather than merely that a developer's own `.env` happens to work.
+      OBJECT_STORE_ENDPOINT: http://localhost:9000
+      OBJECT_STORE_REGION: us-east-1
+      OBJECT_STORE_BUCKET: legalconnect-documents-ci
+      OBJECT_STORE_ACCESS_KEY_ID: lc_minio_ci
+      OBJECT_STORE_SECRET_ACCESS_KEY: lc_minio_ci_password
+      OBJECT_STORE_FORCE_PATH_STYLE: 'true'
+      EMAIL_PROVIDER_REGION: us-east-1
+      EMAIL_SENDER_ADDRESS: no-reply@legalconnect.mx
+      INVITATION_MAX_FAILED_ATTEMPTS: '10'
+      # Deliberately well above the code default of 50. The full suite issues more than
+      # that against one seeded tenant, and the cap is 002's own rate limit doing its job
+      # — not something a CI run should trip over.
+      INVITATION_ISSUANCE_RATE_PER_HOUR: '2000'
 
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +82,25 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - run: npm ci
+
+      # Creates the bucket the application expects. `docker-compose.yml` does this for
+      # local dev via its `minio-bucket` service; GitHub's `services:` block has no
+      # equivalent, so it is a step here. Both exist because MinIO comes up HEALTHY with
+      # no bucket in it, and every upload then fails with a 500 that looks like
+      # application code.
+      - name: Create the object-store bucket
+        run: |
+          curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+          chmod +x /tmp/mc
+          /tmp/mc alias set ci http://localhost:9000 lc_minio_ci lc_minio_ci_password
+          /tmp/mc mb --ignore-existing ci/legalconnect-documents-ci
+
+      # Leads the quality gates because a drifted environment makes every gate below it
+      # fail for reasons that have nothing to do with the code — three separate incidents
+      # in this repository, each a key present in `.env.example` and absent from the
+      # environment actually running. See scripts/check-env-example.mjs.
+      - name: Environment matches .env.example
+        run: npm run check:env
 
       - name: Typecheck
         run: npm run typecheck

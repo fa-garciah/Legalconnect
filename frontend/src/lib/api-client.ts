@@ -27,7 +27,10 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   const activeTenant = readActiveTenantClient();
 
   const headers: Record<string, string> = {
-    'content-type': 'application/json',
+    // A FormData body (007-document-management's multipart upload) must never carry an
+    // explicit content-type: the browser sets its own, boundary included, only when it
+    // is absent here.
+    ...(init.body instanceof FormData ? {} : { 'content-type': 'application/json' }),
     'x-identity-id': principal.identityId,
     ...(init.headers as Record<string, string> | undefined),
   };

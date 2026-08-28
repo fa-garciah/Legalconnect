@@ -13,6 +13,7 @@ import { InvitationModule } from './modules/invitation/invitation.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { DirectoryModule } from './modules/directory/directory.module';
 import { CaseCoreModule } from './modules/case-core/case-core.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -58,6 +59,9 @@ import { CaseCoreModule } from './modules/case-core/case-core.module';
     // Registers the `assigned` scope resolver in its own onModuleInit (006/FR-013) —
     // the first thing ever plugged into the port 004 shipped empty.
     CaseCoreModule,
+    // 007-document-management. Registers no resolver of its own — every route reuses
+    // CaseCoreModule's AssignedScopeResolver via its own @ScopeTarget('caseId').
+    DocumentsModule,
   ],
   providers: [
     { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },

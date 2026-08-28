@@ -73,12 +73,71 @@ runs under a *different database role* (`lc_platform`) on a *different
 connection*, never through `TenantContextInterceptor` at all (FR-009,
 research.md D9). It is not a bypass flag inside the tenant path — there is no
 "disable isolation" switch sitting on the route every business request
-travels. `lc_platform`'s own reach is narrowed at the grant level to `tenant`,
-`plan` and `audit_event` — it cannot read or write a single business table,
-now or after any future migration, because nothing grants it that access. If
+travels. `lc_platform`'s own reach is narrowed at the grant level, and every
+extension to it since 001 has been *narrower* than the three grants 001 started
+with. As of slice 006 it holds, in full:
+
+| Table | Privileges | Added by |
+|---|---|---|
+| `tenant` | INSERT, SELECT, UPDATE | 001 |
+| `plan` | INSERT, SELECT, UPDATE | 001 |
+| `audit_event` | INSERT, SELECT | 001 |
+| `membership` | SELECT | 002 — a read-only existence check |
+| `invitation` | INSERT | 002 — the bootstrap seed |
+| `position` | INSERT | 017 — provisioning writes the default catalog |
+| `case_status`, `matter_type`, `venue` | INSERT | 006 — same, three more catalogs |
+
+Read the shape of that list, not just its length. The four newest grants are
+**INSERT-only**: provisioning may bring a firm's starting vocabulary into
+existence and can never read it back, edit it, or remove it. And it holds
+**nothing at all** on `client`, `case_file` or `case_assignment` — registering a
+firm's clients and opening its matters is the firm's own act. No case file, and
+no tenant's membership roster, is reachable across firms. That this list must be
+edited by hand to grow is the mechanism, not an inconvenience;
+`tests/integration/platform-scope.test.ts` fails the build when it changes
+without someone saying so. If
 a future slice genuinely needs a second cross-tenant administrative surface,
 model it the same way: a separate role, a separate connection, narrowed
 grants — not a parameter that skips the tenant middleware.
+
+## When authorization itself depends on RLS having already narrowed
+
+Slice `006-client-case-core` introduced the first component whose *correctness as an
+authorization check* rests on the mechanism above: the `assigned` scope resolver
+(`src/modules/case-core/assigned-scope.resolver.ts`). It is worth reading once, because it
+looks wrong to anyone who has not read this document.
+
+The resolver answers "is this caller on this case's team?" with a single query, and that
+query writes **no `tenant_id` predicate**:
+
+```sql
+SELECT EXISTS (
+  SELECT 1 FROM case_assignment
+   WHERE case_id = $1::uuid AND membership_id = $2::uuid AND unassigned_at IS NULL
+)
+```
+
+Its absence is load-bearing, not an oversight. `currentTx()` is the transaction
+`TenantContextInterceptor` already opened with `app.tenant_id` set, and
+`case_assignment_own_tenant` applies it. Hand the resolver another firm's case id and the
+sub-select matches zero rows, the resolver answers `false`, and the caller gets the same
+`404` a nonexistent case gets — so **cross-firm case existence stays uninferable**. Adding
+the predicate by hand would be harmless but would suggest RLS were not already doing it,
+which is worse than the apparent omission. `assigned-scope-isolation.test.ts` asserts both
+directions: zero rows under the wrong tenant, and a match under the right one, so the
+`false` is isolation rather than a query that never matches anything.
+
+Two consequences worth carrying into the next slice that adds a scope kind:
+
+- **`case_assignment.tenant_id` is denormalised on purpose.** It could be reached through
+  `case_file`, but then the RLS policy would need a join, and that join would sit on the
+  authorization path of every scoped request. The column is written from the session
+  setting rather than from the request, and `case-core-grants-lockdown.test.ts` asserts it
+  always matches its case's tenant.
+- **The resolver deliberately does not check whether the case exists first.** "No such
+  case" and "not your case" both produce zero rows and the same `false`. Distinguishing
+  them internally would create two code paths whose timing differs — a side channel that
+  would undo the byte-identical refusal the 404 was chosen to provide.
 
 ## What "no context active" means, and why it's silent
 

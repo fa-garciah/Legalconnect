@@ -61,6 +61,12 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   'case.create': ['MP', 'CM', 'SA'],
   'case.read_catalog': ['MP', 'AA', 'PL', 'CM', 'BM', 'SA'],
   'case.manage_catalog': ['MP', 'SA'],
+  // 007-document-management, the two `tenant`-scoped rows of 36-43 — the
+  // document-category catalog, structurally identical to 006/017's own catalogs.
+  // `BM` excluded from both, mirroring 006's own exclusion of `BM` from case content
+  // (Principle VI) — this slice's FR-016 draws the identical line for documents.
+  'document.read_catalog': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  'document.manage_catalog': ['MP', 'SA'],
 };
 
 /**
@@ -81,6 +87,15 @@ const ASSIGNED_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   'case.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
   'case.change_status': ['MP', 'AA', 'CM', 'SA'],
   'case.manage_team': ['MP', 'CM', 'SA'],
+  // 007-document-management, the six `assigned`-scoped rows of 36-43 — resolved
+  // through 006's existing resolver via the document's case reference (FR-005), never
+  // a second resolver. Row 38 (download) equals row 37 (read) — spec.md Decision 2.
+  'document.upload': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  'document.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  'document.download': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  'document.change_category': ['MP', 'CM', 'SA'],
+  'document.withdraw': ['MP', 'SA'],
+  'document.restore': ['MP', 'SA'],
 };
 
 /** Rows 9-10, `self` scope — not archetype-decided by anybody (research.md D8). */
@@ -143,9 +158,9 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
       ...PO_ROWS,
       ...EMPTY_ROWS,
     ]);
-    // 21 (004) + 3 (017) + 11 (006). A census, moved by every slice that extends the
-    // registry — 017 took it from 21 to 24.
-    expect(asserted.size).toBe(35);
+    // 21 (004) + 3 (017) + 11 (006) + 8 (007). A census, moved by every slice that
+    // extends the registry — 006 took it from 24 to 35, this slice from 35 to 43.
+    expect(asserted.size).toBe(43);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

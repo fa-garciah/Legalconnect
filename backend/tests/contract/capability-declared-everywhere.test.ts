@@ -91,16 +91,16 @@ describe('capability declared everywhere', () => {
     expect(undeclared).toEqual([]);
   });
 
-  it('the declared routes plus the registry rows with no endpoint account for all 35 capabilities', () => {
+  it('the declared routes plus the registry rows with no endpoint account for all 43 capabilities', () => {
     const handlers = routeHandlers();
     const declaredIds = new Set(handlers.map((h) => h.capability));
     const allIds = new Set(Object.keys(CAPABILITIES) as CapabilityId[]);
     const undeclaredInRegistry = [...allIds].filter((id) => !declaredIds.has(id));
 
-    // 21 (004) + 3 (017) + 11 (006). This number is a census, not an assertion about any
-    // one slice, so every slice that extends the registry moves it — 017 took it from 21
-    // to 24, and 006 takes it to 35.
-    expect(declaredIds.size + undeclaredInRegistry.length).toBe(35);
+    // 21 (004) + 3 (017) + 11 (006) + 8 (007). This number is a census, not an assertion
+    // about any one slice, so every slice that extends the registry moves it — 017 took
+    // it from 21 to 24, 006 took it to 35, and 007 takes it to 43.
+    expect(declaredIds.size + undeclaredInRegistry.length).toBe(43);
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 

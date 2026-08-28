@@ -25,5 +25,56 @@ services:
       timeout: 5s
       retries: 12
 
+  # 007-document-management, research.md D6. S3-API-compatible, local-only — the same
+  # requests, signing and expiry behaviour as real S3, so a pre-signed-URL isolation
+  # test proves something real rather than asserting a mock was called correctly.
+  # Never used in production; `plan.md`'s Constraints still fix real S3 in
+  # mx-central-1 as the production target.
+  minio:
+    image: minio/minio:latest
+    container_name: legalconnect-minio-dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: lc_minio_dev
+      MINIO_ROOT_PASSWORD: lc_minio_dev_password
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - lc-miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Creates the bucket the application expects, then exits.
+  #
+  # Without this, `docker compose up` produces a HEALTHY MinIO with no bucket in it, and
+  # every upload fails with a 500 that looks like application code — 18 of 007's own tests
+  # failed exactly that way before this service existed. The bucket is not optional
+  # configuration a developer might reasonably choose; it is the one MinIO must contain for
+  # the service to work at all, so it belongs beside the container that serves it rather
+  # than in a README step somebody has to find.
+  #
+  # `mc mb --ignore-existing` is idempotent, which matters because the volume survives
+  # `docker compose down` (without `-v`) while this service re-runs on every `up`.
+  #
+  # `service_completed_successfully` is what makes `npm run db:up`'s `--wait` cover this
+  # too: compose waits for the bucket to exist, not merely for MinIO to answer.
+  minio-bucket:
+    image: minio/mc:latest
+    container_name: legalconnect-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 lc_minio_dev lc_minio_dev_password &&
+      mc mb --ignore-existing local/legalconnect-documents-dev &&
+      echo 'bucket legalconnect-documents-dev ready'
+      "
+
 volumes:
   lc-pgdata:
+  lc-miniodata:

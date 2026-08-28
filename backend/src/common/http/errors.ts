@@ -394,6 +394,24 @@ export class CatalogEntryAlreadyRetired extends HttpException {
   }
 }
 
+/**
+ * 007-document-management, FR-004. Same shape as `AlreadyDeactivated` (001),
+ * `AlreadyRevoked` (002) and `PositionAlreadyRetired` (017) — idempotent-mutation-
+ * on-an-already-final-state is refused, not silently accepted.
+ */
+export class AlreadyWithdrawn extends HttpException {
+  constructor() {
+    super(errorBody('already_withdrawn', 'The document is already withdrawn.'), HttpStatus.CONFLICT);
+  }
+}
+
+/** 007-document-management. Restoring a document that was never withdrawn. */
+export class NotWithdrawn extends HttpException {
+  constructor() {
+    super(errorBody('not_withdrawn', 'The document is not withdrawn.'), HttpStatus.CONFLICT);
+  }
+}
+
 export class LimitsExceeded extends HttpException {
   constructor(exceeded: ReadonlyArray<{ limit: string; current: number; target: number }>) {
     super(
