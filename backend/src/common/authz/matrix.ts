@@ -92,4 +92,20 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   // categorises what it bills — a catalog is the firm's vocabulary, not case content.
   'case.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
   'case.manage_catalog': new Set(['MP', 'SA']),
+  // 007-document-management, rows 36-43. spec.md Capability Matrix.
+  //
+  // `BM` excluded from all six document rows — mirrors 006's own exclusion of `BM`
+  // from case content (Principle VI): billing needs a case reference, never case
+  // content, and a document is case content. Row 38 (download) equals row 37 (read)
+  // — spec.md Decision 2, no narrower grant invented without a stated reason.
+  'document.upload': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.download': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.change_category': new Set(['MP', 'CM', 'SA']),
+  'document.withdraw': new Set(['MP', 'SA']),
+  'document.restore': new Set(['MP', 'SA']),
+  // Row 43 is `MP` + `SA`, matching 006's row 35 and 017's row 23 exactly for a
+  // structurally identical catalog.
+  'document.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.manage_catalog': new Set(['MP', 'SA']),
 };

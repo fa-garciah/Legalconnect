@@ -6,6 +6,7 @@
  * This file is the typed view of that schema, not its source of truth.
  */
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -73,6 +74,10 @@ export const tenant = pgTable(
     status: tenantStatus('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
+    // 007-document-management, research.md D3: a transactionally-maintained running
+    // total, never decremented by withdrawal (FR-015). Read live on every upload
+    // check (FR-014) — never cached.
+    storageBytesUsed: bigint('storage_bytes_used', { mode: 'number' }).notNull().default(0),
   },
   (t) => [
     unique('tenant_rfc_unique').on(t.rfc),
@@ -429,6 +434,71 @@ export const caseAssignment = pgTable(
   ],
 );
 
+export const documentCategoryStatus = pgEnum('document_category_status', ['active', 'retired']);
+
+/**
+ * DocumentCategory: a tenant-defined catalog entry (007/FR-009), structurally
+ * identical to 006's `case_status`/`matter_type`/`venue` and 017's `position`.
+ * Seeded with a firm-agnostic default including "Unclassified" (FR-010) — never
+ * hard-deleted (FR-012).
+ */
+export const documentCategory = pgTable(
+  'document_category',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenant.id),
+    name: text('name').notNull(),
+    status: documentCategoryStatus('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    retiredAt: timestamp('retired_at', { withTimezone: true }),
+  },
+  (t) => [
+    // research.md D1 — active names collide case-insensitively per tenant; a retired
+    // name is free to reuse, the same shape 006/017's own catalogs already use.
+    uniqueIndex('document_category_tenant_active_name_unique')
+      .on(t.tenantId, sql`lower(trim(${t.name}))`)
+      .where(sql`${t.status} = 'active'`),
+  ],
+);
+
+export const documentStatus = pgEnum('document_status', ['active', 'withdrawn']);
+
+/**
+ * Document: references exactly one case (FR-001, immutable after upload), carries
+ * the uploading membership (FR-002), a category that is never null (FR-010), and an
+ * active-or-withdrawn status (FR-004). Scope is its case's scope — this table carries
+ * no assignment of its own (spec.md, "A Document's Scope Is Its Case's Scope").
+ *
+ * `storageKey` names the S3 object holding the binary content (research.md D6) — no
+ * column here ever holds file bytes, only the pointer to them.
+ */
+export const document = pgTable(
+  'document',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenant.id),
+    caseId: uuid('case_id').notNull().references(() => caseFile.id),
+    uploadedByMembershipId: uuid('uploaded_by_membership_id')
+      .notNull()
+      .references(() => membership.id),
+    categoryId: uuid('category_id').notNull().references(() => documentCategory.id),
+    storageKey: text('storage_key').notNull().unique(),
+    originalFilename: text('original_filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
+    status: documentStatus('status').notNull().default('active'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('document_case_active_idx').on(t.caseId, t.status),
+    check(
+      'document_withdrawn_at_consistent',
+      sql`(${t.status} = 'withdrawn' AND ${t.withdrawnAt} IS NOT NULL) OR (${t.status} = 'active' AND ${t.withdrawnAt} IS NULL)`,
+    ),
+  ],
+);
+
 export type Tenant = typeof tenant.$inferSelect;
 export type Plan = typeof plan.$inferSelect;
 export type Identity = typeof identity.$inferSelect;
@@ -443,3 +513,5 @@ export type MatterType = typeof matterType.$inferSelect;
 export type Venue = typeof venue.$inferSelect;
 export type Position = typeof position.$inferSelect;
 export type DirectoryEntry = typeof directoryEntry.$inferSelect;
+export type DocumentCategory = typeof documentCategory.$inferSelect;
+export type Document = typeof document.$inferSelect;

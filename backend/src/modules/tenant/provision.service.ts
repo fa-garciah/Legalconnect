@@ -21,6 +21,7 @@ import { normaliseName, normalisePlanCode, normaliseRfc } from './rfc';
 import { TenantRepository, UNIQUE_VIOLATION, type TenantRow } from './tenant.repository';
 import { seedDefaultPositionCatalog } from '../directory/position-catalog.seed';
 import { seedDefaultCaseCatalogs } from '../case-core/catalogs/case-catalog.seed';
+import { seedDefaultDocumentCategories } from '../documents/categories/document-category.seed';
 
 interface RawInput {
   readonly name?: unknown;
@@ -64,6 +65,9 @@ export class ProvisionService {
       // receives all FOUR catalogs through one provisioning operation, not two. A firm
       // either exists with its whole vocabulary or does not exist.
       await seedDefaultCaseCatalogs(tx, tenant.id);
+      // 007/FR-009 — the same transaction again. A tenant provisioned after this slice
+      // receives all FIVE catalogs through one provisioning operation.
+      await seedDefaultDocumentCategories(tx, tenant.id);
       return tenant;
     } catch (error) {
       // Mapped from the DATABASE's unique violation, not from a prior existence check.

@@ -90,6 +90,22 @@ export const CAPABILITIES = {
   'case.manage_team': { scope: 'assigned' },
   'case.read_catalog': { scope: 'tenant' },
   'case.manage_catalog': { scope: 'tenant' },
+  // 007-document-management, rows 36-43 (FR-022 — extends this registry in the same
+  // change that introduces the capability, per 004/FR-021).
+  //
+  // Rows 36-41 resolve at `assigned` scope, via the document's OWN case reference —
+  // no second resolver is registered (spec.md FR-005/FR-008). A document is never
+  // itself the scope target; `@ScopeTarget('caseId')` on every route below names the
+  // URL's own case segment, exactly as 006's own `assigned`-scoped routes already do.
+  'document.upload': { scope: 'assigned' },
+  'document.read': { scope: 'assigned' },
+  // Equal to `document.read` (spec.md Decision 2) — no narrower grant invented.
+  'document.download': { scope: 'assigned' },
+  'document.change_category': { scope: 'assigned' },
+  'document.withdraw': { scope: 'assigned' },
+  'document.restore': { scope: 'assigned' },
+  'document.read_catalog': { scope: 'tenant' },
+  'document.manage_catalog': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

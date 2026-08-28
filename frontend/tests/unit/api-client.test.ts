@@ -85,4 +85,17 @@ describe('apiFetch', () => {
       expect(result.status).toBeNull();
     }
   });
+
+  it('007-document-management: omits content-type for a FormData body, so the browser sets its own multipart boundary', async () => {
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }));
+
+    const form = new FormData();
+    form.append('file', new Blob(['x']), 'x.pdf');
+    await apiFetch('/tenant/cases/case-1/documents', { method: 'POST', body: form });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers['content-type']).toBeUndefined();
+    expect(headers['x-identity-id']).toBe('identity-1');
+  });
 });

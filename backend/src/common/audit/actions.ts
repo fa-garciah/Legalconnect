@@ -67,6 +67,18 @@ export const AUDIT_ACTIONS = [
   // any catalog entry, and only that catalog has it.
   'case.catalog_entry_updated',
   'case.catalog_entry_retired',
+  // Slice 007 (FR-019, FR-020). Six mutations plus two ACCESS records — preview and
+  // download are audited as distinct interactive accesses of the same document,
+  // never conflated into one action. Both channel-gated below, joining 006's
+  // `case.read`.
+  'document.uploaded',
+  'document.previewed',
+  'document.downloaded',
+  'document.category_changed',
+  'document.withdrawn',
+  'document.restored',
+  'document_category.created',
+  'document_category.retired',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -84,6 +96,11 @@ export const CHANNEL_GATED_ACTIONS: ReadonlySet<AuditAction> = new Set<AuditActi
   'audit.queried',
   'tenant.registry_read',
   'case.read',
+  // 007/FR-020. Opening a document for preview, and downloading one, are each the
+  // access a firm needs evidence of; automated traffic must not inflate the log it
+  // is watching, the same reasoning `case.read` above already carries.
+  'document.previewed',
+  'document.downloaded',
 ]);
 
 export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
@@ -126,6 +143,16 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'case.catalog_entry_created': 'unknown',
   'case.catalog_entry_updated': 'case_status',
   'case.catalog_entry_retired': 'unknown',
+  // Slice 007. One catalog only (unlike 006's three), so the target entity is fixed
+  // rather than set per call.
+  'document.uploaded': 'document',
+  'document.previewed': 'document',
+  'document.downloaded': 'document',
+  'document.category_changed': 'document',
+  'document.withdrawn': 'document',
+  'document.restored': 'document',
+  'document_category.created': 'document_category',
+  'document_category.retired': 'document_category',
 };
 
 export type Channel = 'interactive' | 'automated';

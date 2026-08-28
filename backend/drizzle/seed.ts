@@ -25,6 +25,7 @@ import {
   DEFAULT_CASE_STATUSES,
   DEFAULT_MATTER_TYPES,
 } from '../src/modules/case-core/catalogs/case-catalog.seed';
+import { DEFAULT_DOCUMENT_CATEGORIES } from '../src/modules/documents/categories/document-category.seed';
 
 function loadEnvFile(path: string): void {
   if (!existsSync(path)) return;
@@ -109,6 +110,8 @@ async function main(): Promise<void> {
     await seedIdentitiesAndMemberships(tenantIds[0]!, tenantIds[1]!);
     await seedDefaultPositionCatalog(tenantIds[0]!, tenantIds[1]!);
     await seedCaseCore(tenantIds[0]!, tenantIds[1]!);
+    await seedDocumentCategories(tenantIds[0]!, tenantIds[1]!);
+    await seedDocuments(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -365,6 +368,88 @@ async function seedCaseCore(tenantA: string, tenantB: string): Promise<void> {
       if (membershipId) console.log(`SEED_MEMBERSHIP_${suffix}=${membershipId}`);
     }
     console.log('seeded 2 clients and 3 cases per tenant');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * T016 — 007-document-management. The default document-category catalog, mirroring
+ * `seedDefaultPositionCatalog`'s exact pattern (research.md D1): re-runnable via
+ * `ON CONFLICT ... DO NOTHING` against the partial unique index, since this dev/CI
+ * script may run against a database that already has these rows.
+ */
+async function seedDocumentCategories(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      for (const name of DEFAULT_DOCUMENT_CATEGORIES) {
+        await client.query(
+          `INSERT INTO document_category (tenant_id, name)
+           VALUES ($1, $2)
+           ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+          [tenantId, name],
+        );
+      }
+    }
+    console.log(`seeded ${DEFAULT_DOCUMENT_CATEGORIES.length} default document categories for each of 2 tenants`);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 007-document-management. One fixture document row per tenant, on the same footing
+ * as `venue`'s single fixture row above: `no-context.test.ts` sweeps every registered
+ * tenant-scoped table and asserts it is non-empty while a tenant is active, which is
+ * what makes its "zero rows after release" assertion a real regression test rather
+ * than vacuously true for a table nothing ever populates. This is fixture setup, not
+ * a simulated upload — no bytes are written to object storage, only the metadata row
+ * (`upload()`'s own contract test covers the real upload path).
+ */
+async function seedDocuments(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      const { rows: caseRows } = await client.query<{ id: string }>(
+        `SELECT id FROM case_file WHERE tenant_id = $1 ORDER BY file_number LIMIT 1`,
+        [tenantId],
+      );
+      const { rows: categoryRows } = await client.query<{ id: string }>(
+        `SELECT id FROM document_category WHERE tenant_id = $1 AND name = 'Unclassified'`,
+        [tenantId],
+      );
+      const { rows: membershipRows } = await client.query<{ id: string }>(
+        `SELECT id FROM membership WHERE tenant_id = $1 ORDER BY created_at LIMIT 1`,
+        [tenantId],
+      );
+      const caseId = caseRows[0]?.id;
+      const categoryId = categoryRows[0]?.id;
+      const membershipId = membershipRows[0]?.id;
+      if (!caseId || !categoryId || !membershipId) {
+        throw new Error(`seedDocuments: missing prerequisite fixture for tenant ${tenantId}`);
+      }
+
+      await client.query(
+        `INSERT INTO document
+           (tenant_id, case_id, uploaded_by_membership_id, category_id, storage_key,
+            original_filename, mime_type, size_bytes)
+         VALUES ($1, $2, $3, $4, $5, 'fixture.pdf', 'application/pdf', 1024)
+         ON CONFLICT (storage_key) DO NOTHING`,
+        [tenantId, caseId, membershipId, categoryId, `tenant/${tenantId}/case/${caseId}/fixture`],
+      );
+    }
+    console.log('seeded 1 fixture document per tenant');
   } finally {
     await client.end();
   }

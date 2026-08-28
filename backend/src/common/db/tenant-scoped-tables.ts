@@ -71,6 +71,15 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
     table: 'venue',
     scopeColumn: 'tenant_id',
   },
+  // 007-document-management. Two tables, both scoped the ordinary way.
+  {
+    table: 'document',
+    scopeColumn: 'tenant_id',
+  },
+  {
+    table: 'document_category',
+    scopeColumn: 'tenant_id',
+  },
 ];
 
 /** Tables that legitimately hold no tenant data and therefore carry no policy. */

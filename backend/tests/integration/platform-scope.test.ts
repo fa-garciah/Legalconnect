@@ -82,7 +82,7 @@ describe('platform administration scope', () => {
     }
   });
 
-  it('holds privileges on exactly nine tables — the original three, D6\'s two, 017\'s one, and 006\'s three', async () => {
+  it('holds privileges on exactly ten tables — the original three, D6\'s two, 017\'s one, 006\'s three, and 007\'s one', async () => {
     const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
       `SELECT table_name, privilege_type
          FROM information_schema.role_table_grants
@@ -96,6 +96,9 @@ describe('platform administration scope', () => {
       // 006's three, all INSERT-only, for the same reason 017's `position` is: provisioning
       // seeds a firm's starting vocabulary and can never read it back.
       'case_status',
+      // 007's one, INSERT-only for the identical reason — the default document-category
+      // catalog is a provisioning seed, never read back by lc_platform.
+      'document_category',
       'invitation',
       'matter_type',
       'membership',
@@ -124,6 +127,20 @@ describe('platform administration scope', () => {
       'matter_type:INSERT',
       'venue:INSERT',
     ]);
+  });
+
+  it('T028 (007): the document-category extension is insert-only — provisioning seeds the default catalog and can never read, edit or remove one', async () => {
+    const { rows } = await migration.query<{ table_name: string; privilege_type: string }>(
+      `SELECT table_name, privilege_type
+         FROM information_schema.role_table_grants
+        WHERE grantee = 'lc_platform' AND table_name IN ('document_category', 'document')
+        ORDER BY table_name, privilege_type`,
+    );
+
+    // INSERT and nothing else, on `document_category` and nothing else. Whichever
+    // documents a firm files is entirely its own — `document` is absent entirely,
+    // the same line 0022/0024 already drew.
+    expect(rows.map((r) => `${r.table_name}:${r.privilege_type}`)).toEqual(['document_category:INSERT']);
   });
 
   it('the two D6 extensions are narrower than the original three grants — read-only on membership, insert-only on invitation, no identity at all', async () => {
