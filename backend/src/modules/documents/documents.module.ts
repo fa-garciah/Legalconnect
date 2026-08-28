@@ -45,7 +45,12 @@ function objectStoreConfig(): S3ObjectStoreConfig {
     DocumentCategoryRepository,
     {
       provide: OBJECT_STORE_PORT,
-      useFactory: () => new S3ObjectStore(objectStoreConfig()),
+      // The config function is PASSED, not called. `S3ObjectStore` invokes it on first
+      // use, so a missing `OBJECT_STORE_*` value fails the one request that needs object
+      // storage rather than aborting application startup — which, called eagerly here,
+      // took down every test in the repo that boots `AppModule` with an unreadable
+      // `Worker exited unexpectedly`. See the note on `S3ObjectStore`'s constructor.
+      useFactory: () => new S3ObjectStore(objectStoreConfig),
     },
   ],
 })

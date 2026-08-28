@@ -96,9 +96,34 @@ npx vitest run tests/unit/refusal-bucket.test.ts tests/component/ErrorState.test
 | Network failure (no response) | Opaque bucket, retry-only copy, implies no permission/scope/entitlement cause |
 | Navigate away from an errored region and back | The query is fresh — no stale error re-rendered from a prior cache entry |
 
-**Known limitation, not a failure of this scenario**: `scope`-class refusals are not yet
-separately reachable through any real backend response (research.md D3) — this scenario
-does not simulate one, because 004 does not yet emit one.
+**Known limitation — RESOLVED 2026-08-27 by slice `006-client-case-core`, and resolved by
+determination rather than by new code.**
+
+The original note read: *"`scope`-class refusals are not yet separately reachable through
+any real backend response (research.md D3) — this scenario does not simulate one, because
+004 does not yet emit one."*
+
+006 ships the first three `assigned`-scope capabilities (`case.read`,
+`case.change_status`, `case.manage_team`), so the backend now emits scope refusals. But
+they need **no new bucket, and no change to `refusal-bucket.ts`**: 006's Decision 4 settled
+004's long-open Open Item 3 in favour of **404**, byte-identical to a resource that does
+not exist. A scope refusal is therefore already covered by this scenario's very first row —
+it is one of the responses that must render *identically* to the others, not a fourth case
+needing distinct copy.
+
+That is the opposite of what research.md D3 anticipated when it left room for a future
+`'scope'` variant in `RefusalBucket`, and it is the better answer: a 403 saying "you are
+not assigned to this" would confirm a matter exists, which in a firm running an ethical
+wall is often the whole of the protected fact.
+
+**Verified end to end**: `backend/tests/integration/assigned-scope-opacity.test.ts` asserts
+that an unassigned case, a nonexistent case and another tenant's case produce
+byte-identical responses — status, parsed body, and serialised JSON. `refusal-bucket.ts`
+maps all three through `not_found` → **opaque**, and this file's own
+`tests/unit/refusal-bucket.test.ts` passes unmodified.
+
+**Action for a future reader**: the `'scope'` variant D3 left room for should not be added.
+If one is ever wanted, it would require reopening 004's FR-017 amendment first.
 
 ## Scenario 5 — Empty (US5, FR-017, FR-018)
 

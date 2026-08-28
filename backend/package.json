@@ -12,6 +12,7 @@
     "dev": "ts-node --project tsconfig.json src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env-example.mjs",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"drizzle/**/*.ts\"",
     "db:up": "docker compose up -d --wait",
