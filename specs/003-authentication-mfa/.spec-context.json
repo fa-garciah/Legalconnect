@@ -2,8 +2,8 @@
   "workflow": "speckit",
   "specName": "Authentication & Multi-Factor Enrollment",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -25,7 +25,142 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-10T00:55:32.628Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-10T02:12:03.014Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:13:40.091Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:15:16.236Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:16:01.888Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:16:41.810Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:19:17.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:20:16.871Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:20:17.214Z"
     }
   ],
-  "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946"
+  "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
+  "currentTask": "T007",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Created the five new directories per plan.md Structure Decision",
+      "files": [
+        "backend/src/common/auth",
+        "backend/src/modules/auth",
+        "backend/tests/integration/concurrency",
+        "frontend/src/app/(auth)",
+        "frontend/tests/component/auth"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Added otplib@13.5.0, @node-rs/argon2@2.2.0, @aws-sdk/client-kms@3.1129.0 pinned exactly (no caret) per Principle II blast radius",
+      "files": [
+        "backend/package.json",
+        "backend/package-lock.json"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added next-auth@5.0.0-beta.32 pinned exactly; input-otp already present from 016a so no new UI package",
+      "files": [
+        "frontend/package.json",
+        "frontend/package-lock.json"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Updated BASELINE_DEPENDENCIES with the three 003 additions and documented why they are pinned exactly; test passes",
+      "files": [
+        "backend/tests/integration/no-new-dependency.test.ts"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Added the Slice 003 env block (DATABASE_URL_AUTH + 6 auth parameters) to .env.example, each commented as a parameter not a switch; mirrored into local .env and the CI env block so check:env passes on both sides",
+      "files": [
+        "backend/.env.example",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Created frontend/.env.example with NEXTAUTH_URL, NEXTAUTH_SECRET and NEXT_PUBLIC_API_BASE_URL; API base matches 018's existing localhost:3001 default",
+      "files": [
+        "frontend/.env.example"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Extended the Role union and ENV_BY_ROLE with auth -> DATABASE_URL_AUTH so lockdown tests connect as the real lc_auth role",
+      "files": [
+        "backend/tests/helpers/db.ts"
+      ]
+    }
+  },
+  "concerns": [
+    {
+      "note": "backend npm audit reports 2 CRITICAL (vitest, @vitest/coverage-v8) plus 8 high / 8 moderate, all pre-existing devDependencies untouched by this slice. CI job dependency-scan runs npm audit --audit-level=critical and is therefore red on main independently of 003. Needs a separate dependency-bump PR (vitest, drizzle-orm 0.45.2, multer, js-yaml).",
+      "step": "implement"
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "next-auth pinned at 5.0.0-beta.32 (Auth.js v5) rather than 4.24.15 stable",
+      "why": "T058 needs frontend/src/middleware.ts and T056 needs a server-side session read. v5 is App-Router-native: auth() works in middleware, server components and route handlers. v4 is Pages-Router-first and its App Router gate is the deprecated next-auth/middleware withAuth wrapper. Both declare next ^16 and react ^19 peers, so compatibility is not the differentiator. Risk is bounded by D1: NextAuth verifies nothing, holds no adapter and no session strategy - it is cookie, CSRF and redirect transport only, and the product session table is the sole authority. Frontend npm audit stays at 0 vulnerabilities.",
+      "rejected": "next-auth 4.24.15 stable - rejected because reaching App Router middleware through it means depending on a deprecated Pages-Router API for the authentication gate, which is worse standing than a pinned beta in a confined transport role"
+    }
+  ]
 }

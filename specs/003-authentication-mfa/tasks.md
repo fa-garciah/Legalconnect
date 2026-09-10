@@ -105,13 +105,13 @@ tasks; blocks merge.
 frontend dependency, and the configuration surface. No new test runner configuration —
 this slice reuses `001`'s and `016a`'s toolchains entirely.
 
-- [ ] T001 Create the new directories per plan.md: `backend/src/common/auth/`, `backend/src/modules/auth/`, `backend/tests/integration/concurrency/`, `frontend/src/app/(auth)/`, `frontend/tests/component/auth/`
-- [ ] T002 Add the three backend runtime dependencies, **pinned exactly** because the constitution places `otplib` and the credential verifier inside Principle II's blast radius — `otplib`, `@node-rs/argon2`, `@aws-sdk/client-kms` — in `backend/package.json` (plan.md, Primary Dependencies)
-- [ ] T003 [P] Add `next-auth` to `frontend/package.json`, confined to [D1](./research.md#d1--nextauth-is-the-browsers-session-transport-the-apis-session-table-is-the-sole-authority)'s transport role. `input-otp@^1.5.0` and `frontend/src/components/ui/input-otp.tsx` are **already present** from `016a`'s shadcn set — the challenge screen needs no new UI package
-- [ ] T004 Update `BASELINE_DEPENDENCIES` with the three additions from T002 in `backend/tests/integration/no-new-dependency.test.ts`, following the precedent that test's own comment sets for `007` — **this test fails the moment T002 lands and must be updated, not deleted** (depends on T002)
-- [ ] T005 [P] Add the Slice 003 block to `backend/.env.example`: `DATABASE_URL_AUTH` (T000), `AUTH_KEY_PROVIDER`, `AUTH_LOCAL_KEY`, `AUTH_KMS_KEY_ID`, `AUTH_LOCKOUT_THRESHOLD=5`, `AUTH_LOCKOUT_MINUTES=15`, `AUTH_BACKUP_CODE_COUNT=10` — each commented as a **parameter, not a switch** (quickstart.md, Required environment). `npm run check:env` verifies this file
-- [ ] T006 [P] Create `frontend/.env.example` (it does not exist) with `NEXTAUTH_URL`, `NEXTAUTH_SECRET` and `NEXT_PUBLIC_API_BASE_URL`
-- [ ] T007 [P] Extend the `Role` union and `ENV_BY_ROLE` map with `'auth'` → `DATABASE_URL_AUTH` in `backend/tests/helpers/db.ts`, so lockdown tests can connect as the real role rather than as the owner (MODIFIES a slice 001 file)
+- [x] T001 Create the new directories per plan.md: `backend/src/common/auth/`, `backend/src/modules/auth/`, `backend/tests/integration/concurrency/`, `frontend/src/app/(auth)/`, `frontend/tests/component/auth/`
+- [x] T002 Add the three backend runtime dependencies, **pinned exactly** because the constitution places `otplib` and the credential verifier inside Principle II's blast radius — `otplib`, `@node-rs/argon2`, `@aws-sdk/client-kms` — in `backend/package.json` (plan.md, Primary Dependencies)
+- [x] T003 [P] Add `next-auth` to `frontend/package.json`, confined to [D1](./research.md#d1--nextauth-is-the-browsers-session-transport-the-apis-session-table-is-the-sole-authority)'s transport role. `input-otp@^1.5.0` and `frontend/src/components/ui/input-otp.tsx` are **already present** from `016a`'s shadcn set — the challenge screen needs no new UI package
+- [x] T004 Update `BASELINE_DEPENDENCIES` with the three additions from T002 in `backend/tests/integration/no-new-dependency.test.ts`, following the precedent that test's own comment sets for `007` — **this test fails the moment T002 lands and must be updated, not deleted** (depends on T002)
+- [x] T005 [P] Add the Slice 003 block to `backend/.env.example`: `DATABASE_URL_AUTH` (T000), `AUTH_KEY_PROVIDER`, `AUTH_LOCAL_KEY`, `AUTH_KMS_KEY_ID`, `AUTH_LOCKOUT_THRESHOLD=5`, `AUTH_LOCKOUT_MINUTES=15`, `AUTH_BACKUP_CODE_COUNT=10` — each commented as a **parameter, not a switch** (quickstart.md, Required environment). `npm run check:env` verifies this file
+- [x] T006 [P] Create `frontend/.env.example` (it does not exist) with `NEXTAUTH_URL`, `NEXTAUTH_SECRET` and `NEXT_PUBLIC_API_BASE_URL`
+- [x] T007 [P] Extend the `Role` union and `ENV_BY_ROLE` map with `'auth'` → `DATABASE_URL_AUTH` in `backend/tests/helpers/db.ts`, so lockdown tests can connect as the real role rather than as the owner (MODIFIES a slice 001 file)
 
 ---
 

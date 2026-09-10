@@ -47,9 +47,14 @@ jobs:
       DATABASE_URL_APP: postgresql://lc_app:lc_app_ci@localhost:5432/legalconnect
       DATABASE_URL_PLATFORM: postgresql://lc_platform:lc_platform_ci@localhost:5432/legalconnect
       DATABASE_URL_RETENTION: postgresql://lc_retention:lc_retention_ci@localhost:5432/legalconnect
+      # 003's fifth role. lc_auth is the only role holding grants on the three
+      # authentication-material tables; lc_app holds none at all. The lockdown suite
+      # connects as this role for real rather than as the owner, so CI needs it.
+      DATABASE_URL_AUTH: postgresql://lc_auth:lc_auth_ci@localhost:5432/legalconnect
       LC_APP_PASSWORD: lc_app_ci
       LC_PLATFORM_PASSWORD: lc_platform_ci
       LC_RETENTION_PASSWORD: lc_retention_ci
+      LC_AUTH_PASSWORD: lc_auth_ci
       PORT: '3000'
       # 001's deployment constraint: the platform surface authenticates nothing before
       # slice 003, so it binds to loopback. CI sets it explicitly rather than relying on
@@ -71,6 +76,18 @@ jobs:
       # that against one seeded tenant, and the cap is 002's own rate limit doing its job
       # — not something a CI run should trip over.
       INVITATION_ISSUANCE_RATE_PER_HOUR: '2000'
+      # 003's parameters. Every one is a PARAMETER, NOT A SWITCH: none can disable
+      # enrollment or the challenge, and mfa-no-disable-path.test.ts asserts that
+      # exhaustively over this whole set rather than by sampling (FR-007, SC-004).
+      #
+      # The local key provider is correct HERE and refused in any deployed
+      # environment by main.ts's startup assertion — CI is not a deployment.
+      AUTH_KEY_PROVIDER: local
+      AUTH_LOCAL_KEY: ZGV2LW9ubHktMzItYnl0ZS1rZXktbm90LWEtc2VjcmV0IQ==
+      AUTH_KMS_KEY_ID: ''
+      AUTH_LOCKOUT_THRESHOLD: '5'
+      AUTH_LOCKOUT_MINUTES: '15'
+      AUTH_BACKUP_CODE_COUNT: '10'
 
     steps:
       - uses: actions/checkout@v4
