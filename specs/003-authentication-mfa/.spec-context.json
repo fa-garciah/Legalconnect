@@ -112,10 +112,42 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T02:36:25.389Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:35.584Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:35.889Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:36.199Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:36.529Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T010",
+  "currentTask": "T015",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -194,11 +226,43 @@
       "files": [
         "backend/drizzle/0032_identity_factor.sql"
       ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Created backup_code with set_id grouping, partial index on unconsumed rows, zero lc_app grants, and consume_backup_code() SECURITY DEFINER owned by lc_auth resolving the last-code race under FOR UPDATE",
+      "files": [
+        "backend/drizzle/0033_backup_code.sql"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Created session and refresh_token with family lineage, plus resolve_session() (the one function lc_app may EXECUTE) and rotate_refresh() revoking the whole family on detected reuse under FOR UPDATE",
+      "files": [
+        "backend/drizzle/0034_session_and_refresh.sql"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Added the unique index on lower(btrim(email)) preceded in the same file by a guard that raises with the duplicate count and addresses; guard verified firing against real duplicates",
+      "files": [
+        "backend/drizzle/0035_identity_email_unique.sql"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Ran the duplicate pre-flight against the only existing environment (local dev): found 7 duplicate groups, all test residue from repeated 002 suite runs. Remediated by volume reset; all 36 migrations then applied clean from scratch",
+      "files": [
+        "backend/drizzle/0035_identity_email_unique.sql"
+      ]
     }
   },
   "concerns": [
     {
       "note": "backend npm audit reports 2 CRITICAL (vitest, @vitest/coverage-v8) plus 8 high / 8 moderate, all pre-existing devDependencies untouched by this slice. CI job dependency-scan runs npm audit --audit-level=critical and is therefore red on main independently of 003. Needs a separate dependency-bump PR (vitest, drizzle-orm 0.45.2, multer, js-yaml).",
+      "step": "implement"
+    },
+    {
+      "note": "002 test-suite idempotency breaks once 0035 lands. The T015 pre-flight found 7 duplicate normalized emails in the local dev database - all test residue (member@example.com x9, already@example.com x3, etc.) from repeated 002 suite runs that create identities with FIXED emails and never clean them up. With the unique index in place, 002 suite passes on a fresh database and FAILS on the second run against the same one. This directly threatens T064, which requires re-running 002 full contract and integration suites and confirming they pass. Fix is per-run unique emails in 002 fixtures or teardown of created identities - decide before T064, not at it.",
       "step": "implement"
     }
   ],
@@ -228,7 +292,15 @@
         "backend npm audit: 2 critical + 8 high + 8 moderate, all pre-existing devDependencies untouched by this slice; CI dependency-scan is already red on main independently of 003",
         "frontend npm audit: 0 vulnerabilities with next-auth v5 beta added"
       ]
+    },
+    {
+      "what": "Block 2A migrations applied from scratch and 001 invariants unbroken",
+      "command": "docker compose down -v && npm run db:up && npm run db:migrate && npm run verify:role && npm run test:rls",
+      "result": "all 36 migrations apply clean including 0035; verify:role 4/4 (lc_app still not superuser, owns nothing, no BYPASSRLS); test:rls 31/31 - the RLS catalogue admits the five new tables because they carry no tenant_id, as data-model.md predicted. This effectively discharges T040 early.",
+      "warnings": [
+        "0035 guard fired correctly against the pre-existing test residue before the reset, naming the count and the addresses - the intended behaviour, verified rather than assumed"
+      ]
     }
   ],
-  "last_action": "Phase 2 partial: T008-T010 done (10/103). Migrations 0030-0032 written, APPLIED to the local DB and verified: lc_app gets permission denied on identity_credential and identity_factor, claim_attempt is OWNER lc_auth SECURITY DEFINER with PUBLIC revoked. NEXT: T011 (backup_code + consume_backup_code), T012 (session + refresh_token + resolve_session + rotate_refresh), T013 (identity email unique index + duplicate guard), T015 (duplicate pre-flight). Then block 2B (T016-T019). Reminder: T014 was deliberately MOVED to block 2E to sit beside T035, its caller."
+  "last_action": "Block 2A COMPLETE: T008-T013 + T015 done (14/103). Migrations 0030-0035 applied from scratch and verified; verify:role 4/4 and test:rls 31/31 green, which discharges T040 early. NEXT: block 2B (T016-T019) - Drizzle schema, the twelve audit actions plus TARGET_ENTITY_BY_ACTION, the sanitiser deny-list, and the tenant-scoped-tables comment. Reminders: T014 was MOVED to block 2E beside T035; and see the recorded concern about 002 suite idempotency before reaching T064."
 }
