@@ -9,12 +9,14 @@
 import { Module } from '@nestjs/common';
 import { SignInController } from './sign-in.controller';
 import { EnrollmentController } from './enrollment.controller';
+import { RecoveryController } from './recovery.controller';
 import { SignInService } from './sign-in.service';
 import { EnrollmentService } from './enrollment.service';
+import { RecoveryService } from './recovery.service';
 
 @Module({
-  controllers: [SignInController, EnrollmentController],
-  providers: [SignInService, EnrollmentService],
-  exports: [SignInService, EnrollmentService],
+  controllers: [SignInController, EnrollmentController, RecoveryController],
+  providers: [SignInService, EnrollmentService, RecoveryService],
+  exports: [SignInService, EnrollmentService, RecoveryService],
 })
 export class AuthModule {}

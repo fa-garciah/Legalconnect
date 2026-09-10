@@ -116,7 +116,11 @@ describe('capability declared everywhere', () => {
     // reviewer reads. Both entries here are ungated for the same reason —
     // each runs before an authenticated principal exists, which is the state
     // they exist to end (FR-040, contracts/README.md).
-    const AUTHENTICATION_CONTROLLERS = ['SignInController', 'EnrollmentController'];
+    const AUTHENTICATION_CONTROLLERS = [
+      'SignInController',
+      'EnrollmentController',
+      'RecoveryController',
+    ];
 
     const ungated = routeHandlers().filter((h) => !h.capability);
     for (const handler of ungated) {

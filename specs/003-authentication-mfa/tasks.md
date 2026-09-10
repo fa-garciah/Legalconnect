@@ -275,7 +275,7 @@ and leaves the rest usable, and that no surface anywhere returns the set again.
 
 ### Tests for User Story 3 ⚠️ Write first, watch them fail
 
-- [ ] T074 [P] [US3] **BLOCKING (SC-029)** Integration test: exactly 10 codes issued once; all 10 stored as irreversible memory-hard digests; consuming 1 invalidates exactly that 1 with **0 collateral invalidations**; a consumed code is refused **identically to one that never existed**; exhaustion is audited as a distinct event; and advancing the clock a year leaves all 10 valid — **no time-based expiry**, in `backend/tests/integration/backup-codes.test.ts` — FR-023 to FR-031, SC-010 to SC-016, SC-031
+- [x] T074 [P] [US3] **BLOCKING (SC-029)** Integration test: exactly 10 codes issued once; all 10 stored as irreversible memory-hard digests; consuming 1 invalidates exactly that 1 with **0 collateral invalidations**; a consumed code is refused **identically to one that never existed**; exhaustion is audited as a distinct event; and advancing the clock a year leaves all 10 valid — **no time-based expiry**, in `backend/tests/integration/backup-codes.test.ts` — FR-023 to FR-031, SC-010 to SC-016, SC-031
 - [ ] T075 [P] [US3] Integration test: **enrollment does not complete without the codes** — if issuance fails the whole transaction fails and the identity remains unenrolled, with no state in which a confirmed factor exists and no codes do, in `backend/tests/integration/enrollment-atomic-with-codes.test.ts` — FR-023
 - [ ] T076 [P] [US3] Integration test: **0 routes return the codes again for any archetype including SA and PO**, asserted by route-table inspection rather than by attempting each, in `backend/tests/integration/backup-codes-unreadable.test.ts` — FR-024, FR-029, SC-006
 - [ ] T077 [P] [US3] Component test: the codes are presented for recording, the person must acknowledge before proceeding, and **none is written to browser storage**, in `frontend/tests/component/auth/BackupCodes.test.tsx` — FR-051, SC-028
@@ -283,8 +283,8 @@ and leaves the rest usable, and that no surface anywhere returns the set again.
 ### Implementation for User Story 3
 
 - [x] T078 [US3] Issue exactly 10 codes inside the **same transaction** as enrollment confirmation, storing each only as a high-entropy-profile Argon2id digest and auditing `backup_codes.issued`, in `backend/src/modules/auth/enrollment.service.ts` (depends on T028, T070)
-- [ ] T079 [US3] Implement consumption with the fixed comparison count and `FOR UPDATE`, auditing `backup_code.consumed` and `backup_codes.exhausted` **as distinct events**, in `backend/src/modules/auth/backup-codes.ts` (depends on T011, T028)
-- [ ] T080 [US3] Accept a backup code at the challenge step in place of a generated code, **counting the attempt toward FR-021's counter** so recovery is not an unthrottled bypass, in `backend/src/modules/auth/sign-in.service.ts` (depends on T052, T079)
+- [x] T079 [US3] Implement consumption with the fixed comparison count and `FOR UPDATE`, auditing `backup_code.consumed` and `backup_codes.exhausted` **as distinct events**, in `backend/src/modules/auth/backup-codes.ts` (depends on T011, T028)
+- [x] T080 [US3] Accept a backup code at the challenge step in place of a generated code, **counting the attempt toward FR-021's counter** so recovery is not an unthrottled bypass, in `backend/src/modules/auth/sign-in.service.ts` (depends on T052, T079)
 - [ ] T081 [US3] Implement the one-time code presentation in `frontend/src/app/(auth)/enrolar/page.tsx`, with no re-display path anywhere in the client (depends on T077)
 
 **Checkpoint**: Enrollment is now complete per FR-023. A lost authenticator is still
@@ -305,7 +305,7 @@ reachable until a new factor is confirmed.
 
 ### Tests for User Story 4 ⚠️ Write first, watch them fail
 
-- [ ] T082 [P] [US4] Contract test `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll`: a satisfied challenge emits **no session**, only an `enrollmentToken`; `remainingCodes` is disclosed only after success; and re-enrollment returns a **complete new set of 10** plus a session, in `backend/tests/contract/recovery.test.ts` — FR-027, FR-028
+- [x] T082 [P] [US4] Contract test `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll`: a satisfied challenge emits **no session**, only an `enrollmentToken`; `remainingCodes` is disclosed only after success; and re-enrollment returns a **complete new set of 10** plus a session, in `backend/tests/contract/recovery.test.ts` — FR-027, FR-028
 - [ ] T083 [P] [US4] Integration test: two simultaneous recoveries presenting the same **last unconsumed** code yield exactly one success and one consumption, in `backend/tests/integration/concurrency/last-backup-code.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
 - [ ] T084 [P] [US4] Integration test: response times for a match early in the set versus late show **no usable difference**, in `backend/tests/integration/backup-code-timing.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
 - [ ] T085 [P] [US4] Integration test: recovery-path re-issuance requires **0 step-up checks**; standalone re-issuance is reachable from **0 production surfaces**; the previous factor no longer satisfies a challenge; abandoning re-enrollment leaves no access and an unenrolled identity; and an identity with all 10 consumed is refused with **no alternative path offered**, in `backend/tests/integration/recovery-reenrollment.test.ts` — FR-032, SC-015, SC-033
@@ -313,9 +313,9 @@ reachable until a new factor is confirmed.
 
 ### Implementation for User Story 4
 
-- [ ] T087 [US4] Implement the backup-code challenge emitting an `enrollmentToken` and **no session**, auditing consumption, in `backend/src/modules/auth/recovery.service.ts` (depends on T079, T080)
-- [ ] T088 [US4] Implement forced re-enrollment **reusing the T069/T070 enrollment mechanism rather than duplicating it** — there is one way to enroll a factor in this product and recovery walks through it — replacing the previous factor, invalidating the entire previous code set, issuing 10 fresh codes and emitting one session, auditing `factor.replaced`, `backup_codes.reissued` and `signin.succeeded`, in `backend/src/modules/auth/recovery.service.ts` (depends on T069, T070, T078, T087)
-- [ ] T089 [US4] Implement `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll` in `backend/src/modules/auth/recovery.controller.ts`, the latter reachable **only immediately after a satisfied recovery**
+- [x] T087 [US4] Implement the backup-code challenge emitting an `enrollmentToken` and **no session**, auditing consumption, in `backend/src/modules/auth/recovery.service.ts` (depends on T079, T080)
+- [x] T088 [US4] Implement forced re-enrollment **reusing the T069/T070 enrollment mechanism rather than duplicating it** — there is one way to enroll a factor in this product and recovery walks through it — replacing the previous factor, invalidating the entire previous code set, issuing 10 fresh codes and emitting one session, auditing `factor.replaced`, `backup_codes.reissued` and `signin.succeeded`, in `backend/src/modules/auth/recovery.service.ts` (depends on T069, T070, T078, T087)
+- [x] T089 [US4] Implement `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll` in `backend/src/modules/auth/recovery.controller.ts`, the latter reachable **only immediately after a satisfied recovery**
 - [ ] T090 [US4] Implement the recovery screen in `frontend/src/app/(auth)/recuperar/page.tsx`, reached from the challenge screen (depends on T086)
 - [ ] T091 [US4] E2E test: full recovery — sign in, present a code, be refused tenant data, re-enroll, receive 10 fresh codes, and confirm every previous code is invalid, in `frontend/tests/e2e/auth-recovery.spec.ts` — quickstart.md Scenario 5
 

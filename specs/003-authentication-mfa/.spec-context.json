@@ -576,10 +576,66 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:28:46.540Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T074",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.175Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T079",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.522Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T080",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.874Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T082",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.219Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T087",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.536Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T088",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.881Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T089",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:25.233Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T078",
+  "currentTask": "T089",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1078,6 +1134,56 @@
       "files": [
         "backend/src/modules/auth/enrollment.service.ts"
       ]
+    },
+    "T074": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): exactly 10 codes issued once, all stored as irreversible Argon2id digests verified to actually be of those codes, consuming 1 invalidates exactly 1, a consumed code is refused identically to one that never existed, one identity cannot consume another's, no surface returns the set again, and a year's age leaves all 10 valid",
+      "files": [
+        "backend/tests/integration/backup-codes.test.ts"
+      ]
+    },
+    "T079": {
+      "status": "DONE",
+      "did": "Implemented consumption with the fixed comparison count and FOR UPDATE, auditing backup_code.consumed and backup_codes.exhausted as DISTINCT events",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T080": {
+      "status": "DONE",
+      "did": "A backup code is accepted at the challenge step in place of a generated one, counting toward FR-021's counter so recovery is not an unthrottled bypass",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T082": {
+      "status": "DONE",
+      "did": "Contract test for recovery: a satisfied challenge emits NO session, remainingCodes only after success, the consumed code cannot be reused, re-enrollment returns a complete new set of 10 plus a session, the previous factor is dead, and abandoning leaves no access",
+      "files": [
+        "backend/tests/contract/recovery.test.ts"
+      ]
+    },
+    "T087": {
+      "status": "DONE",
+      "did": "Implemented the backup-code challenge emitting an enrollmentToken and no session, auditing consumption",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T088": {
+      "status": "DONE",
+      "did": "Implemented forced re-enrollment REUSING the T069/T070 mechanism rather than duplicating it: prepareReenrollment retires the factor, drops the code set and revokes every live session, then EnrollmentService.confirm runs unchanged",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts",
+        "backend/src/modules/auth/recovery.controller.ts"
+      ]
+    },
+    "T089": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/recovery/backup-code and /reenroll, the latter reachable only immediately after a satisfied recovery",
+      "files": [
+        "backend/src/modules/auth/recovery.controller.ts"
+      ]
     }
   },
   "concerns": [
@@ -1172,5 +1278,5 @@
       ]
     }
   ],
-  "last_action": "69/103. ALL THREE SC-029 BLOCKING SUITES NOW EXIST AND PASS: mfa-enforcement, mfa-no-disable-path (exhaustive inspection over every documented env key and entitlement), and totp-secret-custody (restores a dump without the key and proves 0 working factors). Backend 154 files / 1516 tests. Enrollment works end to end: begin issues the only secret this product ever returns, confirm sets both columns and issues 10 codes in ONE transaction. NEXT: T068/T072 the enrollment screen, T074-T081 (US3 backup codes), T082-T091 (US4 recovery), Phase 7 polish. Recorded a FLAKY test to pin down: provision-seeds-catalog FR-009."
+  "last_action": "76/103. ALL FOUR USER STORIES ARE FUNCTIONALLY COMPLETE on the backend: sign-in, enrollment, backup codes, recovery. Backend 156 files / 1534 tests, typecheck and lint clean. All four SC-029 blocking suites pass. NEXT: the remaining frontend screens (T068/T072 enrollment, T077/T081 code display, T086/T090 recovery), the e2e specs (T061/T073/T091/T095), and Phase 7 polish (T092-T101)."
 }

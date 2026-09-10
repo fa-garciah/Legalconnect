@@ -65,7 +65,8 @@ export async function hashBackupCodes(codes: readonly string[]): Promise<string[
   return Promise.all(codes.map((code) => hashHighEntropy(code)));
 }
 
-export interface StoredBackupCode {
+/** Extends Record so a driver row satisfies it without a cast at the call site. */
+export interface StoredBackupCode extends Record<string, unknown> {
   readonly id: string;
   readonly digest: string;
 }
