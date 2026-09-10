@@ -1,0 +1,31 @@
+{
+  "workflow": "speckit",
+  "specName": "Authentication & Multi-Factor Enrollment",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-08T16:28:05.449Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-09T15:26:47.456Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-10T00:55:32.628Z"
+    }
+  ],
+  "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946"
+}
