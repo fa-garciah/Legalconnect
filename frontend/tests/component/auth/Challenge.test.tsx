@@ -80,10 +80,13 @@ describe('ChallengeForm (T051)', () => {
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
   });
 
-  it('offers the backup-code path rather than stranding a person without their phone', async () => {
+  it('offers the backup-code path, CARRYING the challenge token', async () => {
+    // The token has to travel: recovery presents it to the same API route this
+    // screen would have. A bare /recuperar link would land somebody on a form
+    // with nothing to submit, one step after losing their phone.
     render(<ChallengeForm />);
     const link = screen.getByRole('link', { name: /código de respaldo/i });
-    expect(link).toHaveAttribute('href', '/recuperar');
+    expect(link).toHaveAttribute('href', '/recuperar?reto=opaque-challenge-token');
   });
 
   it('WRITES NOTHING TO BROWSER STORAGE (FR-051, SC-028)', async () => {

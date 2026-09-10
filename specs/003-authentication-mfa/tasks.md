@@ -255,7 +255,7 @@ changed.
 - [x] T069 [US2] Implement secret generation, envelope encryption under the `KeyProvider`, and storage with `confirmed_at IS NULL` in `backend/src/modules/auth/enrollment.service.ts`, auditing `enrollment.started` and `enrollment.failed` with **the secret in no entry** (depends on T025, T026)
 - [x] T070 [US2] Implement confirmation setting `identity_factor.confirmed_at` and `identity.mfa_enrolled_at` **in one transaction** — `confirmed_at` is the fact, `mfa_enrolled_at` is `002/FR-026`'s already-shipped interface to it, and **the two must not diverge** — auditing `enrollment.completed`, in `backend/src/modules/auth/enrollment.service.ts` (depends on T069)
 - [x] T071 [US2] Implement `POST /auth/enrollment/begin` and `POST /auth/enrollment/confirm` in `backend/src/modules/auth/enrollment.controller.ts`, reachable **only** by an identity past the credential step with no confirmed factor
-- [ ] T072 [US2] Implement the enrollment screen — QR plus manual-entry secret, then code confirmation — in `frontend/src/app/(auth)/enrolar/page.tsx` (depends on T068)
+- [x] T072 [US2] Implement the enrollment screen — QR plus manual-entry secret, then code confirmation — in `frontend/src/app/(auth)/enrolar/page.tsx` (depends on T068)
 - [ ] T073 [US2] E2E test: **the walk-through that did not exist before this slice** — accept an invitation, sign in, be refused tenant data, enroll, and watch the same request succeed with nothing else changed, in `frontend/tests/e2e/auth-enrollment.spec.ts` — quickstart.md Scenario 1, US2 acceptance bar
 
 **Checkpoint**: A real person can now become a working user without seeding. Enrollment
@@ -285,7 +285,7 @@ and leaves the rest usable, and that no surface anywhere returns the set again.
 - [x] T078 [US3] Issue exactly 10 codes inside the **same transaction** as enrollment confirmation, storing each only as a high-entropy-profile Argon2id digest and auditing `backup_codes.issued`, in `backend/src/modules/auth/enrollment.service.ts` (depends on T028, T070)
 - [x] T079 [US3] Implement consumption with the fixed comparison count and `FOR UPDATE`, auditing `backup_code.consumed` and `backup_codes.exhausted` **as distinct events**, in `backend/src/modules/auth/backup-codes.ts` (depends on T011, T028)
 - [x] T080 [US3] Accept a backup code at the challenge step in place of a generated code, **counting the attempt toward FR-021's counter** so recovery is not an unthrottled bypass, in `backend/src/modules/auth/sign-in.service.ts` (depends on T052, T079)
-- [ ] T081 [US3] Implement the one-time code presentation in `frontend/src/app/(auth)/enrolar/page.tsx`, with no re-display path anywhere in the client (depends on T077)
+- [x] T081 [US3] Implement the one-time code presentation in `frontend/src/app/(auth)/enrolar/page.tsx`, with no re-display path anywhere in the client (depends on T077)
 
 **Checkpoint**: Enrollment is now complete per FR-023. A lost authenticator is still
 unrecoverable — US4 closes that.
@@ -316,7 +316,7 @@ reachable until a new factor is confirmed.
 - [x] T087 [US4] Implement the backup-code challenge emitting an `enrollmentToken` and **no session**, auditing consumption, in `backend/src/modules/auth/recovery.service.ts` (depends on T079, T080)
 - [x] T088 [US4] Implement forced re-enrollment **reusing the T069/T070 enrollment mechanism rather than duplicating it** — there is one way to enroll a factor in this product and recovery walks through it — replacing the previous factor, invalidating the entire previous code set, issuing 10 fresh codes and emitting one session, auditing `factor.replaced`, `backup_codes.reissued` and `signin.succeeded`, in `backend/src/modules/auth/recovery.service.ts` (depends on T069, T070, T078, T087)
 - [x] T089 [US4] Implement `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll` in `backend/src/modules/auth/recovery.controller.ts`, the latter reachable **only immediately after a satisfied recovery**
-- [ ] T090 [US4] Implement the recovery screen in `frontend/src/app/(auth)/recuperar/page.tsx`, reached from the challenge screen (depends on T086)
+- [x] T090 [US4] Implement the recovery screen in `frontend/src/app/(auth)/recuperar/page.tsx`, reached from the challenge screen (depends on T086)
 - [ ] T091 [US4] E2E test: full recovery — sign in, present a code, be refused tenant data, re-enroll, receive 10 fresh codes, and confirm every previous code is invalid, in `frontend/tests/e2e/auth-recovery.spec.ts` — quickstart.md Scenario 5
 
 **Checkpoint**: All four user stories are independently functional.

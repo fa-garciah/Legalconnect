@@ -97,7 +97,10 @@ export function ChallengeForm(): React.JSX.Element {
 
       <p className="text-xs text-muted-foreground">
         ¿Perdiste tu aplicación?{' '}
-        <a href="/recuperar" className="underline underline-offset-4">
+        <a
+          href={`/recuperar?reto=${encodeURIComponent(challengeToken)}`}
+          className="underline underline-offset-4"
+        >
           Usa un código de respaldo
         </a>
         .

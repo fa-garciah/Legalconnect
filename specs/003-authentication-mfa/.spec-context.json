@@ -632,10 +632,34 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:42:25.233Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T072",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:43.575Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T081",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:44.314Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T090",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:44.962Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T089",
+  "currentTask": "T090",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1184,6 +1208,29 @@
       "files": [
         "backend/src/modules/auth/recovery.controller.ts"
       ]
+    },
+    "T072": {
+      "status": "DONE",
+      "did": "Implemented the enrollment screen: a three-stage flow (begin, register with QR URI plus manual key, confirm), nothing persisted to browser storage",
+      "files": [
+        "frontend/src/app/(auth)/enrolar/page.tsx",
+        "frontend/src/app/(auth)/enrolar/EnrollmentFlow.tsx"
+      ]
+    },
+    "T081": {
+      "status": "DONE",
+      "did": "Implemented the one-time code presentation with an acknowledgement gate and NO re-display path anywhere in the client - there is no route that returns them, so a view-codes affordance would be a button that cannot work",
+      "files": [
+        "frontend/src/app/(auth)/enrolar/EnrollmentFlow.tsx"
+      ]
+    },
+    "T090": {
+      "status": "DONE",
+      "did": "Implemented the recovery screen, reached from the challenge screen carrying the challenge token, handing straight to re-enrollment because success emits no session",
+      "files": [
+        "frontend/src/app/(auth)/recuperar/page.tsx",
+        "frontend/src/app/(auth)/recuperar/RecoveryForm.tsx"
+      ]
     }
   },
   "concerns": [
@@ -1278,5 +1325,5 @@
       ]
     }
   ],
-  "last_action": "76/103. ALL FOUR USER STORIES ARE FUNCTIONALLY COMPLETE on the backend: sign-in, enrollment, backup codes, recovery. Backend 156 files / 1534 tests, typecheck and lint clean. All four SC-029 blocking suites pass. NEXT: the remaining frontend screens (T068/T072 enrollment, T077/T081 code display, T086/T090 recovery), the e2e specs (T061/T073/T091/T095), and Phase 7 polish (T092-T101)."
+  "last_action": "79/103. ALL FOUR FLOWS ARE BUILT END TO END, backend and frontend. The production build carries /ingresar, /verificar, /enrolar, /recuperar and the NextAuth handler. Backend 156 files / 1534 tests; frontend 35 files / 363 tests. NEXT: the remaining component tests (T068, T077, T086), the e2e specs (T061, T073, T091, T095), and Phase 7 polish (T092-T101 - audit completeness, refusal ordering, Spanish copy sweep, CI wiring, quickstart walkthrough, infra KMS key)."
 }
