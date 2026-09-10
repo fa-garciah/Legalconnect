@@ -440,10 +440,50 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T05:55:34.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:06.744Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.054Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.384Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T062",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.680Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T063",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:08.004Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T049",
+  "currentTask": "T063",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -815,6 +855,44 @@
       "files": [
         "backend/tests/integration/key-unavailable-fails-closed.test.ts"
       ]
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "The three stand-in headers are gone: 0 src/** files read them (comments stripped so an explanation is not a violation), presenting them buys nothing on tenant-scoped, identity-only or acceptance routes, x-tenant-id STILL works with a real session, and a session cannot be redirected by a header naming another identity",
+      "files": [
+        "backend/tests/integration/stand-ins-removed.test.ts",
+        "backend/src/common/authz/interceptor.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "Rewrote the principal unit test for a real session read: the SHAPE is unchanged, the token is presented as a bearer credential, the read is never cached, and an unauthenticated visitor gets an empty principal rather than a throw",
+      "files": [
+        "frontend/tests/unit/principal.test.ts"
+      ]
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "Replaced principal.ts with a real session read and DELETED principal.fixture.json. types.ts untouched. Memberships come from 002's route because the session carries no tenant and no archetype (FR-037)",
+      "files": [
+        "frontend/src/session/principal.ts",
+        "frontend/src/session/session-store.ts"
+      ]
+    },
+    "T062": {
+      "status": "DONE",
+      "did": "Ran every suite standing on getPrincipal() unchanged: 33 files / 349 tests green across 016a, 018, 019, api-client and the Spanish-copy suites. The seam held - no consumer needed amending",
+      "files": [
+        "frontend/tests"
+      ]
+    },
+    "T063": {
+      "status": "DONE",
+      "did": "Confirmed git diff over frontend/src/shell, frontend/src/feedback and frontend/src/authz is EMPTY - 016a's module contract survives (FR-048, SC-025)",
+      "files": [
+        "frontend/src"
+      ]
     }
   },
   "concerns": [
@@ -836,6 +914,10 @@
     },
     {
       "note": "SPECIFICATION GAP blocking Phase 3 / T052. contracts/authentication.md requires a challengeToken that is short-lived, SINGLE-USE, and carries no identity the client can read - it is the state that makes POST /auth/factor reachable without a session existing yet (FR-003 forbids a session before the second factor). data-model.md specifies NO storage for it: five entities, none of them a pending challenge, and no FR in spec.md mentions challengeToken at all. Single-use plus opaque-to-the-client cannot both hold in a purely stateless token. PROPOSED RESOLUTION, same shape as the recent_code_digests deviation already recorded: two nullable columns on identity_factor - challenge_nonce_digest and challenge_expires_at - giving ONE pending challenge per identity, which is also the correct semantics since a fresh sign-in should supersede a prior challenge. Consumption is a compare-and-clear under FOR UPDATE inside claim_attempt or a sibling function, so single-use is a data-layer guarantee rather than an application convention. Needs a migration 0038 and a note in data-model.md. Recorded rather than guessed at because it decides the shape of T052, T053 and the four US1 contract tests.",
+      "step": "implement"
+    },
+    {
+      "note": "OPEN: how the BROWSER presents its credential on direct API calls. getPrincipal() is settled - it runs in a server component, reads the httpOnly cookie and sends a bearer token. api-client.ts is not: it runs in the browser, and the credential is httpOnly precisely so page script cannot read it (FR-051), so the token cannot simply be attached there. D1 addresses the server path and is silent on this one. Two real options: a Next route-handler proxy that attaches the credential server-side, or same-site cookie auth on the API with CORS credentials enabled. api-client.ts no longer sends the dead x-identity-id header and currently sends no replacement, with the reasoning in the file. Blocks nothing in the backend; blocks browser-driven authenticated reads in 018/019 until chosen.",
       "step": "implement"
     }
   ],
@@ -901,5 +983,5 @@
       ]
     }
   ],
-  "last_action": "51/103. US1 BACKEND IS COMPLETE: 150 files / 1489 tests green. Sign-in, challenge, refresh, lockout, replay guard, family revocation and fail-closed key handling all proven. NEXT: T048 (stand-ins removed), then the FRONTEND half of US1 - T050/T051 tests, T056 replace principal.ts and delete the fixture, T057 NextAuth route, T058 middleware, T059/T060 the two screens, T061-T064 the regression sweeps."
+  "last_action": "57/103. THE SEAM IS CLOSED: principal.fixture.json is DELETED and getPrincipal() reads a real session; all 33 frontend files / 349 tests pass unchanged, and shell/feedback/authz have an EMPTY diff (FR-048 holds). Backend 151 files / 1495 tests. NEXT: T051 component tests + T057 NextAuth route + T058 middleware + T059/T060 the two screens + T061 e2e; then Phase 4 (US2 enrollment). OPEN CONCERN: browser-direct credential transport for api-client.ts - server path is settled, browser path needs a proxy route or same-site cookie auth."
 }

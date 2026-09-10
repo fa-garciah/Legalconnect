@@ -8,18 +8,18 @@
  * else.
  *
  * **Prerequisites** (quickstart.md): backend on 3001, migrated and seeded, and
- * `src/session/principal.fixture.json` pointing at a seeded identity. With the shipped
+ * `E2E_IDENTITY_ID`/`E2E_TENANT_ID` pointing at a seeded identity. With the shipped
  * fixture the register renders a refusal rather than data — correct behaviour, and why the
  * first test here checks the seam before anything else does.
  */
 import { test, expect, type Page } from '@playwright/test';
-import fixture from '../../src/session/principal.fixture.json';
+import { SEEDED_IDENTITY_ID, SEEDED_TENANT_ID } from './seeded-principal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
 const HEADERS = {
-  'x-identity-id': fixture.identityId,
-  'x-tenant-id': fixture.memberships[0]?.tenantId ?? '',
+  'x-identity-id': SEEDED_IDENTITY_ID,
+  'x-tenant-id': SEEDED_TENANT_ID,
 };
 
 /** One per matter. The register is a table; each matter is a row. */
@@ -45,7 +45,7 @@ test.describe('the case register against a running backend', () => {
       const text = (await error.textContent()) ?? '';
       throw new Error(
         `The register refused rather than loading. Check the backend is on 3001 and that ` +
-          `principal.fixture.json names a seeded identity and tenant. Screen said: ${text}`,
+          `E2E_IDENTITY_ID and E2E_TENANT_ID name a seeded identity and tenant. Screen said: ${text}`,
       );
     }
   });

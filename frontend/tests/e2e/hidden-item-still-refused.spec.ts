@@ -25,14 +25,14 @@
  * would suggest.
  */
 import { test, expect } from '@playwright/test';
-import fixture from '../../src/session/principal.fixture.json';
+import { SEEDED_TENANT_ID } from './seeded-principal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
 /** Well-formed, and guaranteed to name nobody — no `identity` row is ever seeded with it. */
 const UNKNOWN_IDENTITY_ID = '00000000-0000-0000-0000-000000000000';
 
-const TENANT_ID = fixture.memberships[0]?.tenantId ?? '';
+const TENANT_ID = SEEDED_TENANT_ID;
 
 test.describe('hiding a navigation item is cosmetic only', () => {
   test('the tenant-scoped route (case.read_list) refuses an unrecognised caller, same as a hidden item would', async ({

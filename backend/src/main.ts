@@ -63,7 +63,8 @@ async function bootstrap(): Promise<void> {
    * sessions and MFA are `003` and `005` — so the whole surface is bound to loopback and
    * treated as unreachable. A wildcard origin would let any page a developer happens to
    * visit issue requests to their own `localhost:3001` and read the replies, which for a
-   * server that trusts `x-identity-id` outright means reading any tenant's data. The
+   * server that trusted `x-identity-id` outright meant reading any tenant's data —
+   * true until 003 replaced that header with a verified session. The
    * origins are therefore named, and in production they must be named explicitly: the
    * localhost default applies only outside production, where it saves every developer
    * rediscovering the paragraph above.
@@ -86,7 +87,10 @@ async function bootstrap(): Promise<void> {
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['content-type', 'x-identity-id', 'x-tenant-id'],
+      // 003/T048. `x-identity-id` is gone — the browser presents a bearer
+      // token and the API resolves the session from it. `x-tenant-id` stays: it
+      // selects which membership to activate and asserts nothing.
+      allowedHeaders: ['content-type', 'authorization', 'x-tenant-id'],
       credentials: false,
     });
   } else {

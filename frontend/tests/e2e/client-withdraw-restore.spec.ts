@@ -22,7 +22,7 @@
  * **This test writes** and leaves its client behind; `006` has no delete, deliberately.
  */
 import { test, expect, type Page } from '@playwright/test';
-import fixture from '../../src/session/principal.fixture.json';
+import { SEEDED_IDENTITY_ID, SEEDED_TENANT_ID } from './seeded-principal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -124,8 +124,8 @@ test.describe('withdrawing a client and undoing it', () => {
   });
 
   test('the round trip leaves two distinct audit entries', async ({ page, request }) => {
-    const identityId = fixture.identityId;
-    const tenantId = fixture.memberships[0]?.tenantId;
+    const identityId = SEEDED_IDENTITY_ID;
+    const tenantId = SEEDED_TENANT_ID;
     const headers = { 'x-identity-id': identityId, 'x-tenant-id': tenantId ?? '' };
 
     const probe = await request.get(`${API_BASE}/audit/events?limit=1`, { headers });
