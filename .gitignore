@@ -38,3 +38,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# Local tooling state (per-machine, not shared)
+.claude/.headroom_wrap_*
