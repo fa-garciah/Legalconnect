@@ -11,7 +11,7 @@ import { DbMembershipPort } from '../../src/common/tenant/membership';
 import { closeAppDb } from '../../src/common/db/client';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { connectAs } from '../helpers/db';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 
 describe('MFA enrollment gate (FR-026)', () => {
   let tenants: SeededTenants;
@@ -22,9 +22,13 @@ describe('MFA enrollment gate (FR-026)', () => {
     tenants = await seededTenantIds();
     const migration = await connectAs('migration');
     try {
+      // 003/0035 added a unique index on lower(btrim(email)), so a fixed literal
+      // email collides on the second run against the same database. Derived from
+      // the same per-run suffix the subject already used.
+      const suffix = Date.now();
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email) VALUES ($1, 'unenrolled@example.com') RETURNING id`,
-        [`idp|unenrolled-${Date.now()}`],
+        `INSERT INTO identity (subject, email) VALUES ($1, $2) RETURNING id`,
+        [`idp|unenrolled-${suffix}`, `unenrolled-${suffix}@example.com`],
       );
       unenrolledIdentityId = identity.rows[0]!.id;
       await migration.query(
@@ -47,7 +51,7 @@ describe('MFA enrollment gate (FR-026)', () => {
   });
 
   it('answers 403, not the tenant-context 404 — the caller already proved the membership is real', async () => {
-    const app: INestApplication = await createRealApp();
+    const app: INestApplication = await createAuthenticatedApp();
     try {
       // enumerate-own-memberships is identity-only and not MFA-gated; a real
       // tenant-scoped route is what exercises the gate end-to-end. The MFA

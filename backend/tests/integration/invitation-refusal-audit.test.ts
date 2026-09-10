@@ -5,14 +5,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 
 describe('invitation refusal is audited without disclosing the reason (FR-034)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
   });
 
   afterAll(async () => {
@@ -23,9 +23,7 @@ describe('invitation refusal is audited without disclosing the reason (FR-034)',
     const reference = `refusal-audit-${Date.now()}`;
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${reference}/accept`)
-      .set('x-subject', 'idp|refusal-audit')
-      .set('x-email', 'x@example.com')
-      .send();
+      .send({ email: 'x@example.com', credential: 'una-contrasena-larga-de-prueba' });
     expect(response.status).toBe(400);
 
     const migration = await connectAs('migration');

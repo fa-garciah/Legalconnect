@@ -36,6 +36,12 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Opting in, exactly as the line above invites and as backend/ already does via the
+# root .gitignore. `.env.example` carries no secret — it is the contract that says
+# which keys must exist, and a contract nobody can read is not one. 003 is the first
+# slice to need it here, because 016a's shell made no network calls and held no
+# session. Real `.env` files stay ignored by the pattern above.
+!.env.example
 
 # vercel
 .vercel

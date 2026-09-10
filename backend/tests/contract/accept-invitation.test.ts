@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -50,7 +50,7 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });
@@ -62,20 +62,24 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
   it('scenarios 1-2: accepting with no prior identity creates exactly one identity and one live membership', async () => {
     const email = `new-person-${Date.now()}@example.com`;
     const { rawReference } = await issueInvitation(app, identities, tenants.a, email);
-    const subject = `idp|new-person-${Date.now()}`;
 
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', subject)
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
 
     expect(response.status).toBe(201);
     expect(response.body.tenantId).toBe(tenants.a);
 
     const migration = await connectAs('migration');
     try {
-      const idRows = await migration.query('SELECT count(*)::text AS n FROM identity WHERE subject = $1', [subject]);
+      // Counted on the normalized email, not on a locally-invented subject:
+      // 003/D9 makes the subject a value the PRODUCT generates, so a test cannot
+      // know it in advance. The email is what accept_invitation now keys
+      // find-or-create on, and 0035's unique index is what makes that legitimate.
+      const idRows = await migration.query(
+        'SELECT count(*)::text AS n FROM identity WHERE lower(btrim(email)) = lower(btrim($1))',
+        [email],
+      );
       expect(Number(idRows.rows[0].n)).toBe(1);
       const memberRows = await migration.query(
         'SELECT count(*)::text AS n FROM membership WHERE identity_id = $1',
@@ -104,9 +108,7 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
     const { rawReference } = await issueInvitation(app, identities, tenants.a, email);
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', subject)
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
 
     expect(response.status).toBe(201);
 
@@ -122,20 +124,15 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
   it('scenario 5: accepting an already-accepted invitation is refused', async () => {
     const email = `once-only-${Date.now()}@example.com`;
     const { rawReference } = await issueInvitation(app, identities, tenants.a, email);
-    const subject = `idp|once-only-${Date.now()}`;
 
     const first = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', subject)
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
     expect(first.status).toBe(201);
 
     const second = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', subject)
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
     expect(second.status).toBe(400);
     expect(second.body.error.code).toBe('invitation_invalid');
   });
@@ -146,9 +143,10 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
 
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', 'idp|wrong-person')
-      .set('x-email', `different-${Date.now()}@example.com`)
-      .send();
+      .send({
+        email: `different-${Date.now()}@example.com`,
+        credential: 'una-contrasena-larga-de-prueba',
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe('invitation_invalid');
@@ -157,9 +155,7 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
   it('a nonexistent reference produces the identical refusal shape as an expired/used one', async () => {
     const response = await request(app.getHttpServer())
       .post('/identity/invitations/does-not-exist-at-all/accept')
-      .set('x-subject', 'idp|nobody')
-      .set('x-email', 'nobody@example.com')
-      .send();
+      .send({ email: 'nobody@example.com', credential: 'una-contrasena-larga-de-prueba' });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -170,19 +166,14 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
   it('quickstart V5/SC-005: two concurrent acceptances of the same invitation produce exactly one membership', async () => {
     const email = `concurrent-${Date.now()}@example.com`;
     const { rawReference } = await issueInvitation(app, identities, tenants.a, email);
-    const subject = `idp|concurrent-${Date.now()}`;
 
     const [a, b] = await Promise.all([
       request(app.getHttpServer())
         .post(`/identity/invitations/${rawReference}/accept`)
-        .set('x-subject', subject)
-        .set('x-email', email)
-        .send(),
+        .send({ email: email, credential: 'una-contrasena-larga-de-prueba' }),
       request(app.getHttpServer())
         .post(`/identity/invitations/${rawReference}/accept`)
-        .set('x-subject', subject)
-        .set('x-email', email)
-        .send(),
+        .send({ email: email, credential: 'una-contrasena-larga-de-prueba' }),
     ]);
 
     const statuses = [a.status, b.status].sort();
@@ -191,8 +182,9 @@ describe('POST /identity/invitations/:reference/accept (US3)', () => {
     const migration = await connectAs('migration');
     try {
       const { rows } = await migration.query(
-        `SELECT count(*)::text AS n FROM membership m JOIN identity i ON i.id = m.identity_id WHERE i.subject = $1`,
-        [subject],
+        `SELECT count(*)::text AS n FROM membership m JOIN identity i ON i.id = m.identity_id
+          WHERE lower(btrim(i.email)) = lower(btrim($1))`,
+        [email],
       );
       expect(Number(rows[0].n)).toBe(1);
     } finally {

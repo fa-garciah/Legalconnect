@@ -19,14 +19,15 @@ import { refusalToHttp } from './refusal';
 import type { ScopeRequest } from './scope';
 import type { Subject } from './matrix';
 import { ResourceNotFound } from '../http/errors';
-import { firstHeaderValue } from '../http/header';
-import { IDENTITY_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
+import { AUTH_SURFACE, IDENTITY_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
 import { currentPrincipal } from '../tenant/middleware';
 import type { ActivePrincipal } from '../tenant/principal';
 
 interface IncomingRequest {
   readonly headers: Record<string, string | string[] | undefined>;
   readonly params?: Record<string, string | undefined>;
+  /** 003/T033. Set by `SessionGuard`, which runs before every interceptor. */
+  readonly identityId?: string;
 }
 
 interface Caller {
@@ -44,6 +45,19 @@ export class AuthorizationInterceptor implements NestInterceptor {
   }
 
   private async decideAndProceed(context: ExecutionContext, next: CallHandler): Promise<unknown> {
+    // 003/FR-040. The authentication surface is skipped BEFORE the
+    // undeclared-route refusal below, because these routes legitimately declare
+    // no capability: they run before a principal exists, so there is nothing to
+    // decide against. Skipping is a declared, reviewable act — the route says
+    // @AuthSurface() — rather than an absence the interceptor infers.
+    const isAuthSurface = Boolean(
+      this.reflector.getAllAndOverride<boolean>(AUTH_SURFACE, [
+        context.getHandler(),
+        context.getClass(),
+      ]),
+    );
+    if (isAuthSurface) return firstValueFrom(next.handle() as Observable<unknown>);
+
     const capabilityId = this.reflector.getAllAndOverride<CapabilityId | undefined>(CAPABILITY, [
       context.getHandler(),
       context.getClass(),
@@ -148,8 +162,12 @@ export class AuthorizationInterceptor implements NestInterceptor {
       return { subject: 'PO', principal: null, identityId: null };
     }
     if (isIdentityOnly) {
-      const identityId = firstHeaderValue(request.headers, 'x-identity-id') ?? null;
-      return { subject: 'SA', principal: null, identityId };
+      // 003/T048. From the RESOLVED SESSION, not from a header. This was the
+      // last real read of `x-identity-id` in src/**, and it mattered more than
+      // the others: it fed the identity that `self`-scoped capabilities decide
+      // against, so a caller who could set the header could have a self-scoped
+      // decision made about somebody else.
+      return { subject: 'SA', principal: null, identityId: request.identityId ?? null };
     }
     const principal = currentPrincipal();
     return { subject: principal.archetype, principal, identityId: principal.identityId };

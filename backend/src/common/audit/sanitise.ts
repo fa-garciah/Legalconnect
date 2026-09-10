@@ -41,6 +41,27 @@ const FORBIDDEN_KEY_PARTS: ReadonlyArray<readonly [string, string]> = [
   ['otp', 'an authentication factor'],
   ['backupcode', 'an authentication factor'],
   ['backup_code', 'an authentication factor'],
+  // Slice 003. FR-014 excludes factor material from logs, error payloads, traces
+  // and the audit log alike, and FR-025 says the same for backup codes. The three
+  // below close the shapes this slice introduces that the list above would miss.
+  //
+  // `secret`, `backupcode` and `backup_code` were already here and are left as
+  // they are — 003 needed no new rule for them, which is the list working.
+  //
+  // A bare `code` key is the one worth pausing on, because it is the broadest rule
+  // in this file and the file's own MX_PHONE comment records what a too-broad rule
+  // costs here: the sanitiser REFUSES rather than strips, and refusing rolls the
+  // mutation back, so an over-broad match is a denial of service on the system's
+  // own writes rather than a harmless false positive.
+  //
+  // It earns its place anyway. In this slice's metadata a bare `code` is a TOTP
+  // code or a backup code and nothing else, and those are precisely the values
+  // that must never reach an entry. The innocent `code` keys that already exist in
+  // this codebase are plan identifiers, and they are references rather than data —
+  // which is exactly what ALLOWED_KEYS below is for.
+  ['code', 'an authentication factor'],
+  ['digest', 'a stored verification digest'],
+  ['ciphertext', 'encrypted factor material'],
   ['csd', 'invoice-signing material'],
   ['authorization', 'an authorization header'],
   ['cookie', 'a session cookie'],
@@ -65,7 +86,26 @@ const FORBIDDEN_KEY_PARTS: ReadonlyArray<readonly [string, string]> = [
  * Key names that CONTAIN a forbidden substring but are references, not data.
  * `tenantId` is fine; `clientEmail` is not.
  */
-const ALLOWED_KEYS: ReadonlySet<string> = new Set(['addresscount', 'emailsent', 'tokencount']);
+const ALLOWED_KEYS: ReadonlySet<string> = new Set([
+  'addresscount',
+  'emailsent',
+  'tokencount',
+  // Plan identifiers, admitted when 003 added a bare `code` rule above. A plan
+  // code is `esencial` / `profesional` / `premium` — a tier name from a closed
+  // enum, present in this codebase since 001 and carried by `tenant.plan_changed`.
+  // It is a reference, not data, and nothing about it is a secret.
+  //
+  // Deliberately enumerated rather than admitted by a pattern like "*plancode".
+  // A future key that genuinely holds a code must FAIL and be considered, not slip
+  // through because it happened to match a wildcard someone wrote today.
+  //
+  // Also deliberately NOT admitted: `postalcode`, which the new rule now catches.
+  // That is correct rather than collateral — a postal code is end-client personal
+  // data, and Principle VI keeps it out of application logs regardless of which
+  // rule happens to catch it.
+  'plancode',
+  'previousplancode',
+]);
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const JWT = /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/;

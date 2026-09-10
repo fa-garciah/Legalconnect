@@ -9,6 +9,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -22,6 +23,16 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+
+/**
+ * `bytea`. Drizzle's pg-core ships no built-in for it, and slice 003 needs one for
+ * the envelope-encrypted TOTP secret — which must be bytes rather than text,
+ * because base64-ing ciphertext into a text column would make it eyeballable in a
+ * dump and invite someone to log it as a string.
+ */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => 'bytea',
+});
 
 export const planCode = pgEnum('plan_code', ['esencial', 'profesional', 'premium']);
 export const tenantStatus = pgEnum('tenant_status', ['active', 'deactivated']);
@@ -116,13 +127,28 @@ export const auditEvent = pgTable(
  * SELECT restricted to its own row — so nothing above this schema can insert or
  * update through it; only `accept_invitation()` (0015) can.
  */
-export const identity = pgTable('identity', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  subject: text('subject').notNull().unique(),
-  email: text('email').notNull(),
-  mfaEnrolledAt: timestamp('mfa_enrolled_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const identity = pgTable(
+  'identity',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    subject: text('subject').notNull().unique(),
+    email: text('email').notNull(),
+    mfaEnrolledAt: timestamp('mfa_enrolled_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // 003/D9, migration 0035. Sign-in resolves an identity by email, so the email
+    // must identify at most one row — the column has carried no uniqueness
+    // constraint since 0012, which was survivable only while an external user pool
+    // enforced it and nothing here resolved a person by email. Both halves of that
+    // changed with the v1.5.0 amendment.
+    //
+    // An EXPRESSION index rather than a normalized stored column: the raw address
+    // is what invitation email is addressed to, and storing only the normalized
+    // form would quietly rewrite people's addresses.
+    uniqueIndex('identity_email_normalized_unique').on(sql`lower(btrim(${t.email}))`),
+  ],
+);
 
 /**
  * Membership: the access one identity holds within one tenant. Named at slice
@@ -499,6 +525,138 @@ export const document = pgTable(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// 003-authentication-mfa. Five tables, none carrying tenant_id.
+// ---------------------------------------------------------------------------
+//
+// THE TYPED VIEW BELOW GRANTS NOTHING. Reachability is decided by the GRANTS in
+// migrations 0031-0034, and lc_app holds no privilege at all on the first three
+// of these. A Drizzle table object compiles fine and the query it builds is
+// refused by PostgreSQL with `permission denied` — which is the intended and
+// tested behaviour (auth-grants-lockdown.test.ts), not a bug to work around by
+// widening a grant.
+//
+// Only backend/src/modules/auth/ holds the lc_auth connection that can reach them.
+
+/**
+ * identity_credential: the verification material for FR-001. One row per identity.
+ * Argon2id PHC string, interactive profile — computed in the application, because
+ * digests are salted and no comparable candidate can be derived without the stored
+ * string (003/D6, and the reason lc_auth is a LOGIN role at all).
+ */
+export const identityCredential = pgTable('identity_credential', {
+  identityId: uuid('identity_id')
+    .primaryKey()
+    .references(() => identity.id, { onDelete: 'cascade' }),
+  digest: text('digest').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * identity_factor: the TOTP secret and the lockout state.
+ *
+ * The secret CANNOT BE HASHED — it must be readable on every verification, which
+ * makes it the most sensitive recoverable material in this database. Hence
+ * ciphertext plus a key reference, wrapped under a key the application holds and
+ * the database does not (FR-013), so a dump yields no working factor.
+ *
+ * `confirmed_at` is the enrollment state; `identity.mfaEnrolledAt` is 002/FR-026's
+ * already-shipped interface to the same fact, and the two must not diverge.
+ */
+export const identityFactor = pgTable('identity_factor', {
+  identityId: uuid('identity_id')
+    .primaryKey()
+    .references(() => identity.id, { onDelete: 'cascade' }),
+  secretCiphertext: bytea('secret_ciphertext').notNull(),
+  keyReference: text('key_reference').notNull(),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+  failedAttemptCount: integer('failed_attempt_count').notNull().default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  /** FR-020's replay guard. An addition to data-model.md — see migration 0032. */
+  recentCodeDigests: jsonb('recent_code_digests').notNull().default(sql`'[]'::jsonb`),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * backup_code: ten rows per identity per issued set (FR-031). No time-based
+ * expiry — a code stops being valid only by consumption or by its set being
+ * replaced (SC-031). Stored as high-entropy-profile Argon2id digests, and read
+ * back by nobody: FR-029 forbids ANY archetype reading any code, including its
+ * owner after issuance and including PO and SA.
+ */
+export const backupCode = pgTable(
+  'backup_code',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    identityId: uuid('identity_id')
+      .notNull()
+      .references(() => identity.id, { onDelete: 'cascade' }),
+    setId: uuid('set_id').notNull(),
+    digest: text('digest').notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('backup_code_unconsumed_idx')
+      .on(t.identityId, t.setId)
+      .where(sql`${t.consumedAt} IS NULL`),
+  ],
+);
+
+/**
+ * session: the access emitted on successful authentication.
+ *
+ * CARRIES NO TENANT AND NO ARCHETYPE (FR-037). Both are resolved per request from
+ * `membership`, and nothing here is ever trusted as their source (002/FR-016) —
+ * which is what keeps the identity layer replaceable and why this slice touches no
+ * shipped authorization code. Stored as a digest of an opaque token (003/D2).
+ */
+export const session = pgTable(
+  'session',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    identityId: uuid('identity_id')
+      .notNull()
+      .references(() => identity.id, { onDelete: 'cascade' }),
+    accessDigest: text('access_digest').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    deviceMetadata: jsonb('device_metadata').notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('session_identity_live_idx')
+      .on(t.identityId)
+      .where(sql`${t.revokedAt} IS NULL`),
+  ],
+);
+
+/**
+ * refresh_token: rotated on every use; detected reuse revokes the entire family
+ * and its sessions (FR-036). Persisted server-side and individually revocable,
+ * which is what the constitution's prohibition on stateless JWT requires and what
+ * makes US09/US10's session inventory buildable in 005.
+ */
+export const refreshToken = pgTable(
+  'refresh_token',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id').notNull(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => session.id, { onDelete: 'cascade' }),
+    tokenDigest: text('token_digest').notNull().unique(),
+    /** Self-reference; typed loosely because Drizzle cannot express it inline. */
+    parentId: uuid('parent_id'),
+    /** Non-null and presented again IS the reuse signal. */
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    deviceMetadata: jsonb('device_metadata').notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('refresh_token_family_idx').on(t.familyId)],
+);
+
 export type Tenant = typeof tenant.$inferSelect;
 export type Plan = typeof plan.$inferSelect;
 export type Identity = typeof identity.$inferSelect;
@@ -515,3 +673,8 @@ export type Position = typeof position.$inferSelect;
 export type DirectoryEntry = typeof directoryEntry.$inferSelect;
 export type DocumentCategory = typeof documentCategory.$inferSelect;
 export type Document = typeof document.$inferSelect;
+export type IdentityCredential = typeof identityCredential.$inferSelect;
+export type IdentityFactor = typeof identityFactor.$inferSelect;
+export type BackupCode = typeof backupCode.$inferSelect;
+export type Session = typeof session.$inferSelect;
+export type RefreshToken = typeof refreshToken.$inferSelect;

@@ -15,6 +15,23 @@
 import { SetMetadata } from '@nestjs/common';
 
 /** Marks an endpoint as not tenant-scoped — the platform administration surface. */
+/**
+ * 003/FR-040. Marks the authentication surface: routes reached BEFORE an
+ * authenticated, membership-resolved principal exists, because producing one is
+ * what they do.
+ *
+ * Two interceptors and one guard read it, and each skips for its own reason:
+ *   SessionGuard             — requiring a session to create a session is circular.
+ *   AuthorizationInterceptor — there is no archetype to check a capability
+ *                              against, no tenant to scope to, no plan to consult.
+ *
+ * contracts/README.md states this positively so a reviewer or an audit does not
+ * file an ungated authentication route as a missing-authorization defect. The gate
+ * these routes carry is STATE, not capability: a challenge answer with no pending
+ * challenge is refused, and so is enrollment for an already-enrolled identity.
+ */
+export const AUTH_SURFACE = 'authSurface';
+
 export const PLATFORM_SURFACE = 'platformSurface';
 export const PlatformSurface = () => SetMetadata(PLATFORM_SURFACE, true);
 

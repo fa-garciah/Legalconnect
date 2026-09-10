@@ -1,0 +1,1705 @@
+{
+  "workflow": "speckit",
+  "specName": "Authentication & Multi-Factor Enrollment",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-08T16:28:05.449Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-09T15:26:47.456Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-10T00:55:32.628Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-10T02:12:03.014Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:13:40.091Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:15:16.236Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:16:01.888Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:16:41.810Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:19:17.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:20:16.871Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:20:17.214Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:34:05.594Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:36:25.062Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:36:25.389Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:35.584Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:35.889Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:36.199Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:42:36.529Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:03.868Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:04.281Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:04.647Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:05.063Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:43.807Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.129Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.445Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.762Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.087Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.433Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.787Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:46.112Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:46.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:32:57.176Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:32:57.521Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:32:57.864Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:32:58.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:35.366Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:35.818Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:36.218Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:36.638Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:37.103Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:37.559Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:31.301Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:31.675Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:32.175Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:32.593Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:15.972Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:16.405Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:16.783Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:17.138Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.142Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.553Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.918Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:33.459Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:33.957Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:34.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:06.744Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.054Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.384Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T062",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:07.680Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T063",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:03:08.004Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:11:02.326Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:11:02.716Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T058",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:11:03.053Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T059",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:11:03.420Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T060",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:11:03.755Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T065",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:44.504Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T066",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:44.819Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T067",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.118Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T069",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.501Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T070",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.850Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T071",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:46.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T078",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:46.540Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T074",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.175Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T079",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.522Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T080",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:23.874Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T082",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.219Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T087",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.536Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T088",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:24.881Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T089",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:42:25.233Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T072",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:43.575Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T081",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:44.314Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T090",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:46:44.962Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T097",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:52:59.470Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T100",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:53:35.332Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T099",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:53:35.642Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T068",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:00.731Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T077",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:01.066Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T086",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:01.395Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T075",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:54.417Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T083",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:54.768Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T084",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:55.102Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T092",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:55.467Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T093",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:38.382Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T094",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:38.694Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T096",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.002Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T098",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T101",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.691Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T076",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:41:11.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T085",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:45:01.612Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T061",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:45:02.127Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T073",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:51.964Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T091",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:52.298Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T095",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:52.714Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:31:28.880Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T064",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:31:29.235Z"
+    }
+  ],
+  "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
+  "currentTask": "T064",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Created the five new directories per plan.md Structure Decision",
+      "files": [
+        "backend/src/common/auth",
+        "backend/src/modules/auth",
+        "backend/tests/integration/concurrency",
+        "frontend/src/app/(auth)",
+        "frontend/tests/component/auth"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Added otplib@13.5.0, @node-rs/argon2@2.2.0, @aws-sdk/client-kms@3.1129.0 pinned exactly (no caret) per Principle II blast radius",
+      "files": [
+        "backend/package.json",
+        "backend/package-lock.json"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added next-auth@5.0.0-beta.32 pinned exactly; input-otp already present from 016a so no new UI package",
+      "files": [
+        "frontend/package.json",
+        "frontend/package-lock.json"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Updated BASELINE_DEPENDENCIES with the three 003 additions and documented why they are pinned exactly; test passes",
+      "files": [
+        "backend/tests/integration/no-new-dependency.test.ts"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Added the Slice 003 env block (DATABASE_URL_AUTH + 6 auth parameters) to .env.example, each commented as a parameter not a switch; mirrored into local .env and the CI env block so check:env passes on both sides",
+      "files": [
+        "backend/.env.example",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Created frontend/.env.example with NEXTAUTH_URL, NEXTAUTH_SECRET and NEXT_PUBLIC_API_BASE_URL; API base matches 018's existing localhost:3001 default",
+      "files": [
+        "frontend/.env.example"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Extended the Role union and ENV_BY_ROLE with auth -> DATABASE_URL_AUTH so lockdown tests connect as the real lc_auth role",
+      "files": [
+        "backend/tests/helpers/db.ts"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Created the lc_auth LOGIN role, its audit_event INSERT policy restricted to the twelve actions with tenant_id IS NULL, and narrowed lc_app's audit_event_own_tenant to exclude all sixteen; registered LC_AUTH_PASSWORD in migrate.ts. Applied and verified against the live database.",
+      "files": [
+        "backend/drizzle/0030_lc_auth_role.sql",
+        "backend/drizzle/migrate.ts"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Created identity_credential with zero lc_app grants, INSERT for lc_identity_writer, SELECT + column-scoped UPDATE(digest,updated_at) for lc_auth. Applied and verified.",
+      "files": [
+        "backend/drizzle/0031_identity_credential.sql"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Created identity_factor (secret_ciphertext, key_reference, confirmed_at, lockout counters) with zero lc_app grants, plus claim_attempt() SECURITY DEFINER owned by lc_auth applying the FR-020 replay guard across the full 90s window, FR-021 counter and 15-minute lockout in one FOR UPDATE step. PUBLIC execute revoked. Applied and verified.",
+      "files": [
+        "backend/drizzle/0032_identity_factor.sql"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Created backup_code with set_id grouping, partial index on unconsumed rows, zero lc_app grants, and consume_backup_code() SECURITY DEFINER owned by lc_auth resolving the last-code race under FOR UPDATE",
+      "files": [
+        "backend/drizzle/0033_backup_code.sql"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Created session and refresh_token with family lineage, plus resolve_session() (the one function lc_app may EXECUTE) and rotate_refresh() revoking the whole family on detected reuse under FOR UPDATE",
+      "files": [
+        "backend/drizzle/0034_session_and_refresh.sql"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Added the unique index on lower(btrim(email)) preceded in the same file by a guard that raises with the duplicate count and addresses; guard verified firing against real duplicates",
+      "files": [
+        "backend/drizzle/0035_identity_email_unique.sql"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Ran the duplicate pre-flight against the only existing environment (local dev): found 7 duplicate groups, all test residue from repeated 002 suite runs. Remediated by volume reset; all 36 migrations then applied clean from scratch",
+      "files": [
+        "backend/drizzle/0035_identity_email_unique.sql"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Extended the Drizzle schema with the five new tables, a customType bytea for the envelope-encrypted secret, and the identity email expression index",
+      "files": [
+        "backend/src/common/db/schema.ts"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Added the twelve audit actions and their TARGET_ENTITY_BY_ACTION entries, none channel-gated; also added migration 0036 extending the audit_event_action_known CHECK constraint, which T008 had missed",
+      "files": [
+        "backend/src/common/audit/actions.ts",
+        "backend/drizzle/0036_auth_audit_actions.sql"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Extended the sanitiser deny-list with code, digest and ciphertext (secret and backup_code were already present) and allowlisted plancode/previousplancode as references rather than data",
+      "files": [
+        "backend/src/common/audit/sanitise.ts"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Recorded the five new tables as deliberately unregistered, in the comment shape identity already uses, explaining that they are protected by grants rather than policies",
+      "files": [
+        "backend/src/common/db/tenant-scoped-tables.ts"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Unit test for the two Argon2id profiles: distinct, interactive meets OWASP floors, both argon2id, digests self-describe their profile, salting verified",
+      "files": [
+        "backend/tests/unit/argon2-profiles.test.ts"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Unit test for the TOTP window: three steps in accepted, every step outside refused, and an explicit test documenting that single-use CANNOT live in the verifier",
+      "files": [
+        "backend/tests/unit/totp-window.test.ts"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Unit test for KeyProvider: round-trip, ciphertext never contains plaintext, non-deterministic wrap, cross-key rejected, unavailable key THROWS, tampering rejected, short key refused",
+      "files": [
+        "backend/tests/unit/key-provider.test.ts"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Unit test for backup code generation: exactly 10, 130 bits each, no collisions within or across sets, ambiguous characters excluded, zero count refused",
+      "files": [
+        "backend/tests/unit/backup-code-generation.test.ts"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Implemented the two Argon2id profiles; neither hasher takes an options argument, which is what makes the profiles unreachable from each other's path",
+      "files": [
+        "backend/src/common/auth/argon2.ts"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Implemented the otplib wrapper with 30s step and 90s window; epochTolerance is in SECONDS not steps, which the outside-window test exists to catch",
+      "files": [
+        "backend/src/common/auth/totp.ts"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Implemented the KeyProvider port with LocalKeyProvider (AES-256-GCM) and KmsKeyProvider; unwrap throws rather than returning falsy",
+      "files": [
+        "backend/src/common/auth/key-provider.ts"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "Added assertKeyProviderIsSafe, called from main.ts beside assertApplicationRoleIsSafe: refuses to boot when a deployed environment resolves the local key provider. No override flag",
+      "files": [
+        "backend/src/common/auth/deployment-assertions.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Implemented backup code generation and verifyAgainstSet with a fixed comparison count and no early exit, so the matched code's position is not observable",
+      "files": [
+        "backend/src/modules/auth/backup-codes.ts"
+      ]
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "Integration test for session resolution: live resolves, expired/revoked/unknown all return null indistinguishably, plaintext token never in either table, lc_app denied SELECT but able to EXECUTE resolve_session",
+      "files": [
+        "backend/tests/integration/session-resolution.test.ts"
+      ]
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "Implemented the opaque-token session port (mint, resolve, rotate, revoke) plus the lc_auth Drizzle client; SHA-256 rather than Argon2id because a 256-bit random token has no guessable structure and resolution runs on every request",
+      "files": [
+        "backend/src/common/auth/session.port.ts",
+        "backend/src/common/auth/auth-db.ts"
+      ]
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "Implemented SessionGuard - deliberately a Guard, the one place that is right, because Guards run before Interceptors and everything else needs the identity it establishes. Resolves through resolve_session on the lc_app connection, which is why that grant exists",
+      "files": [
+        "backend/src/common/auth/session.guard.ts"
+      ]
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "Implemented the per-instance origin throttle, documented in-file as best-effort and NOT authoritative; the per-identity lockout in claim_attempt is the security control",
+      "files": [
+        "backend/src/common/auth/origin-throttle.ts"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Replaced accept_invitation with the five-argument version as migration 0037 (not 0036 - taken), establishing identity_credential inside the existing transaction. Find-or-create re-keyed from subject to normalized email, which D9 forces",
+      "files": [
+        "backend/drizzle/0037_accept_invitation_v2.sql"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "Identity context now takes the identity from the resolved session rather than x-identity-id",
+      "files": [
+        "backend/src/common/identity/context.ts"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "Tenant middleware takes the identity from the session while KEEPING x-tenant-id, which was never an identity claim - it names which membership to activate",
+      "files": [
+        "backend/src/common/tenant/middleware.ts"
+      ]
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "Acceptance service generates the opaque subject in the product and passes the Argon2id digest as the fifth argument; email and credential moved from headers to the request body",
+      "files": [
+        "backend/src/modules/identity/accept-invitation.service.ts",
+        "backend/src/modules/identity/accept-invitation.controller.ts"
+      ]
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "Ran verify:role (4/4) and test:rls (31/31) - both pass unchanged with all five new tables present",
+      "files": [
+        "backend/drizzle"
+      ]
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Ran test:isolation - 001's suite passes unchanged, 12 files / 70 tests. Authentication precedes tenant selection and did not touch it",
+      "files": [
+        "backend/tests/integration/isolation"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "THE HARD GATE: as the real lc_app role, SELECT/INSERT/UPDATE/DELETE on all five tables is permission denied - not empty; EXECUTE permitted on resolve_session and on nothing else; zero column-level privileges; lc_auth owns nothing; lc_platform and lc_retention reach no material",
+      "files": [
+        "backend/tests/integration/auth-grants-lockdown.test.ts"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "The D3 regression test: an identity reading its own row through identity_self_row obtains no material, and cannot reach it by join, subquery or EXISTS. Asserts over the actual column list so a future migration adding identity.totp_secret fails here",
+      "files": [
+        "backend/tests/integration/identity-self-row-no-material.test.ts"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "Acceptance creates identity, membership and credential atomically; a refusal leaves none of the three; a second membership does NOT replace an existing credential; 002's six refusal branches still collapse identically",
+      "files": [
+        "backend/tests/integration/credential-at-acceptance.test.ts"
+      ]
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "Both halves of the audit narrowing: lc_auth can insert all twelve with tenant_id NULL and nothing else, lc_app can insert none of them but still writes its own domain actions, and mfa_not_enrolled is absent from the vocabulary entirely",
+      "files": [
+        "backend/tests/integration/auth-audit-actions.test.ts"
+      ]
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): 100% of sign-ins demand a second factor across all six archetypes, 0 complete on a credential alone, 0 sessions before both steps, unenrolled routed to enrollment reaching 0 tenant-scoped resources, challenge token single-use and opaque",
+      "files": [
+        "backend/tests/integration/mfa-enforcement.test.ts"
+      ]
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "Implemented the credential and challenge steps with a single refuse() exit, a dummy Argon2id verification so an unknown email costs the same as a known one, peek-then-consume so a wrong code spends an attempt without burning the challenge, and audit writes for all four actions",
+      "files": [
+        "backend/src/modules/auth/sign-in.service.ts"
+      ]
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/sign-in, /auth/factor and /auth/refresh, each carrying @AuthSurface() and @IdentitySurface() so the ungated status is declared where a reviewer reads it",
+      "files": [
+        "backend/src/modules/auth/sign-in.controller.ts"
+      ]
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "Wired AuthModule and registered SessionGuard as the one APP_GUARD; taught 004's AuthorizationInterceptor to skip the declared authentication surface",
+      "files": [
+        "backend/src/modules/auth/auth.module.ts",
+        "backend/src/app.module.ts",
+        "backend/src/common/authz/interceptor.ts"
+      ]
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "Contract test for POST /auth/sign-in: next=factor with no session, next=enrollment for unenrolled, and the 401 body BYTE-IDENTICAL across unknown email, wrong credential and locked identity; a fresh sign-in supersedes the prior challenge",
+      "files": [
+        "backend/tests/contract/sign-in.test.ts"
+      ]
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "Rotation and family revocation: reuse revokes the whole family and its sessions, the revocation is not announced, a live access token dies immediately, two simultaneous presentations do not both succeed, and one family's death does not touch another",
+      "files": [
+        "backend/tests/integration/session-rotation-family.test.ts"
+      ]
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "Lockout: 4 failures then success resets the counter, the 5th locks, a VALID code is refused during the lockout indistinguishably, the credential step is locked too, the lockout lifts on its own, and one identity locking does not affect another",
+      "files": [
+        "backend/tests/integration/lockout.test.ts"
+      ]
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "Contract test for POST /auth/factor: exactly one session with a 15-minute expiry, response keys are exactly accessToken/refreshToken/expiresAt with no tenant and no archetype, the token actually authenticates, uniform 401 across wrong code / unknown token / replay, and neither token in the database in plaintext",
+      "files": [
+        "backend/tests/contract/factor.test.ts"
+      ]
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "Replay under concurrency: two simultaneous challenges with one valid code yield exactly one success and one session; a used code is refused anywhere in the window; the replay counts as a failed attempt; a different neighbouring-step code still works so the guard is not a blanket; the store holds digests",
+      "files": [
+        "backend/tests/integration/concurrency/challenge-replay.test.ts"
+      ]
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "Key unavailable fails closed: a VALID code is refused when the key is gone, the refusal is byte-identical to a wrong code, nothing leaks about keys or encryption, the failure counts toward the lockout, and restoring the key restores sign-in",
+      "files": [
+        "backend/tests/integration/key-unavailable-fails-closed.test.ts"
+      ]
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "The three stand-in headers are gone: 0 src/** files read them (comments stripped so an explanation is not a violation), presenting them buys nothing on tenant-scoped, identity-only or acceptance routes, x-tenant-id STILL works with a real session, and a session cannot be redirected by a header naming another identity",
+      "files": [
+        "backend/tests/integration/stand-ins-removed.test.ts",
+        "backend/src/common/authz/interceptor.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "Rewrote the principal unit test for a real session read: the SHAPE is unchanged, the token is presented as a bearer credential, the read is never cached, and an unauthenticated visitor gets an empty principal rather than a throw",
+      "files": [
+        "frontend/tests/unit/principal.test.ts"
+      ]
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "Replaced principal.ts with a real session read and DELETED principal.fixture.json. types.ts untouched. Memberships come from 002's route because the session carries no tenant and no archetype (FR-037)",
+      "files": [
+        "frontend/src/session/principal.ts",
+        "frontend/src/session/session-store.ts"
+      ]
+    },
+    "T062": {
+      "status": "DONE",
+      "did": "Ran every suite standing on getPrincipal() unchanged: 33 files / 349 tests green across 016a, 018, 019, api-client and the Spanish-copy suites. The seam held - no consumer needed amending",
+      "files": [
+        "frontend/tests"
+      ]
+    },
+    "T063": {
+      "status": "DONE",
+      "did": "Confirmed git diff over frontend/src/shell, frontend/src/feedback and frontend/src/authz is EMPTY - 016a's module contract survives (FR-048, SC-025)",
+      "files": [
+        "frontend/src"
+      ]
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "Component tests for both screens: Spanish copy, NO trusted-device control asserted by several names in both languages, one uniform refusal that leaks no cause, nothing written to browser storage, and keyboard reachability",
+      "files": [
+        "frontend/tests/component/auth/SignIn.test.tsx",
+        "frontend/tests/component/auth/Challenge.test.tsx"
+      ]
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "Implemented the NextAuth v5 Credentials provider whose authorize() calls the API and verifies nothing; no adapter, no session strategy beyond the cookie, and the session callback exposes no token to the client",
+      "files": [
+        "frontend/src/auth.ts",
+        "frontend/src/app/api/auth/[...nextauth]/route.ts"
+      ]
+    },
+    "T058": {
+      "status": "DONE",
+      "did": "Implemented the middleware: unauthenticated visitors to private routes go to /ingresar carrying their destination, signed-in visitors on the auth screens go onward, and it forwards x-pathname so the root layout can decide about the shell. Documented in-file as convenience, NOT enforcement",
+      "files": [
+        "frontend/src/middleware.ts"
+      ]
+    },
+    "T059": {
+      "status": "DONE",
+      "did": "Implemented the sign-in screen in the (auth) route group, outside the shell chrome, with one refusal message whatever the cause and no remember-me control",
+      "files": [
+        "frontend/src/app/(auth)/ingresar/page.tsx",
+        "frontend/src/app/(auth)/ingresar/SignInForm.tsx",
+        "frontend/src/app/(auth)/AuthCard.tsx"
+      ]
+    },
+    "T060": {
+      "status": "DONE",
+      "did": "Implemented the challenge screen over 016a's existing input-otp component, with no trusted-device control of any kind and a route to the backup-code path",
+      "files": [
+        "frontend/src/app/(auth)/verificar/page.tsx",
+        "frontend/src/app/(auth)/verificar/ChallengeForm.tsx"
+      ]
+    },
+    "T065": {
+      "status": "DONE",
+      "did": "Contract test for enrollment begin/confirm: the secret is returned exactly once with no session, an unconfirmed row satisfies no challenge, beginning again discards the prior secret, confirmed_at and mfa_enrolled_at are set together, and an enrolled identity is refused",
+      "files": [
+        "backend/tests/contract/enrollment.test.ts"
+      ]
+    },
+    "T066": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): an INSPECTION test, exhaustive over every key in .env.example and every entitlement in the registry, asserting none is consulted on the enforcement path; plus a codebase-wide scan for any identifier naming such a switch",
+      "files": [
+        "backend/tests/integration/mfa-no-disable-path.test.ts"
+      ]
+    },
+    "T067": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): a dump restored without the key yields 0 working factors (the exact scenario Technical Debt item 11 names), the secret is in no audit entry while the events themselves ARE recorded, and an authenticator app is the only enrollable type",
+      "files": [
+        "backend/tests/integration/totp-secret-custody.test.ts"
+      ]
+    },
+    "T069": {
+      "status": "DONE",
+      "did": "Implemented secret generation, envelope encryption and storage with confirmed_at NULL; beginning again replaces the prior unconfirmed row wholesale",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
+    },
+    "T070": {
+      "status": "DONE",
+      "did": "Implemented confirmation setting identity_factor.confirmed_at and identity.mfa_enrolled_at in ONE transaction, since the second is 002/FR-026's shipped interface to the first and they must not diverge",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
+    },
+    "T071": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/enrollment/begin and /confirm, reachable only past the credential step with no confirmed factor - the gate is state, not capability",
+      "files": [
+        "backend/src/modules/auth/enrollment.controller.ts"
+      ]
+    },
+    "T078": {
+      "status": "DONE",
+      "did": "Issued exactly 10 codes inside the SAME transaction as confirmation, stored only as high-entropy-profile Argon2id digests, audited as backup_codes.issued",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
+    },
+    "T074": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): exactly 10 codes issued once, all stored as irreversible Argon2id digests verified to actually be of those codes, consuming 1 invalidates exactly 1, a consumed code is refused identically to one that never existed, one identity cannot consume another's, no surface returns the set again, and a year's age leaves all 10 valid",
+      "files": [
+        "backend/tests/integration/backup-codes.test.ts"
+      ]
+    },
+    "T079": {
+      "status": "DONE",
+      "did": "Implemented consumption with the fixed comparison count and FOR UPDATE, auditing backup_code.consumed and backup_codes.exhausted as DISTINCT events",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T080": {
+      "status": "DONE",
+      "did": "A backup code is accepted at the challenge step in place of a generated one, counting toward FR-021's counter so recovery is not an unthrottled bypass",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T082": {
+      "status": "DONE",
+      "did": "Contract test for recovery: a satisfied challenge emits NO session, remainingCodes only after success, the consumed code cannot be reused, re-enrollment returns a complete new set of 10 plus a session, the previous factor is dead, and abandoning leaves no access",
+      "files": [
+        "backend/tests/contract/recovery.test.ts"
+      ]
+    },
+    "T087": {
+      "status": "DONE",
+      "did": "Implemented the backup-code challenge emitting an enrollmentToken and no session, auditing consumption",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts"
+      ]
+    },
+    "T088": {
+      "status": "DONE",
+      "did": "Implemented forced re-enrollment REUSING the T069/T070 mechanism rather than duplicating it: prepareReenrollment retires the factor, drops the code set and revokes every live session, then EnrollmentService.confirm runs unchanged",
+      "files": [
+        "backend/src/modules/auth/recovery.service.ts",
+        "backend/src/modules/auth/recovery.controller.ts"
+      ]
+    },
+    "T089": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/recovery/backup-code and /reenroll, the latter reachable only immediately after a satisfied recovery",
+      "files": [
+        "backend/src/modules/auth/recovery.controller.ts"
+      ]
+    },
+    "T072": {
+      "status": "DONE",
+      "did": "Implemented the enrollment screen: a three-stage flow (begin, register with QR URI plus manual key, confirm), nothing persisted to browser storage",
+      "files": [
+        "frontend/src/app/(auth)/enrolar/page.tsx",
+        "frontend/src/app/(auth)/enrolar/EnrollmentFlow.tsx"
+      ]
+    },
+    "T081": {
+      "status": "DONE",
+      "did": "Implemented the one-time code presentation with an acknowledgement gate and NO re-display path anywhere in the client - there is no route that returns them, so a view-codes affordance would be a button that cannot work",
+      "files": [
+        "frontend/src/app/(auth)/enrolar/EnrollmentFlow.tsx"
+      ]
+    },
+    "T090": {
+      "status": "DONE",
+      "did": "Implemented the recovery screen, reached from the challenge screen carrying the challenge token, handing straight to re-enrollment because success emits no session",
+      "files": [
+        "frontend/src/app/(auth)/recuperar/page.tsx",
+        "frontend/src/app/(auth)/recuperar/RecoveryForm.tsx"
+      ]
+    },
+    "T097": {
+      "status": "DONE",
+      "did": "Wired the four blocking suites into CI as their own step on the same footing as tenant isolation, added test:auth-coverage to package.json, AND added the frontend job the repository never had plus a dependency-scan matrix covering both projects",
+      "files": [
+        ".github/workflows/ci.yml",
+        "backend/package.json"
+      ]
+    },
+    "T100": {
+      "status": "DONE",
+      "did": "Added the KMS key, alias, narrow use-policy and output for the production KeyProvider under infra/, with rotation enabled (a re-wrap, not a re-enrollment) and a 30-day deletion window; grants exclude ScheduleKeyDeletion so a compromised task role cannot destroy every second factor",
+      "files": [
+        "infra/main.tf"
+      ]
+    },
+    "T099": {
+      "status": "DONE",
+      "did": "Ran typecheck and lint in both projects and check:env in backend - all clean",
+      "files": [
+        "backend",
+        "frontend"
+      ]
+    },
+    "T068": {
+      "status": "DONE",
+      "did": "Component test for the enrollment screen: both the QR payload AND a manual key, Spanish copy, uniform refusal, and nothing written to browser storage",
+      "files": [
+        "frontend/tests/component/auth/Enrollment.test.tsx"
+      ]
+    },
+    "T077": {
+      "status": "DONE",
+      "did": "Component test for the one-time code display: ten codes shown once, an acknowledgement gate before proceeding, no control offering re-display, and nothing persisted",
+      "files": [
+        "frontend/tests/component/auth/Enrollment.test.tsx"
+      ]
+    },
+    "T086": {
+      "status": "DONE",
+      "did": "Component test for the recovery screen: reached from the challenge with its token, hands to RE-ENROLLMENT and never to the dashboard, uniform refusal, nothing persisted",
+      "files": [
+        "frontend/tests/component/auth/Recovery.test.tsx"
+      ]
+    },
+    "T075": {
+      "status": "DONE",
+      "did": "Enrollment atomicity: a completed enrollment has both a confirmed factor and ten codes, a failed one leaves NEITHER, and the forbidden state does not arise across many real enrollments",
+      "files": [
+        "backend/tests/integration/enrollment-atomic-with-codes.test.ts"
+      ]
+    },
+    "T083": {
+      "status": "DONE",
+      "did": "Two, then ten, concurrent consumptions of the LAST unconsumed code across independent connections yield exactly one success and exactly one recorded consumption",
+      "files": [
+        "backend/tests/integration/concurrency/last-backup-code.test.ts"
+      ]
+    },
+    "T084": {
+      "status": "DONE",
+      "did": "Timing: a match early in the set and one late are indistinguishable, a miss takes the same time as a match, and work scales with candidate count rather than match position - with a positive control so the measurement is not vacuous",
+      "files": [
+        "backend/tests/integration/backup-code-timing.test.ts"
+      ]
+    },
+    "T092": {
+      "status": "DONE",
+      "did": "Audit completeness: exactly one entry per event with no duplication (the lockout case in particular), 0 entries carrying an email or factor material, every entry tenant_id NULL, and every product-written entry naming its identity",
+      "files": [
+        "backend/tests/integration/auth-audit-completeness.test.ts"
+      ]
+    },
+    "T093": {
+      "status": "DONE",
+      "did": "Asserted mfa_not_enrolled stays position 1 of REFUSAL_ORDER and stays UNAUDITED - absent from the vocabulary, absent under near-miss spellings, and not written by any file that also writes audit rows",
+      "files": [
+        "backend/tests/unit/refusal-ordering.test.ts"
+      ]
+    },
+    "T094": {
+      "status": "DONE",
+      "did": "Spanish-copy sweep over the four new screens, including accessible names since an aria-label is easy to leave in English because nobody sees it",
+      "files": [
+        "frontend/tests/component/auth/spanish-copy-auth.test.tsx"
+      ]
+    },
+    "T096": {
+      "status": "DONE",
+      "did": "Ran the four blocking suites INDIVIDUALLY as SC-029 requires: mfa-enforcement 9, mfa-no-disable-path 6, backup-codes 10, totp-secret-custody 7",
+      "files": [
+        "backend/tests/integration"
+      ]
+    },
+    "T098": {
+      "status": "DONE",
+      "did": "Wrote quickstart-results.md recording all eight scenarios with an honest Means column, the two untestable Definition-of-Done items, and five stated gaps",
+      "files": [
+        "specs/003-authentication-mfa/quickstart-results.md"
+      ]
+    },
+    "T101": {
+      "status": "DONE",
+      "did": "Confirmed both untestable items: constitution v1.5.0 is committed and pushed but NOT MERGED (so 003 cannot merge), and the T015 pre-flight ran in the only environment that exists - there is no staging or production because the AWS account is blocked",
+      "files": [
+        "specs/003-authentication-mfa/quickstart-results.md"
+      ]
+    },
+    "T076": {
+      "status": "DONE",
+      "did": "0 routes return the codes, asserted by ROUTE-TABLE INSPECTION with a non-vacuity guard; also no GET route exists anywhere under /auth, and no auth service selects a digest except into verifyAgainstSet. Found that two earlier suites were passing VACUOUSLY because Express 5 renamed _router to router",
+      "files": [
+        "backend/tests/integration/backup-codes-unreadable.test.ts",
+        "backend/tests/helpers/routes.ts"
+      ]
+    },
+    "T085": {
+      "status": "DONE",
+      "did": "Forced re-enrollment: recovery requires 0 step-up checks (it could not, since a person without their authenticator cannot satisfy one), standalone re-issuance is reachable from 0 surfaces, the previous factor dies the instant a code is spent, abandoning leaves nothing, and an exhausted identity is refused with NO alternative offered",
+      "files": [
+        "backend/tests/integration/recovery-reenrollment.test.ts"
+      ]
+    },
+    "T061": {
+      "status": "DONE",
+      "did": "E2E spec for a full sign-in at both viewports, the SECOND sign-in challenged in full from the same browser (SC-027), no trusted-device control, and nothing in browser storage. RFC 6238 derived inline from node:crypto rather than adding otplib to the frontend",
+      "files": [
+        "frontend/tests/e2e/auth-sign-in.spec.ts"
+      ]
+    },
+    "T073": {
+      "status": "DONE",
+      "did": "E2E for the walk-through that did not exist before this slice: refused before, admitted after, with NOTHING else changed - the transition three merged slices were waiting on",
+      "files": [
+        "frontend/tests/e2e/auth-enrollment.spec.ts"
+      ]
+    },
+    "T091": {
+      "status": "DONE",
+      "did": "E2E for full recovery: a code buys re-enrollment and NO session, a complete new set of ten arrives, and the spent code is invalid afterwards. Serial mode, because the first test spends the input the second proves is spent",
+      "files": [
+        "frontend/tests/e2e/auth-recovery.spec.ts"
+      ]
+    },
+    "T095": {
+      "status": "DONE",
+      "did": "E2E for browser storage after all four flows, including after a RELOAD and after a REFUSED sign-in, and covering IndexedDB which the component tests cannot see",
+      "files": [
+        "frontend/tests/e2e/auth-no-browser-storage.spec.ts"
+      ]
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "Confined the header stand-ins to tests/helpers/real-app.ts, removed the last two real reads (004's interceptor and main.ts CORS), and rewrote the now-stale CORS comment in .env.example - a wildcard is still forbidden but for a different reason after 003",
+      "files": [
+        "backend/.env.example",
+        "backend/tests/helpers/real-app.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T064": {
+      "status": "DONE",
+      "did": "Re-ran 002's full contract and integration suites against real sessions in place of the header stand-ins; they pass as part of the 162-file suite",
+      "files": [
+        "backend/tests"
+      ]
+    }
+  },
+  "concerns": [
+    {
+      "note": "backend npm audit reports 2 CRITICAL (vitest, @vitest/coverage-v8) plus 8 high / 8 moderate, all pre-existing devDependencies untouched by this slice. CI job dependency-scan runs npm audit --audit-level=critical and is therefore red on main independently of 003. Needs a separate dependency-bump PR (vitest, drizzle-orm 0.45.2, multer, js-yaml).",
+      "step": "implement"
+    },
+    {
+      "note": "002 test-suite idempotency breaks once 0035 lands. The T015 pre-flight found 7 duplicate normalized emails in the local dev database - all test residue (member@example.com x9, already@example.com x3, etc.) from repeated 002 suite runs that create identities with FIXED emails and never clean them up. With the unique index in place, 002 suite passes on a fresh database and FAILS on the second run against the same one. This directly threatens T064, which requires re-running 002 full contract and integration suites and confirming they pass. Fix is per-run unique emails in 002 fixtures or teardown of created identities - decide before T064, not at it.",
+      "step": "implement"
+    },
+    {
+      "note": "MIGRATION RENUMBER: tasks.md assigns 0036_accept_invitation_v2.sql to T014, but 0036 is now taken by 0036_auth_audit_actions.sql - a migration T008 needed and did not have. T014 must therefore be written as 0037_accept_invitation_v2.sql when block 2E runs. Filename order is what migrate.ts sorts on, so the number matters and the task text is now stale.",
+      "step": "implement"
+    },
+    {
+      "note": "The PLATFORM SURFACE is still unauthenticated after 003. SessionGuard exempts @PlatformSurface() routes because there is nothing to authenticate them with: PO is a vendor role, not a tenant membership, so no PO identity exists to hold a session. 001s loopback binding remains the only control, and main.ts still warns it must not be network-reachable before slice 003 - a warning whose slice number is now stale but whose substance still holds. Closing this needs a spec that does not exist yet.",
+      "step": "implement"
+    },
+    {
+      "note": "SPECIFICATION GAP blocking Phase 3 / T052. contracts/authentication.md requires a challengeToken that is short-lived, SINGLE-USE, and carries no identity the client can read - it is the state that makes POST /auth/factor reachable without a session existing yet (FR-003 forbids a session before the second factor). data-model.md specifies NO storage for it: five entities, none of them a pending challenge, and no FR in spec.md mentions challengeToken at all. Single-use plus opaque-to-the-client cannot both hold in a purely stateless token. PROPOSED RESOLUTION, same shape as the recent_code_digests deviation already recorded: two nullable columns on identity_factor - challenge_nonce_digest and challenge_expires_at - giving ONE pending challenge per identity, which is also the correct semantics since a fresh sign-in should supersede a prior challenge. Consumption is a compare-and-clear under FOR UPDATE inside claim_attempt or a sibling function, so single-use is a data-layer guarantee rather than an application convention. Needs a migration 0038 and a note in data-model.md. Recorded rather than guessed at because it decides the shape of T052, T053 and the four US1 contract tests.",
+      "step": "implement"
+    },
+    {
+      "note": "OPEN: how the BROWSER presents its credential on direct API calls. getPrincipal() is settled - it runs in a server component, reads the httpOnly cookie and sends a bearer token. api-client.ts is not: it runs in the browser, and the credential is httpOnly precisely so page script cannot read it (FR-051), so the token cannot simply be attached there. D1 addresses the server path and is silent on this one. Two real options: a Next route-handler proxy that attaches the credential server-side, or same-site cookie auth on the API with CORS credentials enabled. api-client.ts no longer sends the dead x-identity-id header and currently sends no replacement, with the reasoning in the file. Blocks nothing in the backend; blocks browser-driven authenticated reads in 018/019 until chosen.",
+      "step": "implement"
+    },
+    {
+      "note": "FLAKY: tests/contract/provision-seeds-catalog.test.ts FR-009 (entries immediately editable and assignable) failed once in a full-suite run and passed on the immediately following full run and twice in isolation. Not caused by 003 logic - almost certainly accumulated database state or ordering, since 003 adds many identities and enrollments to a shared database. Worth pinning down before CI relies on it: a test that fails one run in N blocks merges at random and teaches people to re-run rather than read.",
+      "step": "implement"
+    },
+    {
+      "note": "A LESSON THAT COST TWO TEST REWRITES, worth knowing before writing more: database-wide invariant sweeps do not hold in this suite, because the test fixtures legitimately create the states the product forbids. seedAuthIdentity writes confirmed_at and mfa_enrolled_at directly (hundreds of rows in the forbidden confirmed-factor-without-codes state), and auth-audit-actions.test.ts inserts all twelve audit actions with no identity reference to prove lc_auth may write them. Both are correct fixtures. Any invariant assertion must therefore be scoped to rows the PRODUCT created through its own path, or it measures the helper instead of the code. Both affected tests now say so in-file.",
+      "step": "implement"
+    },
+    {
+      "note": "RESOLVED, recorded because the class of bug matters more than this instance: two SC-029 blocking assertions were passing VACUOUSLY. Both enumerated routes via app.getHttpAdapter().getInstance()._router.stack, which Express 5 renamed to .router - so the accessor returned undefined, the for-loop iterated nothing, and NO SURFACE RETURNS THE SET AGAIN was green against an empty list. Caught only because T076 happened to include a non-vacuity assertion. Now behind tests/helpers/routes.ts, whose expectRoutes() THROWS on an empty result rather than leaving that discipline to each caller. Any future absence-proving test should use it. The general lesson: an assertion of the form for (x of xs) expect(x).not.toMatch(...) is silently satisfied by an empty xs, and absence proofs are exactly where that shape appears.",
+      "step": "implement"
+    },
+    {
+      "note": "ORDER-DEPENDENCE IN THE BACKEND SUITE, seen three times now and worth treating as one problem rather than three flakes. provision-seeds-catalog FR-009, and seed-first-administrator scenario 2, each failed once in a full run and passed in isolation and on re-run; a third case in the audit suite was mine and is fixed. None is 003 logic. The pattern is shared database state across 162 files against one PostgreSQL with fileParallelism disabled - 003 roughly doubled the row volume, which makes a pre-existing sensitivity fire more often rather than creating it. Note seed-first-administrator provisions its OWN tenant, so it is not simple tenant pollution and needs actual diagnosis. This matters because CI runs the full suite: a suite that fails one run in N teaches people to re-run rather than read, which is how a real failure gets waved through.",
+      "step": "implement"
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "next-auth pinned at 5.0.0-beta.32 (Auth.js v5) rather than 4.24.15 stable",
+      "why": "T058 needs frontend/src/middleware.ts and T056 needs a server-side session read. v5 is App-Router-native: auth() works in middleware, server components and route handlers. v4 is Pages-Router-first and its App Router gate is the deprecated next-auth/middleware withAuth wrapper. Both declare next ^16 and react ^19 peers, so compatibility is not the differentiator. Risk is bounded by D1: NextAuth verifies nothing, holds no adapter and no session strategy - it is cookie, CSRF and redirect transport only, and the product session table is the sole authority. Frontend npm audit stays at 0 vulnerabilities.",
+      "rejected": "next-auth 4.24.15 stable - rejected because reaching App Router middleware through it means depending on a deprecated Pages-Router API for the authentication gate, which is worse standing than a pinned beta in a confined transport role"
+    },
+    {
+      "decision": "The five new tables are OWNED BY lc_migration with explicit grants to lc_auth; only the SECURITY DEFINER functions are OWNED BY lc_auth",
+      "why": "data-model.md Roles says lc_auth Owns the five new tables, but every per-entity Grants table in the same document lists privileges GRANTED to lc_auth - which only makes sense if it is a grantee, not the owner. The per-entity tables are the precise statement and the Roles row is loose prose. Function ownership by lc_auth is required and is not loose: resolve_session() is the one function lc_app may EXECUTE, and it only yields lc_auth reach on session if lc_auth owns it. This also follows 0015s precedent (OWNER TO lc_identity_writer on the definer function) and keeps the runtime auth connection unable to DROP or ALTER the tables it reads.",
+      "rejected": "Making lc_auth the table owner - rejected because it would let the runtime connection drop authentication tables, and because ownership would make the explicit grants the data model specifies redundant and untestable: auth-grants-lockdown.test.ts asserts what lc_auth was granted, which is vacuous if it owns everything"
+    },
+    {
+      "decision": "Added a seventh column recent_code_digests jsonb to identity_factor, which data-model.md does not list",
+      "why": "FR-020 requires a successfully used code be refused anywhere in FR-056 90-second window, and names claim_attempt() as its home. Enforcing that needs memory of which digests were already accepted for at least that window, and none of the six specified columns can hold it - the requirement was unimplementable as written. Placed on identity_factor rather than in a sixth table because data-model.md commits to five new entities and this entity is already described as holding the lockout state, which is the same class of per-identity verification state. Bounded by construction: at most three codes can legitimately be accepted in one window, and every call prunes older entries before appending. Stores digests only, never codes.",
+      "rejected": "A sixth used_code table - rejected because it changes the slice shape to store a bounded scrap of data and contradicts the documented five-entity count"
+    },
+    {
+      "decision": "accept_invitation find-or-create now keys on the normalized email, not on subject",
+      "why": "D9 makes subject a value the PRODUCT generates at acceptance. A generated subject is new every time by construction, so keying find-or-create on it would find nothing ever: every acceptance would mint a fresh identity, and one human being with memberships in two firms would become two people with one credential each. 001/FR-021 would be silently false with nothing failing loudly. 0035s unique index on lower(btrim(email)) is what makes the email a legitimate key, and sign-in resolves a person by email for the same reason. Subject keeps its own meaning as the stable internal handle that survives an email change (002/FR-003, Technical Debt item 6).",
+      "rejected": "Keying on the generated subject as tasks.md implies - rejected because it silently breaks multi-tenant membership; the multi-tenant integration test is precisely what caught it"
+    },
+    {
+      "decision": "Resolved the challengeToken storage gap with two nullable columns on identity_factor plus issue/peek/consume functions (migration 0038), and granted lc_auth read on identity (migration 0039)",
+      "why": "0038: the contract requires single-use and client-opacity, which no stateless token can provide - a self-contained token cannot invalidate itself, and without single-use one credential verification mints unlimited sessions. Per-identity state with a minute of lifetime is the same class as the lockout counters already on that table, and at most one challenge is live at a time by design. A partial unique index on the digest lets the server resolve the identity FROM the token, which client-opacity requires. peek and consume are separate so a wrong code spends an attempt without burning the challenge - otherwise FR-021s five attempts are unreachable in practice. 0039: identity granted SELECT to lc_app only, so sign-in could read the credential and the factor but not the row connecting them to an email. Needs both a GRANT and a POLICY because RLS is FORCED - a grant alone returns zero rows, the quietest possible failure at the one step where no-such-person and cannot-read must not be confused.",
+      "rejected": "A sixth pending_challenge table - rejected because data-model.md commits to five entities and this is two columns with a minute of lifetime; and scoping lc_auth to a self-row policy - impossible, since which row that is, is the question sign-in asks"
+    },
+    {
+      "decision": "Renamed src/middleware.ts to src/proxy.ts with the export renamed to proxy()",
+      "why": "frontend/AGENTS.md warns that this Next.js version has breaking changes and that the bundled docs must be read before writing code. They record that the middleware.js convention is DEPRECATED in Next 16 and renamed to proxy.js - same functionality, new file and export names. The build was already emitting the route as Proxy (Middleware), i.e. accepting the old name under compatibility. Written against the current convention rather than left for a codemod, because this file is new in this slice and there is nothing to preserve.",
+      "rejected": "Leaving middleware.ts and running @next/codemod later - rejected because it ships a deprecation in brand-new code and the migration is a two-line rename"
+    }
+  ],
+  "verified": [
+    {
+      "what": "Phase 1 setup gates",
+      "command": "npm run check:env && npm run typecheck && npm run lint (backend + frontend) && npx vitest run tests/integration/no-new-dependency.test.ts",
+      "result": "all green - check:env 24 keys documented 0 undocumented, no-new-dependency 1/1 pass, typecheck and lint clean in both projects",
+      "warnings": [
+        "backend npm audit: 2 critical + 8 high + 8 moderate, all pre-existing devDependencies untouched by this slice; CI dependency-scan is already red on main independently of 003",
+        "frontend npm audit: 0 vulnerabilities with next-auth v5 beta added"
+      ]
+    },
+    {
+      "what": "Block 2A migrations applied from scratch and 001 invariants unbroken",
+      "command": "docker compose down -v && npm run db:up && npm run db:migrate && npm run verify:role && npm run test:rls",
+      "result": "all 36 migrations apply clean including 0035; verify:role 4/4 (lc_app still not superuser, owns nothing, no BYPASSRLS); test:rls 31/31 - the RLS catalogue admits the five new tables because they carry no tenant_id, as data-model.md predicted. This effectively discharges T040 early.",
+      "warnings": [
+        "0035 guard fired correctly against the pre-existing test residue before the reset, naming the count and the addresses - the intended behaviour, verified rather than assumed"
+      ]
+    },
+    {
+      "what": "Full backend suite after block 2B",
+      "command": "npm run typecheck && npm run lint && npm test",
+      "result": "134 test files, 1340/1340 pass. Integration passed against a database that already carried prior-run data, which is the idempotency proof the email-uniqueness fix needed.",
+      "warnings": [
+        "Reaching green required fixing 30 pre-existing failures this slice caused: 3 vocabulary count assertions (39 -> 51), the audit-fields sweep attempting to write the twelve auth actions as lc_app, and 7 test sites inserting identities with hardcoded emails"
+      ]
+    },
+    {
+      "what": "US1 backend complete and verified",
+      "command": "npm run typecheck && npm run lint && npm test",
+      "result": "150 files, 1489/1489 tests green. The three BLOCKING-adjacent behaviours all proven end to end: MFA demanded on 100% of sign-ins across every archetype, the lockout trips and lifts on its own, and a key outage fails closed indistinguishably from a wrong code.",
+      "warnings": [
+        "Two latent bugs were found by these tests rather than by review: a driver-string vs Date comparison that meant the lockout never fired, and refuse() throwing inside the transaction so every failed attempt and every audit entry rolled back"
+      ]
+    },
+    {
+      "what": "Everything, both projects, after the CI wiring",
+      "command": "npm run check:env && npm test (backend) && npm test (frontend) && npm run test:auth-coverage",
+      "result": "backend 156 files / 1534 tests; frontend 35 files / 363 tests; the four blocking suites 4 files / 32 tests as their own step; check:env green with 24 keys.",
+      "warnings": [
+        "The new frontend CI job and the dependency-scan matrix have never run on GitHub - they are correct locally but the first real run may surface environment differences",
+        "dependency-scan will FAIL on backend for pre-existing critical CVEs in vitest devDependencies, unrelated to 003"
+      ]
+    }
+  ],
+  "last_action": "101/101 TASKS COMPLETE — tasks.md runs T000-T101 and every box is checked. Backend 162 files / 1569 tests (one order-dependent failure that passes in isolation, recorded as a concern); frontend 38 files / 382 tests plus 128 e2e specs in 14 files. The four e2e suites SKIP cleanly without E2E_* env vars and need a running stack to execute. Remaining work is not tasks: merge the constitution, decide the browser credential transport, bump the vitest CVEs, and diagnose the suite order-dependence."
+}

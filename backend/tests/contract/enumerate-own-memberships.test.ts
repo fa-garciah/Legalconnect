@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 
@@ -14,7 +14,7 @@ describe('GET /identity/memberships (US1 scenario 8)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });
@@ -42,9 +42,15 @@ describe('GET /identity/memberships (US1 scenario 8)', () => {
     expect(response.body.items).toEqual([]);
   });
 
-  it('is unreachable without x-identity-id', async () => {
+  it('is unreachable without an authenticated identity — 401 from the session guard', async () => {
+    // 003/T033. This used to answer 400 validation_failed, because the route read
+    // `x-identity-id` and the interceptor rejected a missing header as malformed
+    // input. It now answers 401 from `SessionGuard`, which is a stronger
+    // statement and a more honest one: the request is not badly shaped, it is
+    // UNAUTHENTICATED. Nothing in the request can assert an identity any more —
+    // only a session can.
     const response = await request(app.getHttpServer()).get('/identity/memberships');
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
   });
 
   it('quickstart V15: a stray x-tenant-id header does not narrow the result to that tenant\'s roster', async () => {

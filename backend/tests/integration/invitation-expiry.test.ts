@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -16,7 +16,7 @@ describe('invitation expiry (US4 scenario 1)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });
@@ -52,9 +52,7 @@ describe('invitation expiry (US4 scenario 1)', () => {
 
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', subject)
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
 
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe('invitation_invalid');

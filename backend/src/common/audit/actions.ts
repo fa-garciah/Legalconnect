@@ -79,6 +79,39 @@ export const AUDIT_ACTIONS = [
   'document.restored',
   'document_category.created',
   'document_category.retired',
+  // Slice 003 (FR-042). Twelve actions, and NONE is channel-gated — none is a read
+  // of a monitorable log, so none carries the self-amplification risk the gates
+  // above exist to prevent. They are the opposite case: an authentication event is
+  // exactly what a firm needs a record of, and suppressing any of them for an
+  // "automated" caller would be a way to sign in unobserved.
+  //
+  // All twelve are written with `tenant_id NULL`, enforced by the policy in
+  // migration 0030 rather than by convention here. Authentication precedes tenant
+  // selection: at the moment a sign-in fails or an account locks, no tenant has
+  // been chosen and attributing one would mean inventing it (research.md D12).
+  //
+  // These carry more weight than the vocabulary's size suggests. While the primary
+  // factor stays phishable — Recognised Technical Debt item 1, and the constitution
+  // forbids claiming otherwise — this log is the ONLY detection net the product
+  // has. That is why 0030 also removes lc_app's ability to write any of them: a
+  // forged `signin.succeeded` or a suppressed `account.locked` attacks the net
+  // itself.
+  //
+  // `mfa_not_enrolled` is deliberately ABSENT and stays unaudited (FR-039),
+  // agreeing with 002's open item 3: a precondition failure by a legitimate member
+  // is not a change of state and not a security signal.
+  'enrollment.started',
+  'enrollment.completed',
+  'enrollment.failed',
+  'factor.replaced',
+  'backup_codes.issued',
+  'backup_code.consumed',
+  'backup_codes.exhausted',
+  'backup_codes.reissued',
+  'signin.succeeded',
+  'signin.failed',
+  'challenge.failed',
+  'account.locked',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -153,6 +186,32 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'document.restored': 'document',
   'document_category.created': 'document_category',
   'document_category.retired': 'document_category',
+  // Slice 003. This Record type is exhaustive over AuditAction, so adding the
+  // twelve above without adding the twelve here is a compile error rather than a
+  // runtime surprise — which is the point of the type and why T017 does both
+  // halves in one task.
+  //
+  // Enrollment, the challenge and the lockout all name `identity_factor`: it is
+  // where the enrollment state and the lockout counters live, so it is what an
+  // audit read would join to. The factor SECRET is of course never in an entry —
+  // FR-014 excludes it from logs, errors, traces and the audit log alike, and
+  // `assertNoSensitiveData`'s deny-list is extended to enforce that.
+  'enrollment.started': 'identity_factor',
+  'enrollment.completed': 'identity_factor',
+  'enrollment.failed': 'identity_factor',
+  'factor.replaced': 'identity_factor',
+  'backup_codes.issued': 'backup_code',
+  'backup_code.consumed': 'backup_code',
+  'backup_codes.exhausted': 'backup_code',
+  'backup_codes.reissued': 'backup_code',
+  // The subject of a sign-in is the PERSON, not the session a successful one
+  // happens to create — which is also why `signin.failed` can share the entity
+  // when no session exists to name. Any session reference rides in the entry's
+  // metadata, the same way 006's team-change actions carry their case.
+  'signin.succeeded': 'identity',
+  'signin.failed': 'identity',
+  'challenge.failed': 'identity_factor',
+  'account.locked': 'identity_factor',
 };
 
 export type Channel = 'interactive' | 'automated';

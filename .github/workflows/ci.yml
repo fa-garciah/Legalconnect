@@ -47,9 +47,14 @@ jobs:
       DATABASE_URL_APP: postgresql://lc_app:lc_app_ci@localhost:5432/legalconnect
       DATABASE_URL_PLATFORM: postgresql://lc_platform:lc_platform_ci@localhost:5432/legalconnect
       DATABASE_URL_RETENTION: postgresql://lc_retention:lc_retention_ci@localhost:5432/legalconnect
+      # 003's fifth role. lc_auth is the only role holding grants on the three
+      # authentication-material tables; lc_app holds none at all. The lockdown suite
+      # connects as this role for real rather than as the owner, so CI needs it.
+      DATABASE_URL_AUTH: postgresql://lc_auth:lc_auth_ci@localhost:5432/legalconnect
       LC_APP_PASSWORD: lc_app_ci
       LC_PLATFORM_PASSWORD: lc_platform_ci
       LC_RETENTION_PASSWORD: lc_retention_ci
+      LC_AUTH_PASSWORD: lc_auth_ci
       PORT: '3000'
       # 001's deployment constraint: the platform surface authenticates nothing before
       # slice 003, so it binds to loopback. CI sets it explicitly rather than relying on
@@ -71,6 +76,18 @@ jobs:
       # that against one seeded tenant, and the cap is 002's own rate limit doing its job
       # — not something a CI run should trip over.
       INVITATION_ISSUANCE_RATE_PER_HOUR: '2000'
+      # 003's parameters. Every one is a PARAMETER, NOT A SWITCH: none can disable
+      # enrollment or the challenge, and mfa-no-disable-path.test.ts asserts that
+      # exhaustively over this whole set rather than by sampling (FR-007, SC-004).
+      #
+      # The local key provider is correct HERE and refused in any deployed
+      # environment by main.ts's startup assertion — CI is not a deployment.
+      AUTH_KEY_PROVIDER: local
+      AUTH_LOCAL_KEY: ZGV2LW9ubHktMzItYnl0ZS1rZXktbm90LXNlY3JldCE=
+      AUTH_KMS_KEY_ID: ''
+      AUTH_LOCKOUT_THRESHOLD: '5'
+      AUTH_LOCKOUT_MINUTES: '15'
+      AUTH_BACKUP_CODE_COUNT: '10'
 
     steps:
       - uses: actions/checkout@v4
@@ -125,8 +142,76 @@ jobs:
       - name: Cross-tenant leak suite (includes the no-context case)
         run: npm run test:isolation
 
+      # 003/T097, SC-029. ON THE SAME FOOTING AS TENANT ISOLATION — a failure
+      # blocks the merge, and the four run as their own step rather than being
+      # discharged by the full suite below.
+      #
+      # The constitution asks for that explicitly: "authentication is covered"
+      # IN AGGREGATE does not satisfy it, because each of these is a single
+      # misconfiguration that leaves every other test green while the protection
+      # is absent. That is the property that put tenant isolation on the list,
+      # and it is why this step sits beside it rather than inside `npm test`.
+      #
+      #   mfa-enforcement      — a second factor is demanded on 100% of sign-ins
+      #   mfa-no-disable-path  — no configuration value can switch it off
+      #   backup-codes         — issuance, single use, and no way to read them back
+      #   totp-secret-custody  — a dump without the key yields no working factor
+      - name: Blocking authentication coverage (SC-029)
+        run: npm run test:auth-coverage
+
       - name: Full suite with blocking coverage
         run: npm test -- --coverage
+
+  # 003. THE FRONTEND HAD NO CI AT ALL until this slice.
+  #
+  # 016a, 018 and 019 shipped with Playwright specs, component tests and unit
+  # tests that nothing ever ran: the `quality` job above is entirely
+  # `working-directory: backend`. Merge Rules say "never merge on red", and you
+  # cannot be green on something that is not executed.
+  #
+  # 003 is what makes it urgent rather than merely overdue: this slice puts the
+  # sign-in, challenge, enrollment and recovery screens in the browser, and
+  # FR-051's "nothing reaches browser storage" is a frontend property that only
+  # a frontend test can hold.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      # A throwaway for the build and the test run. Rotating it signs everyone
+      # out and loses nothing else: the API's session rows decide validity.
+      NEXTAUTH_SECRET: ci-only-secret-not-a-real-one
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and component tests
+        run: npm test
+
+      # The build is its own gate. A page that type-checks can still fail to
+      # render — a client hook in a server component, a missing Suspense
+      # boundary around useSearchParams — and every one of those is a screen
+      # that 500s in production while every test above passes.
+      - name: Production build
+        run: npm run build
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -141,18 +226,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Principle VI: "dependency vulnerability scanning in CI. No critical CVEs on
+  # main." Until 003 this ran only against `backend/`, so Next, React and the
+  # ~40 Radix packages the frontend carries were never scanned at all. The
+  # matrix closes that.
   dependency-scan:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [backend, frontend]
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ matrix.project }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
       - run: npm ci
       # No critical CVEs on main.
       - run: npm audit --audit-level=critical

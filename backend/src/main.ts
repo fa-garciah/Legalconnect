@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { assertApplicationRoleIsSafe } from './common/db/client';
+import { assertKeyProviderIsSafe } from './common/auth/deployment-assertions';
 import { ensureUpcomingPartitions } from './modules/audit/partition-maintenance';
 
 function loadEnvFile(path: string): void {
@@ -25,6 +26,15 @@ async function bootstrap(): Promise<void> {
   // policy in place, every isolation test green, and no isolation whatsoever — so the
   // process refuses to start rather than starting unsafely.
   await assertApplicationRoleIsSafe();
+
+  // 003/T027, the same shape and for the same reason as the role check above: a
+  // single misconfiguration that leaves every test green and the protection
+  // absent. A deployed environment running the LOCAL key provider would wrap every
+  // TOTP secret under an environment variable rather than a key restricted and
+  // audited to the PAC/CSD standard (FR-016) — so a restored backup would yield
+  // working second factors, which is precisely what SC-008 says must be impossible.
+  // An assertion, not a warning, and deliberately with no override flag.
+  assertKeyProviderIsSafe();
 
   // Best-effort. A month with no partition waiting causes inserts into it to fail
   // later; it does not mean isolation is broken now, so unlike the role check above
@@ -53,7 +63,8 @@ async function bootstrap(): Promise<void> {
    * sessions and MFA are `003` and `005` — so the whole surface is bound to loopback and
    * treated as unreachable. A wildcard origin would let any page a developer happens to
    * visit issue requests to their own `localhost:3001` and read the replies, which for a
-   * server that trusts `x-identity-id` outright means reading any tenant's data. The
+   * server that trusted `x-identity-id` outright meant reading any tenant's data —
+   * true until 003 replaced that header with a verified session. The
    * origins are therefore named, and in production they must be named explicitly: the
    * localhost default applies only outside production, where it saves every developer
    * rediscovering the paragraph above.
@@ -76,7 +87,10 @@ async function bootstrap(): Promise<void> {
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['content-type', 'x-identity-id', 'x-tenant-id'],
+      // 003/T048. `x-identity-id` is gone — the browser presents a bearer
+      // token and the API resolves the session from it. `x-tenant-id` stays: it
+      // selects which membership to activate and asserts nothing.
+      allowedHeaders: ['content-type', 'authorization', 'x-tenant-id'],
       credentials: false,
     });
   } else {

@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 
@@ -40,7 +40,7 @@ describe('the last SA of a tenant cannot be removed', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
   });
 
   afterAll(async () => {

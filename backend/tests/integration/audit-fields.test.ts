@@ -38,8 +38,43 @@ const RESERVED_TO_IDENTITY_WRITER: readonly string[] = [
   'invitation.refused',
 ];
 
+/**
+ * slice 003, backend/drizzle/0030: the same exclusion for the same reason, one
+ * slice later and with more at stake. These twelve are reserved to `lc_auth`, and
+ * `lc_app`'s audit_event policy refuses them by construction — this sweep writes
+ * through the ordinary `lc_app` path, so it is structurally the wrong place to
+ * exercise them.
+ *
+ * That refusal is the point rather than an inconvenience. While the primary factor
+ * stays phishable (Constitution, Recognised Technical Debt item 1) this log is the
+ * only detection net the product has, so a forged `signin.succeeded` or a
+ * suppressed `account.locked` attacks the net itself. `lc_app` not being able to
+ * write them is a control, and the fact that these entries appear here as an
+ * exclusion list is that control showing up in the tests.
+ *
+ * Their own coverage is tests/integration/auth-audit-actions.test.ts, which
+ * asserts BOTH halves — `lc_app` refused, `lc_auth` admitted with a NULL tenant.
+ */
+const RESERVED_TO_AUTH_WRITER: readonly string[] = [
+  'enrollment.started',
+  'enrollment.completed',
+  'enrollment.failed',
+  'factor.replaced',
+  'backup_codes.issued',
+  'backup_code.consumed',
+  'backup_codes.exhausted',
+  'backup_codes.reissued',
+  'signin.succeeded',
+  'signin.failed',
+  'challenge.failed',
+  'account.locked',
+];
+
 const UNCONDITIONAL = AUDIT_ACTIONS.filter(
-  (a) => !CHANNEL_GATED_ACTIONS.has(a) && !RESERVED_TO_IDENTITY_WRITER.includes(a),
+  (a) =>
+    !CHANNEL_GATED_ACTIONS.has(a) &&
+    !RESERVED_TO_IDENTITY_WRITER.includes(a) &&
+    !RESERVED_TO_AUTH_WRITER.includes(a),
 );
 const GATED = AUDIT_ACTIONS.filter((a) => CHANNEL_GATED_ACTIONS.has(a));
 
@@ -91,10 +126,16 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it("covers every action in the vocabulary — thirty-nine (001's seven, 002's nine, 017's three, 006's twelve, 007's eight)", () => {
+  it("covers every action in the vocabulary — fifty-one (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve)", () => {
     // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024 /
-    // 007-FR-019 without a test reaching it.
-    expect(AUDIT_ACTIONS).toHaveLength(39);
+    // 007-FR-019 / 003-FR-042 without a test reaching it.
+    //
+    // 003's twelve are counted here but exercised by
+    // tests/integration/auth-audit-actions.test.ts rather than by this sweep —
+    // see RESERVED_TO_AUTH_WRITER above. Counting them here anyway is deliberate:
+    // this assertion's job is to notice vocabulary growth, and excluding an action
+    // from the count because it is tested elsewhere would defeat that.
+    expect(AUDIT_ACTIONS).toHaveLength(51);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a

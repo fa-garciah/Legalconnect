@@ -16,7 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 import { resolverFor } from '../../src/common/authz/scope';
@@ -58,7 +58,7 @@ describe('the assigned scope resolver, against real rows', () => {
   }
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     migration = await connectAs('migration');
     firm = await makeCaseFirm(migration, `CC Resolutor ${nextSuffix()}`, uniqueRfc());
     const { rows } = await migration.query<{ id: string }>(

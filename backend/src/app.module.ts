@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TenantContextInterceptor } from './common/tenant/middleware';
+import { SessionGuard } from './common/auth/session.guard';
 import { PlatformContextInterceptor } from './common/db/platform-context';
 import { AuthorizationInterceptor } from './common/authz/interceptor';
 import { AuditInterceptor } from './common/audit/interceptor';
@@ -14,6 +15,7 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { DirectoryModule } from './modules/directory/directory.module';
 import { CaseCoreModule } from './modules/case-core/case-core.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -62,9 +64,18 @@ import { DocumentsModule } from './modules/documents/documents.module';
     // 007-document-management. Registers no resolver of its own — every route reuses
     // CaseCoreModule's AssignedScopeResolver via its own @ScopeTarget('caseId').
     DocumentsModule,
+    AuthModule,
   ],
   providers: [
     { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },
+    // 003/T054. THE ONE APP_GUARD, and the exception is principled rather than a
+    // reversal of v1.4.0's correction. That correction moved tenant, permission
+    // and entitlement OUT of guards because each needs the resolved principal and
+    // Nest runs every Guard before any Interceptor. This one has the opposite
+    // dependency: it needs nothing prior, and the three interceptors below need
+    // the identity it establishes. Running first is the requirement, not a
+    // convenience — so a Guard is exactly right here and nowhere else.
+    { provide: APP_GUARD, useClass: SessionGuard },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PlatformContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuthorizationInterceptor },

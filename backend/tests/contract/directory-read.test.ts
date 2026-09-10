@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 import { MATRIX } from '../../src/common/authz/matrix';
@@ -84,7 +84,7 @@ describe('reading the firm directory', () => {
       .set('x-tenant-id', tenantId);
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     migration = await connectAs('migration');
 
     firmA = await makeTenant(`T024 Firma A ${nextSuffix()}`);

@@ -80,6 +80,38 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
     table: 'document_category',
     scopeColumn: 'tenant_id',
   },
+  // 003-authentication-mfa adds FIVE tables and registers NONE of them, for the
+  // same reason `identity` above is absent: none carries a tenant_id column, so
+  // none is discoverable by this registry's companion column scan and none needs
+  // an exemption from it. rls-coverage.test.ts asserts that every table CARRYING
+  // tenant_id appears here; these do not carry it, so they pass it as written.
+  // Verified rather than assumed — the suite runs 31/31 green with all five
+  // present in the database.
+  //
+  //   identity_credential, identity_factor, backup_code, session, refresh_token
+  //
+  // The constitution states this exception directly for identity and session
+  // data: "The `identity` table and the session table are tenant-global by design
+  // and therefore carry no tenant_id and no RLS policy of their own... a person
+  // exists before and across tenants." This slice extends it only to material that
+  // HANGS OFF an identity — its credential, its factor, its codes, its sessions.
+  // None is meaningful per tenant: one credential authenticates one person, who
+  // may hold membership in several firms (001/FR-021).
+  //
+  // ISOLATION IS NOT WEAKENED BY THIS, and the reason is worth stating because the
+  // absence of five tables from this list looks like the thing this file exists to
+  // catch. `membership` remains the sole resolver from an identity to tenant data
+  // and remains policied normally. What 003 changes is that the identity reaching
+  // that resolver is now PROVEN rather than asserted by an `x-identity-id` header.
+  //
+  // These five are protected by GRANTS rather than by policies, which is a
+  // stronger control and a differently-shaped one: lc_app holds no privilege at
+  // all on the three material tables, so the question a policy would answer —
+  // which rows may this role see — never arises, because it may not read the table.
+  // auth-grants-lockdown.test.ts is their coverage, asserting permission denied
+  // rather than an empty result. A slice that adds a tenant_id column to any of
+  // them is changing a constitutional decision and needs an amendment, not a row
+  // in this list.
 ];
 
 /** Tables that legitimately hold no tenant data and therefore carry no policy. */

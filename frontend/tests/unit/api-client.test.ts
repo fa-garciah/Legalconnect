@@ -36,7 +36,7 @@ describe('apiFetch', () => {
     vi.unstubAllGlobals();
   });
 
-  it('attaches x-identity-id and x-tenant-id when an active tenant exists', async () => {
+  it('attaches x-tenant-id when an active tenant exists, and NO identity header', async () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
     );
@@ -45,7 +45,9 @@ describe('apiFetch', () => {
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
-    expect(headers['x-identity-id']).toBe('identity-1');
+    // 003/T048. The identity stand-in is gone: it asserted an identity nothing
+    // had verified. `x-tenant-id` stays because it selects rather than asserts.
+    expect(headers['x-identity-id']).toBeUndefined();
     expect(headers['x-tenant-id']).toBe('tenant-1');
   });
 
@@ -96,6 +98,8 @@ describe('apiFetch', () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
     expect(headers['content-type']).toBeUndefined();
-    expect(headers['x-identity-id']).toBe('identity-1');
+    // 003/T048. The identity stand-in is gone: it asserted an identity nothing
+    // had verified. `x-tenant-id` stays because it selects rather than asserts.
+    expect(headers['x-identity-id']).toBeUndefined();
   });
 });

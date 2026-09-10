@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
-import { createRealApp } from '../../../helpers/real-app';
+import { createAuthenticatedApp } from '../../../helpers/real-app';
 import { connectAs } from '../../../helpers/db';
 import { uniqueRfc } from '../../../helpers/rfc';
 import { makeCaseFirm, nextSuffix, uniqueName, type CaseFirm } from '../../../helpers/case-core';
@@ -56,7 +56,7 @@ describe('tenant isolation for S3-resident content (research.md D6)', () => {
   let tenantB: { firm: CaseFirm; caseId: string; documentId: string };
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     migration = await connectAs('migration');
     tenantA = await setUpFirmWithDocument(app, migration, `CC Isolamiento A ${nextSuffix()}`);
     tenantB = await setUpFirmWithDocument(app, migration, `CC Isolamiento B ${nextSuffix()}`);

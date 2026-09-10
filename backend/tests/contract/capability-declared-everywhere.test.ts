@@ -14,7 +14,7 @@ import { PATH_METADATA } from '@nestjs/common/constants';
 import { AppModule } from '../../src/app.module';
 import { CAPABILITIES, capabilityDef, type CapabilityId } from '../../src/common/authz/capability';
 import { CAPABILITY } from '../../src/common/authz/declare';
-import { PLATFORM_SURFACE } from '../../src/common/permissions/guard';
+import { AUTH_SURFACE, PLATFORM_SURFACE } from '../../src/common/permissions/guard';
 
 @Module({ imports: [AppModule, DiscoveryModule] })
 class DiscoveryWrapperModule {}
@@ -24,6 +24,8 @@ interface RouteHandler {
   readonly method: string;
   readonly capability: CapabilityId | undefined;
   readonly isPlatform: boolean;
+  /** 003/FR-040 — declares this route as part of the authentication surface. */
+  readonly isAuthSurface: boolean;
 }
 
 /**
@@ -80,20 +82,63 @@ describe('capability declared everywhere', () => {
         const isPlatform = Boolean(
           reflector.getAllAndOverride<boolean>(PLATFORM_SURFACE, [handler, metatype]),
         );
-        handlers.push({ controller: metatype.name, method: methodName, capability, isPlatform });
+        const isAuthSurface = Boolean(
+          reflector.getAllAndOverride<boolean>(AUTH_SURFACE, [handler, metatype]),
+        );
+        handlers.push({ controller: metatype.name, method: methodName, capability, isPlatform, isAuthSurface });
       }
     }
     return handlers;
   }
 
-  it('0 routes carry no @Capability', () => {
-    const undeclared = routeHandlers().filter((h) => !h.capability);
+  it('0 routes carry no @Capability, except the declared authentication surface', () => {
+    // 003/FR-040. The four `/auth/*` routes carry no capability BY DESIGN: they
+    // run before an authenticated, membership-resolved principal exists, so
+    // there is no archetype to check against, no tenant to scope to and no plan
+    // to consult. contracts/README.md states this positively so an audit does
+    // not file it as a missing-authorization defect.
+    //
+    // The exemption is keyed on the ROUTE'S OWN @AuthSurface() marker, not on a
+    // controller name or a path prefix. A future route that forgets the
+    // capability still fails here; one that means to be ungated has to say so
+    // where a reviewer reads it.
+    const undeclared = routeHandlers().filter((h) => !h.capability && !h.isAuthSurface);
     expect(undeclared).toEqual([]);
+  });
+
+  it('every ungated route is on the authentication surface and nowhere else', () => {
+    // The other direction: @AuthSurface() must not spread. If a tenant-facing
+    // controller ever acquires it, this names the offender.
+    //
+    // The allow-list is ENUMERATED rather than matched on a name pattern. A
+    // pattern like /Auth.*Controller/ would silently admit whatever somebody
+    // named that way next; a list makes each addition a line in a diff a
+    // reviewer reads. Both entries here are ungated for the same reason —
+    // each runs before an authenticated principal exists, which is the state
+    // they exist to end (FR-040, contracts/README.md).
+    const AUTHENTICATION_CONTROLLERS = [
+      'SignInController',
+      'EnrollmentController',
+      'RecoveryController',
+    ];
+
+    const ungated = routeHandlers().filter((h) => !h.capability);
+    for (const handler of ungated) {
+      expect(handler.isAuthSurface, `${handler.controller}.${handler.method}`).toBe(true);
+      expect(AUTHENTICATION_CONTROLLERS, `${handler.controller} is ungated`).toContain(
+        handler.controller,
+      );
+    }
   });
 
   it('the declared routes plus the registry rows with no endpoint account for all 43 capabilities', () => {
     const handlers = routeHandlers();
-    const declaredIds = new Set(handlers.map((h) => h.capability));
+    // Filtered, because the authentication surface contributes `undefined` —
+    // counting it would inflate the census by one for a route that declares no
+    // capability on purpose (003/FR-040).
+    const declaredIds = new Set(
+      handlers.map((h) => h.capability).filter((id): id is CapabilityId => id !== undefined),
+    );
     const allIds = new Set(Object.keys(CAPABILITIES) as CapabilityId[]);
     const undeclaredInRegistry = [...allIds].filter((id) => !declaredIds.has(id));
 

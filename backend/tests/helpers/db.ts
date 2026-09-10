@@ -24,13 +24,20 @@ function loadEnvFile(path: string): void {
 
 loadEnvFile(join(__dirname, '..', '..', '.env'));
 
-export type Role = 'app' | 'platform' | 'migration' | 'retention';
+export type Role = 'app' | 'platform' | 'migration' | 'retention' | 'auth';
 
 const ENV_BY_ROLE: Record<Role, string> = {
   app: 'DATABASE_URL_APP',
   platform: 'DATABASE_URL_PLATFORM',
   migration: 'DATABASE_URL_MIGRATION',
   retention: 'DATABASE_URL_RETENTION',
+  // 003's fifth role. Present here for the same reason the other four are: the
+  // lockdown suite must connect as the REAL role to prove anything. Asking the owner
+  // whether `lc_app` can read `identity_factor` gets a useless answer — the owner can
+  // read everything. `auth-grants-lockdown.test.ts` connects as `app` and expects
+  // permission denied, and as `auth` and expects success; neither assertion means
+  // anything if either connects as the migration role.
+  auth: 'DATABASE_URL_AUTH',
 };
 
 export async function connectAs(role: Role): Promise<Client> {
