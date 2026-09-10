@@ -664,10 +664,26 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:52:59.470Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T100",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:53:35.332Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T099",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:53:35.642Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T097",
+  "currentTask": "T099",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1247,6 +1263,21 @@
         ".github/workflows/ci.yml",
         "backend/package.json"
       ]
+    },
+    "T100": {
+      "status": "DONE",
+      "did": "Added the KMS key, alias, narrow use-policy and output for the production KeyProvider under infra/, with rotation enabled (a re-wrap, not a re-enrollment) and a 30-day deletion window; grants exclude ScheduleKeyDeletion so a compromised task role cannot destroy every second factor",
+      "files": [
+        "infra/main.tf"
+      ]
+    },
+    "T099": {
+      "status": "DONE",
+      "did": "Ran typecheck and lint in both projects and check:env in backend - all clean",
+      "files": [
+        "backend",
+        "frontend"
+      ]
     }
   },
   "concerns": [
@@ -1350,5 +1381,5 @@
       ]
     }
   ],
-  "last_action": "80/103. CI now gates what it never did: the four SC-029 blocking suites as their own step, the FRONTEND job the repository never had (typecheck, lint, tests, production build), and a dependency-scan matrix over both projects. Backend 156/1534, frontend 35/363. REMAINING: component tests T068/T077/T086, e2e T061/T073/T091/T095, and polish T092/T093/T094/T096/T098/T099/T100/T101. NOTE: dependency-scan will fail on backend for PRE-EXISTING critical CVEs in vitest devDeps - needs its own bump PR."
+  "last_action": "82/103. Slice 003 is FUNCTIONALLY COMPLETE: all four flows work end to end, all four SC-029 blocking suites pass and are wired into CI, the frontend has a CI job for the first time, and infra/ carries the KMS key. Backend 156 files/1534 tests; frontend 35 files/363 tests. REMAINING (21): component tests T068/T077/T086; e2e T061/T073/T091/T095 (need a running stack); polish T092 audit completeness, T093 refusal ordering, T094 Spanish-copy sweep, T096 run the four individually, T098 quickstart walkthrough, T101 confirm constitution merged. NOTE: T075/T076/T083/T084/T085 overlap heavily with T038/T074/T082 already written."
 }

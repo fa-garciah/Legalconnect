@@ -332,8 +332,8 @@ reachable until a new factor is confirmed.
 - [ ] T096 [P] Run the three blocking suites **individually** — SC-029 requires each asserted on its own rather than discharged by an aggregate figure: `npx vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts`, then `tests/integration/backup-codes.test.ts`, then `tests/integration/totp-secret-custody.test.ts`
 - [x] T097 [P] Wire the three blocking suites into CI **on the same footing as tenant isolation** — a failure blocks the merge — in the CI workflow, and add `test:auth-coverage` to `backend/package.json` — SC-029
 - [ ] T098 Walk all eight scenarios in [quickstart.md](./quickstart.md) end to end and record the outcomes, following `002`'s `quickstart-results.md` precedent, in `specs/003-authentication-mfa/quickstart-results.md`
-- [ ] T099 [P] Run `npm run typecheck && npm run lint` in **both** projects, and `npm run check:env` in `backend/`
-- [ ] T100 [P] Add the KMS key and its access policy for the production `KeyProvider` under `infra/`, with access restricted and audited to the PAC/CSD standard — FR-016, plan.md non-blocking item 4
+- [x] T099 [P] Run `npm run typecheck && npm run lint` in **both** projects, and `npm run check:env` in `backend/`
+- [x] T100 [P] Add the KMS key and its access policy for the production `KeyProvider` under `infra/`, with access restricted and audited to the PAC/CSD standard — FR-016, plan.md non-blocking item 4
 - [ ] T101 Confirm the two things no test can detect, from [quickstart.md](./quickstart.md#definition-of-done): **constitution v1.5.0 is committed to `main`** (the blocker T000 could not close, `spec.md`'s first Approval Checklist item) and the T015 duplicate pre-flight was run in every environment
 
 ---
