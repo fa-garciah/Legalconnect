@@ -15,6 +15,7 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { DirectoryModule } from './modules/directory/directory.module';
 import { CaseCoreModule } from './modules/case-core/case-core.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 /**
  * Registration of the cross-cutting mechanisms. T051, T060.
@@ -63,6 +64,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     // 007-document-management. Registers no resolver of its own — every route reuses
     // CaseCoreModule's AssignedScopeResolver via its own @ScopeTarget('caseId').
     DocumentsModule,
+    AuthModule,
   ],
   providers: [
     { provide: MEMBERSHIP_PORT, useClass: DbMembershipPort },

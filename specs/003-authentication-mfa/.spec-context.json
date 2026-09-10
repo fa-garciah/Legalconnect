@@ -360,10 +360,42 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T05:18:32.593Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:15.972Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:16.405Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:16.783Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:37:17.138Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T039",
+  "currentTask": "T054",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -663,6 +695,36 @@
       "files": [
         "backend/tests/integration/auth-audit-actions.test.ts"
       ]
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): 100% of sign-ins demand a second factor across all six archetypes, 0 complete on a credential alone, 0 sessions before both steps, unenrolled routed to enrollment reaching 0 tenant-scoped resources, challenge token single-use and opaque",
+      "files": [
+        "backend/tests/integration/mfa-enforcement.test.ts"
+      ]
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "Implemented the credential and challenge steps with a single refuse() exit, a dummy Argon2id verification so an unknown email costs the same as a known one, peek-then-consume so a wrong code spends an attempt without burning the challenge, and audit writes for all four actions",
+      "files": [
+        "backend/src/modules/auth/sign-in.service.ts"
+      ]
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/sign-in, /auth/factor and /auth/refresh, each carrying @AuthSurface() and @IdentitySurface() so the ungated status is declared where a reviewer reads it",
+      "files": [
+        "backend/src/modules/auth/sign-in.controller.ts"
+      ]
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "Wired AuthModule and registered SessionGuard as the one APP_GUARD; taught 004's AuthorizationInterceptor to skip the declared authentication surface",
+      "files": [
+        "backend/src/modules/auth/auth.module.ts",
+        "backend/src/app.module.ts",
+        "backend/src/common/authz/interceptor.ts"
+      ]
     }
   },
   "concerns": [
@@ -707,6 +769,11 @@
       "decision": "accept_invitation find-or-create now keys on the normalized email, not on subject",
       "why": "D9 makes subject a value the PRODUCT generates at acceptance. A generated subject is new every time by construction, so keying find-or-create on it would find nothing ever: every acceptance would mint a fresh identity, and one human being with memberships in two firms would become two people with one credential each. 001/FR-021 would be silently false with nothing failing loudly. 0035s unique index on lower(btrim(email)) is what makes the email a legitimate key, and sign-in resolves a person by email for the same reason. Subject keeps its own meaning as the stable internal handle that survives an email change (002/FR-003, Technical Debt item 6).",
       "rejected": "Keying on the generated subject as tasks.md implies - rejected because it silently breaks multi-tenant membership; the multi-tenant integration test is precisely what caught it"
+    },
+    {
+      "decision": "Resolved the challengeToken storage gap with two nullable columns on identity_factor plus issue/peek/consume functions (migration 0038), and granted lc_auth read on identity (migration 0039)",
+      "why": "0038: the contract requires single-use and client-opacity, which no stateless token can provide - a self-contained token cannot invalidate itself, and without single-use one credential verification mints unlimited sessions. Per-identity state with a minute of lifetime is the same class as the lockout counters already on that table, and at most one challenge is live at a time by design. A partial unique index on the digest lets the server resolve the identity FROM the token, which client-opacity requires. peek and consume are separate so a wrong code spends an attempt without burning the challenge - otherwise FR-021s five attempts are unreachable in practice. 0039: identity granted SELECT to lc_app only, so sign-in could read the credential and the factor but not the row connecting them to an email. Needs both a GRANT and a POLICY because RLS is FORCED - a grant alone returns zero rows, the quietest possible failure at the one step where no-such-person and cannot-read must not be confused.",
+      "rejected": "A sixth pending_challenge table - rejected because data-model.md commits to five entities and this is two columns with a minute of lifetime; and scoping lc_auth to a self-row policy - impossible, since which row that is, is the question sign-in asks"
     }
   ],
   "verified": [
@@ -736,5 +803,5 @@
       ]
     }
   ],
-  "last_action": "PHASES 1 AND 2 COMPLETE: 41/103 (T001-T041), committed and pushed at c6ec339. Suite 143 files / 1443 tests green; typecheck, lint, check:env, verify:role, test:rls, test:isolation all green. NEXT: Phase 3 (US1, T042-T064) is BLOCKED ON A SPEC GAP recorded as a concern - challengeToken has no specified storage and cannot be both single-use and stateless. Resolve that first (proposed: two nullable columns on identity_factor as migration 0038, plus a data-model.md note), then write T042-T051 as failing tests before T052-T064."
+  "last_action": "45/103. THE MVP CORE WORKS: sign-in end to end, credential step then TOTP challenge then session, with the BLOCKING MFA suite green 9/9. Suite 144 files / 1453 tests, typecheck and lint clean. Migrations 0038 (pending challenge) and 0039 (lc_auth reads identity) resolved the two gaps the spec left. NEXT in Phase 3: T042/T043 contract tests, T045 refresh-family, T046 lockout, T047 replay, T048 stand-ins-removed, T049 key-unavailable, then the frontend half T050/T051/T056-T063."
 }

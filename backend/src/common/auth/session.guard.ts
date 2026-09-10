@@ -29,7 +29,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PLATFORM_SURFACE } from '../permissions/guard';
+import { AUTH_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
 import { sql } from 'drizzle-orm';
 import { appDb } from '../db/client';
 import { digestToken } from './session.port';
@@ -39,7 +39,7 @@ import { digestToken } from './session.port';
  * — they are how a session comes to exist. contracts/README.md states this
  * explicitly so an ungated authentication route is not later filed as a defect.
  */
-export const AUTH_SURFACE = 'auth:surface';
+export { AUTH_SURFACE };
 export const AuthSurface = (): MethodDecorator & ClassDecorator =>
   SetMetadata(AUTH_SURFACE, true);
 

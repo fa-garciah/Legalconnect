@@ -83,7 +83,7 @@ jobs:
       # The local key provider is correct HERE and refused in any deployed
       # environment by main.ts's startup assertion — CI is not a deployment.
       AUTH_KEY_PROVIDER: local
-      AUTH_LOCAL_KEY: ZGV2LW9ubHktMzItYnl0ZS1rZXktbm90LWEtc2VjcmV0IQ==
+      AUTH_LOCAL_KEY: ZGV2LW9ubHktMzItYnl0ZS1rZXktbm90LXNlY3JldCE=
       AUTH_KMS_KEY_ID: ''
       AUTH_LOCKOUT_THRESHOLD: '5'
       AUTH_LOCKOUT_MINUTES: '15'

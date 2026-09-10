@@ -20,7 +20,7 @@ import type { ScopeRequest } from './scope';
 import type { Subject } from './matrix';
 import { ResourceNotFound } from '../http/errors';
 import { firstHeaderValue } from '../http/header';
-import { IDENTITY_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
+import { AUTH_SURFACE, IDENTITY_SURFACE, PLATFORM_SURFACE } from '../permissions/guard';
 import { currentPrincipal } from '../tenant/middleware';
 import type { ActivePrincipal } from '../tenant/principal';
 
@@ -44,6 +44,19 @@ export class AuthorizationInterceptor implements NestInterceptor {
   }
 
   private async decideAndProceed(context: ExecutionContext, next: CallHandler): Promise<unknown> {
+    // 003/FR-040. The authentication surface is skipped BEFORE the
+    // undeclared-route refusal below, because these routes legitimately declare
+    // no capability: they run before a principal exists, so there is nothing to
+    // decide against. Skipping is a declared, reviewable act — the route says
+    // @AuthSurface() — rather than an absence the interceptor infers.
+    const isAuthSurface = Boolean(
+      this.reflector.getAllAndOverride<boolean>(AUTH_SURFACE, [
+        context.getHandler(),
+        context.getClass(),
+      ]),
+    );
+    if (isAuthSurface) return firstValueFrom(next.handle() as Observable<unknown>);
+
     const capabilityId = this.reflector.getAllAndOverride<CapabilityId | undefined>(CAPABILITY, [
       context.getHandler(),
       context.getClass(),
