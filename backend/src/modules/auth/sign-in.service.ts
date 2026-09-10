@@ -22,7 +22,22 @@ import { verifyCode } from '../../common/auth/totp';
 import { mintSession, rotateSession, type MintedSession } from '../../common/auth/session.port';
 import { signInOriginThrottle } from '../../common/auth/origin-throttle';
 
-/** The one refusal. Never varied, never explained. */
+/**
+ * The one refusal. Never varied, never explained.
+ *
+ * IT IS THROWN OUTSIDE THE TRANSACTION, ALWAYS. Throwing inside rolls back — and
+ * a failed attempt has two side effects that MUST survive the refusal: the
+ * lockout counter, and the `signin.failed` / `challenge.failed` audit entry.
+ * Rolling those back leaves a system where the counter never reaches five, the
+ * lockout can never trip, and the audit log — the only detection net the product
+ * has while the primary factor is phishable — records nothing at all about failed
+ * authentication. Every failure would look, from the outside, exactly like an
+ * attack that had never happened.
+ *
+ * So each method computes an OUTCOME inside the transaction, lets it commit, and
+ * refuses after. The type below is what keeps that structure from being quietly
+ * undone by someone adding one more early throw.
+ */
 function refuse(): never {
   throw new UnauthorizedException({
     error: 'authentication_failed',
@@ -48,8 +63,22 @@ export interface SessionResult {
 interface IdentityRow extends Record<string, unknown> {
   identity_id: string;
   digest: string | null;
-  confirmed_at: Date | null;
-  locked_until: Date | null;
+  // Typed as `unknown` on purpose. `tx.execute()` returns driver rows without
+  // Drizzle's column mapping, so a timestamptz may arrive as a Date OR as a
+  // string depending on the driver's parser configuration. Typing these as Date
+  // compiles cleanly and then compares a string against a Date at runtime, which
+  // JS resolves lexicographically between two unrelated formats and silently
+  // answers false — a lockout that never fires, with nothing failing loudly.
+  // Coerced through `asDate()` below rather than trusted.
+  confirmed_at: unknown;
+  locked_until: unknown;
+}
+
+/** Narrows a driver timestamp to a Date, whichever shape it arrived in. */
+function asDate(value: unknown): Date | null {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string' && value.length > 0) return new Date(value);
+  return null;
 }
 
 @Injectable()
@@ -65,7 +94,11 @@ export class SignInService {
     // indistinguishable from any other.
     if (!signInOriginThrottle.record(origin).allowed) refuse();
 
-    return withAuthTransaction(async (tx) => {
+    type Outcome =
+      | { kind: 'ok'; result: CredentialStepResult }
+      | { kind: 'refused' };
+
+    const outcome = await withAuthTransaction<Outcome>(async (tx) => {
       const found = await tx.execute<IdentityRow>(sql`
         SELECT i.id AS identity_id,
                c.digest,
@@ -88,33 +121,40 @@ export class SignInService {
 
       if (!row || !row.digest || !credentialOk) {
         await this.audit(tx, 'signin.failed', row?.identity_id);
-        refuse();
+        return { kind: 'refused' };
       }
 
       // FR-005 shares FR-021's threshold, so a locked identity is refused at the
       // credential step too — and indistinguishably (FR-055).
-      if (row.locked_until && row.locked_until > new Date()) {
+      const lockedUntil = asDate(row.locked_until);
+      if (lockedUntil && lockedUntil.getTime() > Date.now()) {
         await this.audit(tx, 'signin.failed', row.identity_id);
-        refuse();
+        return { kind: 'refused' };
       }
 
       const challengeToken = opaqueToken();
 
-      if (!row.confirmed_at) {
+      if (!asDate(row.confirmed_at)) {
         // FR-006, US1 scenario 7. Routed to enrollment, holding no session and
         // reaching no authenticated capability on the way. This token is not
         // stored: replaying it only begins enrollment again, which FR-012 already
         // makes safe by discarding the prior unconfirmed secret.
-        return { challengeToken: this.enrollmentToken(row.identity_id), next: 'enrollment' };
+        return {
+          kind: 'ok',
+          result: { challengeToken: this.enrollmentToken(row.identity_id), next: 'enrollment' },
+        };
       }
 
       const issued = await tx.execute<{ issue_challenge: boolean }>(
         sql`SELECT issue_challenge(${row.identity_id}, ${digest(challengeToken)}) AS issue_challenge`,
       );
-      if (!issued.rows[0]?.issue_challenge) refuse();
+      if (!issued.rows[0]?.issue_challenge) return { kind: 'refused' };
 
-      return { challengeToken, next: 'factor' };
+      return { kind: 'ok', result: { challengeToken, next: 'factor' } };
     });
+
+    if (outcome.kind === 'refused') refuse();
+    return outcome.result;
   }
 
   /**
@@ -126,18 +166,20 @@ export class SignInService {
    * would send the person back to re-enter their credential.
    */
   async completeChallenge(challengeToken: string, code: string): Promise<SessionResult> {
-    return withAuthTransaction(async (tx) => {
+    type Outcome = { kind: 'ok'; result: SessionResult } | { kind: 'refused' };
+
+    const outcome = await withAuthTransaction<Outcome>(async (tx) => {
       const peeked = await tx.execute<{ peek_challenge: string | null }>(
         sql`SELECT peek_challenge(${digest(challengeToken)}) AS peek_challenge`,
       );
       const identityId = peeked.rows[0]?.peek_challenge ?? null;
-      if (!identityId) refuse();
+      if (!identityId) return { kind: 'refused' };
 
       const factor = await tx.execute<{ secret_ciphertext: Buffer; key_reference: string }>(
         sql`SELECT secret_ciphertext, key_reference FROM identity_factor WHERE identity_id = ${identityId}`,
       );
       const stored = factor.rows[0];
-      if (!stored) refuse();
+      if (!stored) return { kind: 'refused' };
 
       let codeOk = false;
       try {
@@ -162,9 +204,10 @@ export class SignInService {
       const verdict = claimed.rows[0];
 
       if (!verdict?.admitted) {
+        // These two writes are the reason this method commits before refusing.
         await this.audit(tx, 'challenge.failed', identityId);
         if (verdict?.locked) await this.audit(tx, 'account.locked', identityId);
-        refuse();
+        return { kind: 'refused' };
       }
 
       // Only now. Consumption is compare-and-clear under FOR UPDATE, so two
@@ -172,21 +215,27 @@ export class SignInService {
       const consumed = await tx.execute<{ consume_challenge: string | null }>(
         sql`SELECT consume_challenge(${digest(challengeToken)}) AS consume_challenge`,
       );
-      if (!consumed.rows[0]?.consume_challenge) refuse();
+      if (!consumed.rows[0]?.consume_challenge) return { kind: 'refused' };
 
       const session = await mintSession(tx, identityId, {});
       await this.audit(tx, 'signin.succeeded', identityId);
-      return this.toResult(session);
+      return { kind: 'ok', result: this.toResult(session) };
     });
+
+    if (outcome.kind === 'refused') refuse();
+    return outcome.result;
   }
 
   /** FR-035, FR-036. Reuse revokes the whole family and is not announced. */
   async refresh(refreshToken: string): Promise<SessionResult> {
-    return withAuthTransaction(async (tx) => {
-      const outcome = await rotateSession(tx, refreshToken, {});
-      if (outcome.kind !== 'rotated') refuse();
-      return this.toResult(outcome.session);
-    });
+    // FR-036 in particular: detected reuse REVOKES THE WHOLE FAMILY, and that
+    // revocation must commit even though the caller is refused. Rolling it back
+    // would leave a captured token's lineage alive after the system had already
+    // detected the theft.
+    const outcome = await withAuthTransaction(async (tx) => rotateSession(tx, refreshToken, {}));
+
+    if (outcome.kind !== 'rotated') refuse();
+    return this.toResult(outcome.session);
   }
 
   private toResult(session: MintedSession): SessionResult {

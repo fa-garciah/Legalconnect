@@ -392,10 +392,34 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T05:37:17.138Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.142Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.553Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:48:07.918Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T054",
+  "currentTask": "T046",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -725,6 +749,27 @@
         "backend/src/app.module.ts",
         "backend/src/common/authz/interceptor.ts"
       ]
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "Contract test for POST /auth/sign-in: next=factor with no session, next=enrollment for unenrolled, and the 401 body BYTE-IDENTICAL across unknown email, wrong credential and locked identity; a fresh sign-in supersedes the prior challenge",
+      "files": [
+        "backend/tests/contract/sign-in.test.ts"
+      ]
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "Rotation and family revocation: reuse revokes the whole family and its sessions, the revocation is not announced, a live access token dies immediately, two simultaneous presentations do not both succeed, and one family's death does not touch another",
+      "files": [
+        "backend/tests/integration/session-rotation-family.test.ts"
+      ]
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "Lockout: 4 failures then success resets the counter, the 5th locks, a VALID code is refused during the lockout indistinguishably, the credential step is locked too, the lockout lifts on its own, and one identity locking does not affect another",
+      "files": [
+        "backend/tests/integration/lockout.test.ts"
+      ]
     }
   },
   "concerns": [
@@ -803,5 +848,5 @@
       ]
     }
   ],
-  "last_action": "45/103. THE MVP CORE WORKS: sign-in end to end, credential step then TOTP challenge then session, with the BLOCKING MFA suite green 9/9. Suite 144 files / 1453 tests, typecheck and lint clean. Migrations 0038 (pending challenge) and 0039 (lc_auth reads identity) resolved the two gaps the spec left. NEXT in Phase 3: T042/T043 contract tests, T045 refresh-family, T046 lockout, T047 replay, T048 stand-ins-removed, T049 key-unavailable, then the frontend half T050/T051/T056-T063."
+  "last_action": "48/103. Suite 147 files / 1472 tests green. Two latent bugs found and fixed by these tests: the lockout compared a driver string against a Date and never fired, and refuse() threw INSIDE the transaction so every counter increment and every signin.failed audit entry rolled back. NEXT: T043 (factor contract), T047 (replay concurrency), T048 (stand-ins removed), T049 (key unavailable), then the frontend half T050/T051/T056-T063."
 }
