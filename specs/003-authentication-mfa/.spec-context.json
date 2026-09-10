@@ -704,10 +704,42 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:59:01.395Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T075",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:54.417Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T083",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:54.768Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T084",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:55.102Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T092",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T17:07:55.467Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T086",
+  "currentTask": "T092",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1323,6 +1355,34 @@
       "files": [
         "frontend/tests/component/auth/Recovery.test.tsx"
       ]
+    },
+    "T075": {
+      "status": "DONE",
+      "did": "Enrollment atomicity: a completed enrollment has both a confirmed factor and ten codes, a failed one leaves NEITHER, and the forbidden state does not arise across many real enrollments",
+      "files": [
+        "backend/tests/integration/enrollment-atomic-with-codes.test.ts"
+      ]
+    },
+    "T083": {
+      "status": "DONE",
+      "did": "Two, then ten, concurrent consumptions of the LAST unconsumed code across independent connections yield exactly one success and exactly one recorded consumption",
+      "files": [
+        "backend/tests/integration/concurrency/last-backup-code.test.ts"
+      ]
+    },
+    "T084": {
+      "status": "DONE",
+      "did": "Timing: a match early in the set and one late are indistinguishable, a miss takes the same time as a match, and work scales with candidate count rather than match position - with a positive control so the measurement is not vacuous",
+      "files": [
+        "backend/tests/integration/backup-code-timing.test.ts"
+      ]
+    },
+    "T092": {
+      "status": "DONE",
+      "did": "Audit completeness: exactly one entry per event with no duplication (the lockout case in particular), 0 entries carrying an email or factor material, every entry tenant_id NULL, and every product-written entry naming its identity",
+      "files": [
+        "backend/tests/integration/auth-audit-completeness.test.ts"
+      ]
     }
   },
   "concerns": [
@@ -1352,6 +1412,10 @@
     },
     {
       "note": "FLAKY: tests/contract/provision-seeds-catalog.test.ts FR-009 (entries immediately editable and assignable) failed once in a full-suite run and passed on the immediately following full run and twice in isolation. Not caused by 003 logic - almost certainly accumulated database state or ordering, since 003 adds many identities and enrollments to a shared database. Worth pinning down before CI relies on it: a test that fails one run in N blocks merges at random and teaches people to re-run rather than read.",
+      "step": "implement"
+    },
+    {
+      "note": "A LESSON THAT COST TWO TEST REWRITES, worth knowing before writing more: database-wide invariant sweeps do not hold in this suite, because the test fixtures legitimately create the states the product forbids. seedAuthIdentity writes confirmed_at and mfa_enrolled_at directly (hundreds of rows in the forbidden confirmed-factor-without-codes state), and auth-audit-actions.test.ts inserts all twelve audit actions with no identity reference to prove lc_auth may write them. Both are correct fixtures. Any invariant assertion must therefore be scoped to rows the PRODUCT created through its own path, or it measures the helper instead of the code. Both affected tests now say so in-file.",
       "step": "implement"
     }
   ],

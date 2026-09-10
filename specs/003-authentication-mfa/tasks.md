@@ -276,7 +276,7 @@ and leaves the rest usable, and that no surface anywhere returns the set again.
 ### Tests for User Story 3 ⚠️ Write first, watch them fail
 
 - [x] T074 [P] [US3] **BLOCKING (SC-029)** Integration test: exactly 10 codes issued once; all 10 stored as irreversible memory-hard digests; consuming 1 invalidates exactly that 1 with **0 collateral invalidations**; a consumed code is refused **identically to one that never existed**; exhaustion is audited as a distinct event; and advancing the clock a year leaves all 10 valid — **no time-based expiry**, in `backend/tests/integration/backup-codes.test.ts` — FR-023 to FR-031, SC-010 to SC-016, SC-031
-- [ ] T075 [P] [US3] Integration test: **enrollment does not complete without the codes** — if issuance fails the whole transaction fails and the identity remains unenrolled, with no state in which a confirmed factor exists and no codes do, in `backend/tests/integration/enrollment-atomic-with-codes.test.ts` — FR-023
+- [x] T075 [P] [US3] Integration test: **enrollment does not complete without the codes** — if issuance fails the whole transaction fails and the identity remains unenrolled, with no state in which a confirmed factor exists and no codes do, in `backend/tests/integration/enrollment-atomic-with-codes.test.ts` — FR-023
 - [ ] T076 [P] [US3] Integration test: **0 routes return the codes again for any archetype including SA and PO**, asserted by route-table inspection rather than by attempting each, in `backend/tests/integration/backup-codes-unreadable.test.ts` — FR-024, FR-029, SC-006
 - [x] T077 [P] [US3] Component test: the codes are presented for recording, the person must acknowledge before proceeding, and **none is written to browser storage**, in `frontend/tests/component/auth/BackupCodes.test.tsx` — FR-051, SC-028
 
@@ -306,8 +306,8 @@ reachable until a new factor is confirmed.
 ### Tests for User Story 4 ⚠️ Write first, watch them fail
 
 - [x] T082 [P] [US4] Contract test `POST /auth/recovery/backup-code` and `POST /auth/recovery/reenroll`: a satisfied challenge emits **no session**, only an `enrollmentToken`; `remainingCodes` is disclosed only after success; and re-enrollment returns a **complete new set of 10** plus a session, in `backend/tests/contract/recovery.test.ts` — FR-027, FR-028
-- [ ] T083 [P] [US4] Integration test: two simultaneous recoveries presenting the same **last unconsumed** code yield exactly one success and one consumption, in `backend/tests/integration/concurrency/last-backup-code.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
-- [ ] T084 [P] [US4] Integration test: response times for a match early in the set versus late show **no usable difference**, in `backend/tests/integration/backup-code-timing.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
+- [x] T083 [P] [US4] Integration test: two simultaneous recoveries presenting the same **last unconsumed** code yield exactly one success and one consumption, in `backend/tests/integration/concurrency/last-backup-code.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
+- [x] T084 [P] [US4] Integration test: response times for a match early in the set versus late show **no usable difference**, in `backend/tests/integration/backup-code-timing.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
 - [ ] T085 [P] [US4] Integration test: recovery-path re-issuance requires **0 step-up checks**; standalone re-issuance is reachable from **0 production surfaces**; the previous factor no longer satisfies a challenge; abandoning re-enrollment leaves no access and an unenrolled identity; and an identity with all 10 consumed is refused with **no alternative path offered**, in `backend/tests/integration/recovery-reenrollment.test.ts` — FR-032, SC-015, SC-033
 - [x] T086 [P] [US4] Component test for the recovery screen: reached from the challenge screen rather than a separate flow, Spanish copy, both viewports, in `frontend/tests/component/auth/Recovery.test.tsx`
 
@@ -325,7 +325,7 @@ reachable until a new factor is confirmed.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T092 [P] Verify each of the twelve audited actions produces **exactly 1 entry — 0 missing, 0 duplicated** — and that 0 entries contain an email address, other contact detail or any factor material, in `backend/tests/integration/auth-audit-completeness.test.ts` — SC-022, SC-023
+- [x] T092 [P] Verify each of the twelve audited actions produces **exactly 1 entry — 0 missing, 0 duplicated** — and that 0 entries contain an email address, other contact detail or any factor material, in `backend/tests/integration/auth-audit-completeness.test.ts` — SC-022, SC-023
 - [ ] T093 [P] Verify `mfa_not_enrolled` **remains unaudited** and remains position 1 of `004`'s refusal ordering, unreordered by this slice, in `backend/tests/unit/refusal-ordering.test.ts` — FR-039, [D12](./research.md#d12--twelve-audit-actions-written-in-transaction-attributed-to-no-tenant-where-none-exists) (MODIFIES a slice 004 file)
 - [ ] T094 [P] Extend the Spanish-copy suite to the four new screens and assert **0 instances of English user-facing copy**, in `frontend/tests/component/spanish-copy.test.tsx` — FR-049, SC-026 (MODIFIES a slice 016a file)
 - [ ] T095 [P] E2E test: after each of the four flows, `localStorage`, `sessionStorage` and IndexedDB hold **0 credentials, factor secrets or backup codes**, in `frontend/tests/e2e/auth-no-browser-storage.spec.ts` — FR-051, SC-028
