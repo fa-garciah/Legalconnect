@@ -520,10 +520,66 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:11:03.755Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T065",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:44.504Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T066",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:44.819Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T067",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.118Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T069",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.501Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T070",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:45.850Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T071",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:46.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T078",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:28:46.540Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T060",
+  "currentTask": "T078",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -973,6 +1029,55 @@
         "frontend/src/app/(auth)/verificar/page.tsx",
         "frontend/src/app/(auth)/verificar/ChallengeForm.tsx"
       ]
+    },
+    "T065": {
+      "status": "DONE",
+      "did": "Contract test for enrollment begin/confirm: the secret is returned exactly once with no session, an unconfirmed row satisfies no challenge, beginning again discards the prior secret, confirmed_at and mfa_enrolled_at are set together, and an enrolled identity is refused",
+      "files": [
+        "backend/tests/contract/enrollment.test.ts"
+      ]
+    },
+    "T066": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): an INSPECTION test, exhaustive over every key in .env.example and every entitlement in the registry, asserting none is consulted on the enforcement path; plus a codebase-wide scan for any identifier naming such a switch",
+      "files": [
+        "backend/tests/integration/mfa-no-disable-path.test.ts"
+      ]
+    },
+    "T067": {
+      "status": "DONE",
+      "did": "BLOCKING (SC-029): a dump restored without the key yields 0 working factors (the exact scenario Technical Debt item 11 names), the secret is in no audit entry while the events themselves ARE recorded, and an authenticator app is the only enrollable type",
+      "files": [
+        "backend/tests/integration/totp-secret-custody.test.ts"
+      ]
+    },
+    "T069": {
+      "status": "DONE",
+      "did": "Implemented secret generation, envelope encryption and storage with confirmed_at NULL; beginning again replaces the prior unconfirmed row wholesale",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
+    },
+    "T070": {
+      "status": "DONE",
+      "did": "Implemented confirmation setting identity_factor.confirmed_at and identity.mfa_enrolled_at in ONE transaction, since the second is 002/FR-026's shipped interface to the first and they must not diverge",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
+    },
+    "T071": {
+      "status": "DONE",
+      "did": "Implemented POST /auth/enrollment/begin and /confirm, reachable only past the credential step with no confirmed factor - the gate is state, not capability",
+      "files": [
+        "backend/src/modules/auth/enrollment.controller.ts"
+      ]
+    },
+    "T078": {
+      "status": "DONE",
+      "did": "Issued exactly 10 codes inside the SAME transaction as confirmation, stored only as high-entropy-profile Argon2id digests, audited as backup_codes.issued",
+      "files": [
+        "backend/src/modules/auth/enrollment.service.ts"
+      ]
     }
   },
   "concerns": [
@@ -998,6 +1103,10 @@
     },
     {
       "note": "OPEN: how the BROWSER presents its credential on direct API calls. getPrincipal() is settled - it runs in a server component, reads the httpOnly cookie and sends a bearer token. api-client.ts is not: it runs in the browser, and the credential is httpOnly precisely so page script cannot read it (FR-051), so the token cannot simply be attached there. D1 addresses the server path and is silent on this one. Two real options: a Next route-handler proxy that attaches the credential server-side, or same-site cookie auth on the API with CORS credentials enabled. api-client.ts no longer sends the dead x-identity-id header and currently sends no replacement, with the reasoning in the file. Blocks nothing in the backend; blocks browser-driven authenticated reads in 018/019 until chosen.",
+      "step": "implement"
+    },
+    {
+      "note": "FLAKY: tests/contract/provision-seeds-catalog.test.ts FR-009 (entries immediately editable and assignable) failed once in a full-suite run and passed on the immediately following full run and twice in isolation. Not caused by 003 logic - almost certainly accumulated database state or ordering, since 003 adds many identities and enrollments to a shared database. Worth pinning down before CI relies on it: a test that fails one run in N blocks merges at random and teaches people to re-run rather than read.",
       "step": "implement"
     }
   ],
@@ -1063,5 +1172,5 @@
       ]
     }
   ],
-  "last_action": "62/103. US1 IS FEATURE-COMPLETE except its e2e (T061) and 002 re-run (T064). Frontend 35 files / 363 tests, production build compiles with /ingresar, /verificar, /api/auth/[...nextauth] and the middleware. Backend 151 files / 1495 tests. NEXT: T061 e2e, T064 002 re-run against real sessions, then Phase 4 (US2 enrollment, T065-T073). The enrollment screen route /enrolar is already referenced by the sign-in redirect and the middleware public list."
+  "last_action": "69/103. ALL THREE SC-029 BLOCKING SUITES NOW EXIST AND PASS: mfa-enforcement, mfa-no-disable-path (exhaustive inspection over every documented env key and entitlement), and totp-secret-custody (restores a dump without the key and proves 0 working factors). Backend 154 files / 1516 tests. Enrollment works end to end: begin issues the only secret this product ever returns, confirm sets both columns and issues 10 codes in ONE transaction. NEXT: T068/T072 the enrollment screen, T074-T081 (US3 backup codes), T082-T091 (US4 recovery), Phase 7 polish. Recorded a FLAKY test to pin down: provision-seeds-catalog FR-009."
 }

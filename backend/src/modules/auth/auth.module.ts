@@ -8,11 +8,13 @@
  */
 import { Module } from '@nestjs/common';
 import { SignInController } from './sign-in.controller';
+import { EnrollmentController } from './enrollment.controller';
 import { SignInService } from './sign-in.service';
+import { EnrollmentService } from './enrollment.service';
 
 @Module({
-  controllers: [SignInController],
-  providers: [SignInService],
-  exports: [SignInService],
+  controllers: [SignInController, EnrollmentController],
+  providers: [SignInService, EnrollmentService],
+  exports: [SignInService, EnrollmentService],
 })
 export class AuthModule {}

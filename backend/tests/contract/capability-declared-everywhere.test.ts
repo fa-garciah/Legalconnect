@@ -109,10 +109,21 @@ describe('capability declared everywhere', () => {
   it('every ungated route is on the authentication surface and nowhere else', () => {
     // The other direction: @AuthSurface() must not spread. If a tenant-facing
     // controller ever acquires it, this names the offender.
+    //
+    // The allow-list is ENUMERATED rather than matched on a name pattern. A
+    // pattern like /Auth.*Controller/ would silently admit whatever somebody
+    // named that way next; a list makes each addition a line in a diff a
+    // reviewer reads. Both entries here are ungated for the same reason —
+    // each runs before an authenticated principal exists, which is the state
+    // they exist to end (FR-040, contracts/README.md).
+    const AUTHENTICATION_CONTROLLERS = ['SignInController', 'EnrollmentController'];
+
     const ungated = routeHandlers().filter((h) => !h.capability);
     for (const handler of ungated) {
       expect(handler.isAuthSurface, `${handler.controller}.${handler.method}`).toBe(true);
-      expect(handler.controller).toBe('SignInController');
+      expect(AUTHENTICATION_CONTROLLERS, `${handler.controller} is ungated`).toContain(
+        handler.controller,
+      );
     }
   });
 
