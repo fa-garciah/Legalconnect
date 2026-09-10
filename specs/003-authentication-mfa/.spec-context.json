@@ -328,10 +328,42 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T05:09:37.559Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:31.301Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:31.675Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:32.175Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:18:32.593Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T041",
+  "currentTask": "T039",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -603,6 +635,34 @@
       "files": [
         "backend/tests/integration/isolation"
       ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "THE HARD GATE: as the real lc_app role, SELECT/INSERT/UPDATE/DELETE on all five tables is permission denied - not empty; EXECUTE permitted on resolve_session and on nothing else; zero column-level privileges; lc_auth owns nothing; lc_platform and lc_retention reach no material",
+      "files": [
+        "backend/tests/integration/auth-grants-lockdown.test.ts"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "The D3 regression test: an identity reading its own row through identity_self_row obtains no material, and cannot reach it by join, subquery or EXISTS. Asserts over the actual column list so a future migration adding identity.totp_secret fails here",
+      "files": [
+        "backend/tests/integration/identity-self-row-no-material.test.ts"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "Acceptance creates identity, membership and credential atomically; a refusal leaves none of the three; a second membership does NOT replace an existing credential; 002's six refusal branches still collapse identically",
+      "files": [
+        "backend/tests/integration/credential-at-acceptance.test.ts"
+      ]
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "Both halves of the audit narrowing: lc_auth can insert all twelve with tenant_id NULL and nothing else, lc_app can insert none of them but still writes its own domain actions, and mfa_not_enrolled is absent from the vocabulary entirely",
+      "files": [
+        "backend/tests/integration/auth-audit-actions.test.ts"
+      ]
     }
   },
   "concerns": [
@@ -672,5 +732,5 @@
       ]
     }
   ],
-  "last_action": "Blocks 2A-2E COMPLETE plus T040/T041: 37/103. Full suite 139 files / 1382 tests green, isolation 70/70, rls 31/31, verify:role 4/4, check:env green. 002's routes are ON THE NETWORK behind real session verification. NEXT: block 2F (T036-T039) - the four lockdown tests; T040/T041 already discharged. Then Phase 3 (US1, T042-T064)."
+  "last_action": "PHASE 1 AND PHASE 2 COMPLETE: 41/103 (T001-T041). Suite 143 files / 1443 tests green, typecheck and lint clean. The hard gate passes: lc_app is DENIED on all five tables, not merely filtered. NEXT: Phase 3 = US1 sign-in (T042-T064), the MVP. Tests T042-T051 first and seen to fail, then T052-T064."
 }
