@@ -18,6 +18,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
 import { createUnauthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
+import { expectRoutes } from '../helpers/routes';
 import { seedAuthIdentity, TEST_CREDENTIAL } from '../helpers/auth-seed';
 import { generateAt } from '../../src/common/auth/totp';
 import { verifyHighEntropy } from '../../src/common/auth/argon2';
@@ -187,14 +188,15 @@ describe('backup codes — BLOCKING (SC-029)', () => {
     // an attempt-based test proves only that the routes it thought of refuse,
     // and says nothing about one added later.
     await enroll('codes-no-readback');
-    const routes = app.getHttpAdapter().getInstance()._router?.stack ?? [];
-    const paths: string[] = routes
-      .map((layer: { route?: { path?: string } }) => layer.route?.path)
-      .filter((path: string | undefined): path is string => typeof path === 'string');
+    // Via expectRoutes(), which THROWS on an empty list — see T076.
+    const paths = expectRoutes(app).map((route) => route.path);
 
-    for (const path of paths) {
-      expect(path.toLowerCase()).not.toMatch(/backup|codigos|codes/);
-    }
+    // `/auth/recovery/backup-code` names a code because it SPENDS one, which
+    // is the opposite of returning them. Nothing else mentions them at all,
+    // and nothing returns them — tests/integration/backup-codes-unreadable
+    // (T076) makes that the whole subject of its own file.
+    const mentions = paths.filter((path) => /backup|codigos|codes/i.test(path));
+    expect(mentions).toEqual(['/auth/recovery/backup-code']);
   });
 
   it('the codes appear in NO audit entry (FR-025)', async () => {

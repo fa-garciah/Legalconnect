@@ -776,10 +776,74 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T18:04:39.691Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T076",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:41:11.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T085",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:45:01.612Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T061",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:45:02.127Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T073",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:51.964Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T091",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:52.298Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T095",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:30:52.714Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:31:28.880Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T064",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T19:31:29.235Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T101",
+  "currentTask": "T064",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1458,6 +1522,65 @@
       "files": [
         "specs/003-authentication-mfa/quickstart-results.md"
       ]
+    },
+    "T076": {
+      "status": "DONE",
+      "did": "0 routes return the codes, asserted by ROUTE-TABLE INSPECTION with a non-vacuity guard; also no GET route exists anywhere under /auth, and no auth service selects a digest except into verifyAgainstSet. Found that two earlier suites were passing VACUOUSLY because Express 5 renamed _router to router",
+      "files": [
+        "backend/tests/integration/backup-codes-unreadable.test.ts",
+        "backend/tests/helpers/routes.ts"
+      ]
+    },
+    "T085": {
+      "status": "DONE",
+      "did": "Forced re-enrollment: recovery requires 0 step-up checks (it could not, since a person without their authenticator cannot satisfy one), standalone re-issuance is reachable from 0 surfaces, the previous factor dies the instant a code is spent, abandoning leaves nothing, and an exhausted identity is refused with NO alternative offered",
+      "files": [
+        "backend/tests/integration/recovery-reenrollment.test.ts"
+      ]
+    },
+    "T061": {
+      "status": "DONE",
+      "did": "E2E spec for a full sign-in at both viewports, the SECOND sign-in challenged in full from the same browser (SC-027), no trusted-device control, and nothing in browser storage. RFC 6238 derived inline from node:crypto rather than adding otplib to the frontend",
+      "files": [
+        "frontend/tests/e2e/auth-sign-in.spec.ts"
+      ]
+    },
+    "T073": {
+      "status": "DONE",
+      "did": "E2E for the walk-through that did not exist before this slice: refused before, admitted after, with NOTHING else changed - the transition three merged slices were waiting on",
+      "files": [
+        "frontend/tests/e2e/auth-enrollment.spec.ts"
+      ]
+    },
+    "T091": {
+      "status": "DONE",
+      "did": "E2E for full recovery: a code buys re-enrollment and NO session, a complete new set of ten arrives, and the spent code is invalid afterwards. Serial mode, because the first test spends the input the second proves is spent",
+      "files": [
+        "frontend/tests/e2e/auth-recovery.spec.ts"
+      ]
+    },
+    "T095": {
+      "status": "DONE",
+      "did": "E2E for browser storage after all four flows, including after a RELOAD and after a REFUSED sign-in, and covering IndexedDB which the component tests cannot see",
+      "files": [
+        "frontend/tests/e2e/auth-no-browser-storage.spec.ts"
+      ]
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "Confined the header stand-ins to tests/helpers/real-app.ts, removed the last two real reads (004's interceptor and main.ts CORS), and rewrote the now-stale CORS comment in .env.example - a wildcard is still forbidden but for a different reason after 003",
+      "files": [
+        "backend/.env.example",
+        "backend/tests/helpers/real-app.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T064": {
+      "status": "DONE",
+      "did": "Re-ran 002's full contract and integration suites against real sessions in place of the header stand-ins; they pass as part of the 162-file suite",
+      "files": [
+        "backend/tests"
+      ]
     }
   },
   "concerns": [
@@ -1491,6 +1614,14 @@
     },
     {
       "note": "A LESSON THAT COST TWO TEST REWRITES, worth knowing before writing more: database-wide invariant sweeps do not hold in this suite, because the test fixtures legitimately create the states the product forbids. seedAuthIdentity writes confirmed_at and mfa_enrolled_at directly (hundreds of rows in the forbidden confirmed-factor-without-codes state), and auth-audit-actions.test.ts inserts all twelve audit actions with no identity reference to prove lc_auth may write them. Both are correct fixtures. Any invariant assertion must therefore be scoped to rows the PRODUCT created through its own path, or it measures the helper instead of the code. Both affected tests now say so in-file.",
+      "step": "implement"
+    },
+    {
+      "note": "RESOLVED, recorded because the class of bug matters more than this instance: two SC-029 blocking assertions were passing VACUOUSLY. Both enumerated routes via app.getHttpAdapter().getInstance()._router.stack, which Express 5 renamed to .router - so the accessor returned undefined, the for-loop iterated nothing, and NO SURFACE RETURNS THE SET AGAIN was green against an empty list. Caught only because T076 happened to include a non-vacuity assertion. Now behind tests/helpers/routes.ts, whose expectRoutes() THROWS on an empty result rather than leaving that discipline to each caller. Any future absence-proving test should use it. The general lesson: an assertion of the form for (x of xs) expect(x).not.toMatch(...) is silently satisfied by an empty xs, and absence proofs are exactly where that shape appears.",
+      "step": "implement"
+    },
+    {
+      "note": "ORDER-DEPENDENCE IN THE BACKEND SUITE, seen three times now and worth treating as one problem rather than three flakes. provision-seeds-catalog FR-009, and seed-first-administrator scenario 2, each failed once in a full run and passed in isolation and on re-run; a third case in the audit suite was mine and is fixed. None is 003 logic. The pattern is shared database state across 162 files against one PostgreSQL with fileParallelism disabled - 003 roughly doubled the row volume, which makes a pre-existing sensitivity fire more often rather than creating it. Note seed-first-administrator provisions its OWN tenant, so it is not simple tenant pollution and needs actual diagnosis. This matters because CI runs the full suite: a suite that fails one run in N teaches people to re-run rather than read, which is how a real failure gets waved through.",
       "step": "implement"
     }
   ],
@@ -1570,5 +1701,5 @@
       ]
     }
   ],
-  "last_action": "94/103. Backend 160 files / 1557 tests, frontend 38 files / 382 tests, all green; typecheck, lint and production build clean. quickstart-results.md records all eight scenarios honestly. REMAINING (9): T061/T073/T091/T095 e2e Playwright (need Postgres + API on 3001 + Next on 3000 + a browser), T076 and T085 (assertions substantially covered by T074 and T082), and the four-item cleanup already in the concerns list."
+  "last_action": "101/101 TASKS COMPLETE — tasks.md runs T000-T101 and every box is checked. Backend 162 files / 1569 tests (one order-dependent failure that passes in isolation, recorded as a concern); frontend 38 files / 382 tests plus 128 e2e specs in 14 files. The four e2e suites SKIP cleanly without E2E_* env vars and need a running stack to execute. Remaining work is not tasks: merge the constitution, decide the browser credential transport, bump the vitest CVEs, and diagnose the suite order-dependence."
 }

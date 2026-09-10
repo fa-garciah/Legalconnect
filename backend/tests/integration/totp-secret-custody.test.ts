@@ -20,6 +20,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
 import { createUnauthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
+import { expectRoutes } from '../helpers/routes';
 import { seedAuthIdentity, TEST_CREDENTIAL, type SeededAuthIdentity } from '../helpers/auth-seed';
 import { generateAt } from '../../src/common/auth/totp';
 import { LocalKeyProvider } from '../../src/common/auth/key-provider';
@@ -159,10 +160,10 @@ describe('TOTP secret custody — BLOCKING (SC-029)', () => {
     // Asserted by route-table inspection rather than by attempting each route:
     // an attempt-based test proves only that the routes it thought of refuse.
     const { secret } = await enrollFully('custody-no-readback');
-    const routes = app.getHttpAdapter().getInstance()._router?.stack ?? [];
-    const paths = routes
-      .map((layer: { route?: { path?: string } }) => layer.route?.path)
-      .filter((path: string | undefined): path is string => typeof path === 'string');
+    // Via expectRoutes(), which THROWS on an empty list. This assertion was
+    // silently vacuous until T076 found that Express 5 renamed `_router` to
+    // `router` — the loop below was iterating nothing and passing.
+    const paths = expectRoutes(app).map((route) => route.path);
 
     for (const path of paths) {
       expect(path.toLowerCase()).not.toContain('secret');
