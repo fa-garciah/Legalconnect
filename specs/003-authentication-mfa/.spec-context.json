@@ -416,10 +416,34 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T05:48:07.918Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:33.459Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:33.957Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:55:34.393Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T046",
+  "currentTask": "T049",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -770,6 +794,27 @@
       "files": [
         "backend/tests/integration/lockout.test.ts"
       ]
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "Contract test for POST /auth/factor: exactly one session with a 15-minute expiry, response keys are exactly accessToken/refreshToken/expiresAt with no tenant and no archetype, the token actually authenticates, uniform 401 across wrong code / unknown token / replay, and neither token in the database in plaintext",
+      "files": [
+        "backend/tests/contract/factor.test.ts"
+      ]
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "Replay under concurrency: two simultaneous challenges with one valid code yield exactly one success and one session; a used code is refused anywhere in the window; the replay counts as a failed attempt; a different neighbouring-step code still works so the guard is not a blanket; the store holds digests",
+      "files": [
+        "backend/tests/integration/concurrency/challenge-replay.test.ts"
+      ]
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "Key unavailable fails closed: a VALID code is refused when the key is gone, the refusal is byte-identical to a wrong code, nothing leaks about keys or encryption, the failure counts toward the lockout, and restoring the key restores sign-in",
+      "files": [
+        "backend/tests/integration/key-unavailable-fails-closed.test.ts"
+      ]
     }
   },
   "concerns": [
@@ -846,7 +891,15 @@
       "warnings": [
         "Reaching green required fixing 30 pre-existing failures this slice caused: 3 vocabulary count assertions (39 -> 51), the audit-fields sweep attempting to write the twelve auth actions as lc_app, and 7 test sites inserting identities with hardcoded emails"
       ]
+    },
+    {
+      "what": "US1 backend complete and verified",
+      "command": "npm run typecheck && npm run lint && npm test",
+      "result": "150 files, 1489/1489 tests green. The three BLOCKING-adjacent behaviours all proven end to end: MFA demanded on 100% of sign-ins across every archetype, the lockout trips and lifts on its own, and a key outage fails closed indistinguishably from a wrong code.",
+      "warnings": [
+        "Two latent bugs were found by these tests rather than by review: a driver-string vs Date comparison that meant the lockout never fired, and refuse() throwing inside the transaction so every failed attempt and every audit entry rolled back"
+      ]
     }
   ],
-  "last_action": "48/103. Suite 147 files / 1472 tests green. Two latent bugs found and fixed by these tests: the lockout compared a driver string against a Date and never fired, and refuse() threw INSIDE the transaction so every counter increment and every signin.failed audit entry rolled back. NEXT: T043 (factor contract), T047 (replay concurrency), T048 (stand-ins removed), T049 (key unavailable), then the frontend half T050/T051/T056-T063."
+  "last_action": "51/103. US1 BACKEND IS COMPLETE: 150 files / 1489 tests green. Sign-in, challenge, refresh, lockout, replay guard, family revocation and fail-closed key handling all proven. NEXT: T048 (stand-ins removed), then the FRONTEND half of US1 - T050/T051 tests, T056 replace principal.ts and delete the fixture, T057 NextAuth route, T058 middleware, T059/T060 the two screens, T061-T064 the regression sweeps."
 }
