@@ -174,5 +174,5 @@
       ]
     }
   ],
-  "last_action": "Phase 1 complete and committed (819b18b) - T001-T007 done, 7/103. NEXT: Phase 2 Foundational, T008-T041, starting with migration 0030_lc_auth_role.sql. Docker is available. Phase 2 must be done in one pass - a partial migration set does not run."
+  "last_action": "Phase 1 complete and committed (819b18b) - T001-T007 done, 7/103. NEXT: Phase 2 Foundational, T008-T041, starting with migration 0030_lc_auth_role.sql. Docker available. Phase 2 is SAFE TO INTERRUPT: migrate.ts tracks applied migrations in its own table, so a partial set applies and the rest applies on the next run. Commit at the internal boundaries T015 / T019 / T028 / T032 / T041. Two pairs must not be split: T014+T035 (accept_invitation replacement and its caller) and T031+T033+T034 (session guard and the header-to-session switch)."
 }
