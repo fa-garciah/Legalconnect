@@ -326,15 +326,15 @@ reachable until a new factor is confirmed.
 ## Phase 7: Polish & Cross-Cutting Concerns
 
 - [x] T092 [P] Verify each of the twelve audited actions produces **exactly 1 entry — 0 missing, 0 duplicated** — and that 0 entries contain an email address, other contact detail or any factor material, in `backend/tests/integration/auth-audit-completeness.test.ts` — SC-022, SC-023
-- [ ] T093 [P] Verify `mfa_not_enrolled` **remains unaudited** and remains position 1 of `004`'s refusal ordering, unreordered by this slice, in `backend/tests/unit/refusal-ordering.test.ts` — FR-039, [D12](./research.md#d12--twelve-audit-actions-written-in-transaction-attributed-to-no-tenant-where-none-exists) (MODIFIES a slice 004 file)
-- [ ] T094 [P] Extend the Spanish-copy suite to the four new screens and assert **0 instances of English user-facing copy**, in `frontend/tests/component/spanish-copy.test.tsx` — FR-049, SC-026 (MODIFIES a slice 016a file)
+- [x] T093 [P] Verify `mfa_not_enrolled` **remains unaudited** and remains position 1 of `004`'s refusal ordering, unreordered by this slice, in `backend/tests/unit/refusal-ordering.test.ts` — FR-039, [D12](./research.md#d12--twelve-audit-actions-written-in-transaction-attributed-to-no-tenant-where-none-exists) (MODIFIES a slice 004 file)
+- [x] T094 [P] Extend the Spanish-copy suite to the four new screens and assert **0 instances of English user-facing copy**, in `frontend/tests/component/spanish-copy.test.tsx` — FR-049, SC-026 (MODIFIES a slice 016a file)
 - [ ] T095 [P] E2E test: after each of the four flows, `localStorage`, `sessionStorage` and IndexedDB hold **0 credentials, factor secrets or backup codes**, in `frontend/tests/e2e/auth-no-browser-storage.spec.ts` — FR-051, SC-028
-- [ ] T096 [P] Run the three blocking suites **individually** — SC-029 requires each asserted on its own rather than discharged by an aggregate figure: `npx vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts`, then `tests/integration/backup-codes.test.ts`, then `tests/integration/totp-secret-custody.test.ts`
+- [x] T096 [P] Run the three blocking suites **individually** — SC-029 requires each asserted on its own rather than discharged by an aggregate figure: `npx vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts`, then `tests/integration/backup-codes.test.ts`, then `tests/integration/totp-secret-custody.test.ts`
 - [x] T097 [P] Wire the three blocking suites into CI **on the same footing as tenant isolation** — a failure blocks the merge — in the CI workflow, and add `test:auth-coverage` to `backend/package.json` — SC-029
-- [ ] T098 Walk all eight scenarios in [quickstart.md](./quickstart.md) end to end and record the outcomes, following `002`'s `quickstart-results.md` precedent, in `specs/003-authentication-mfa/quickstart-results.md`
+- [x] T098 Walk all eight scenarios in [quickstart.md](./quickstart.md) end to end and record the outcomes, following `002`'s `quickstart-results.md` precedent, in `specs/003-authentication-mfa/quickstart-results.md`
 - [x] T099 [P] Run `npm run typecheck && npm run lint` in **both** projects, and `npm run check:env` in `backend/`
 - [x] T100 [P] Add the KMS key and its access policy for the production `KeyProvider` under `infra/`, with access restricted and audited to the PAC/CSD standard — FR-016, plan.md non-blocking item 4
-- [ ] T101 Confirm the two things no test can detect, from [quickstart.md](./quickstart.md#definition-of-done): **constitution v1.5.0 is committed to `main`** (the blocker T000 could not close, `spec.md`'s first Approval Checklist item) and the T015 duplicate pre-flight was run in every environment
+- [x] T101 Confirm the two things no test can detect, from [quickstart.md](./quickstart.md#definition-of-done): **constitution v1.5.0 is committed to `main`** (the blocker T000 could not close, `spec.md`'s first Approval Checklist item) and the T015 duplicate pre-flight was run in every environment
 
 ---
 

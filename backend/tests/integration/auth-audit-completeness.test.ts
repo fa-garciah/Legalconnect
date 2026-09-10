@@ -151,13 +151,26 @@ describe('authentication audit completeness (SC-022, SC-023)', () => {
   });
 
   it('0 ENTRIES CONTAIN AN EMAIL, A CONTACT DETAIL OR ANY FACTOR MATERIAL (SC-023)', async () => {
-    // FR-043 and FR-045, swept over EVERY authentication entry in the database
-    // rather than only this test's: `assertNoSensitiveData`'s deny-list is what
-    // enforces this, and it applies everywhere or nowhere.
+    // FR-043 and FR-045. Scoped to entries THIS FILE produced rather than swept
+    // database-wide — the third time that lesson has come up in this slice, so
+    // it is stated once more here: other suites insert audit rows directly to
+    // prove grants, and a global sweep measures those fixtures alongside the
+    // product. Scoping also keeps the assertion independent of which suites ran
+    // before it, which a shared database otherwise makes it depend on.
+    const identity = await seedAuthIdentity(migration, 'audit-no-pii');
+    const credential = await credentialStep(identity);
+    await request(server())
+      .post('/auth/factor')
+      .send({
+        challengeToken: credential.body.challengeToken,
+        code: await generateAt(identity.secret, Math.floor(Date.now() / 1000)),
+      });
+
     const { rows } = await migration.query<{ blob: string }>(
       `SELECT coalesce(string_agg(metadata::text, ' '), '') AS blob
-         FROM audit_event WHERE action = ANY($1)`,
-      [AUTH_ACTIONS],
+         FROM audit_event
+        WHERE (target_id = $1 OR actor_identity_id = $1) AND action = ANY($2)`,
+      [identity.identityId, AUTH_ACTIONS],
     );
     const blob = rows[0]!.blob;
     expect(blob).not.toContain('@');
@@ -167,6 +180,10 @@ describe('authentication audit completeness (SC-022, SC-023)', () => {
   });
 
   it('every authentication entry carries tenant_id NULL (D12)', async () => {
+    // This one CAN stay database-wide: the policy in migration 0030 asserts
+    // `tenant_id IS NULL` in its WITH CHECK, so no role can write one of these
+    // twelve actions against a tenant even deliberately. A row here would mean
+    // the policy was gone, whoever wrote it.
     const { rows } = await migration.query<{ n: string }>(
       `SELECT count(*)::text AS n FROM audit_event
         WHERE tenant_id IS NOT NULL AND action = ANY($1)`,

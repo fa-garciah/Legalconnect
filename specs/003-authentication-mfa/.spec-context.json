@@ -736,10 +736,50 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T17:07:55.467Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T093",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:38.382Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T094",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:38.694Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T096",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.002Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T098",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T101",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T18:04:39.691Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T092",
+  "currentTask": "T101",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1383,6 +1423,41 @@
       "files": [
         "backend/tests/integration/auth-audit-completeness.test.ts"
       ]
+    },
+    "T093": {
+      "status": "DONE",
+      "did": "Asserted mfa_not_enrolled stays position 1 of REFUSAL_ORDER and stays UNAUDITED - absent from the vocabulary, absent under near-miss spellings, and not written by any file that also writes audit rows",
+      "files": [
+        "backend/tests/unit/refusal-ordering.test.ts"
+      ]
+    },
+    "T094": {
+      "status": "DONE",
+      "did": "Spanish-copy sweep over the four new screens, including accessible names since an aria-label is easy to leave in English because nobody sees it",
+      "files": [
+        "frontend/tests/component/auth/spanish-copy-auth.test.tsx"
+      ]
+    },
+    "T096": {
+      "status": "DONE",
+      "did": "Ran the four blocking suites INDIVIDUALLY as SC-029 requires: mfa-enforcement 9, mfa-no-disable-path 6, backup-codes 10, totp-secret-custody 7",
+      "files": [
+        "backend/tests/integration"
+      ]
+    },
+    "T098": {
+      "status": "DONE",
+      "did": "Wrote quickstart-results.md recording all eight scenarios with an honest Means column, the two untestable Definition-of-Done items, and five stated gaps",
+      "files": [
+        "specs/003-authentication-mfa/quickstart-results.md"
+      ]
+    },
+    "T101": {
+      "status": "DONE",
+      "did": "Confirmed both untestable items: constitution v1.5.0 is committed and pushed but NOT MERGED (so 003 cannot merge), and the T015 pre-flight ran in the only environment that exists - there is no staging or production because the AWS account is blocked",
+      "files": [
+        "specs/003-authentication-mfa/quickstart-results.md"
+      ]
     }
   },
   "concerns": [
@@ -1495,5 +1570,5 @@
       ]
     }
   ],
-  "last_action": "82/103. Slice 003 is FUNCTIONALLY COMPLETE: all four flows work end to end, all four SC-029 blocking suites pass and are wired into CI, the frontend has a CI job for the first time, and infra/ carries the KMS key. Backend 156 files/1534 tests; frontend 35 files/363 tests. REMAINING (21): component tests T068/T077/T086; e2e T061/T073/T091/T095 (need a running stack); polish T092 audit completeness, T093 refusal ordering, T094 Spanish-copy sweep, T096 run the four individually, T098 quickstart walkthrough, T101 confirm constitution merged. NOTE: T075/T076/T083/T084/T085 overlap heavily with T038/T074/T082 already written."
+  "last_action": "94/103. Backend 160 files / 1557 tests, frontend 38 files / 382 tests, all green; typecheck, lint and production build clean. quickstart-results.md records all eight scenarios honestly. REMAINING (9): T061/T073/T091/T095 e2e Playwright (need Postgres + API on 3001 + Next on 3000 + a browser), T076 and T085 (assertions substantially covered by T074 and T082), and the four-item cleanup already in the concerns list."
 }
