@@ -2,7 +2,7 @@
   "name": "legalconnect-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "LegalConnect MX backend — slice 001, tenant foundation & audit log",
+  "description": "LegalConnect MX backend \u2014 slice 001, tenant foundation & audit log",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=22"
@@ -25,7 +25,8 @@
     "test:integration": "vitest run tests/integration",
     "test:isolation": "vitest run tests/integration/isolation",
     "test:rls": "vitest run tests/integration/rls-coverage.test.ts",
-    "verify:role": "vitest run tests/integration/verify-role.test.ts"
+    "verify:role": "vitest run tests/integration/verify-role.test.ts",
+    "test:auth-coverage": "vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts tests/integration/backup-codes.test.ts tests/integration/totp-secret-custody.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "3.1129.0",

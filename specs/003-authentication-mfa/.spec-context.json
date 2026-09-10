@@ -656,10 +656,18 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:46:44.962Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T097",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:52:59.470Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T090",
+  "currentTask": "T097",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1231,6 +1239,14 @@
         "frontend/src/app/(auth)/recuperar/page.tsx",
         "frontend/src/app/(auth)/recuperar/RecoveryForm.tsx"
       ]
+    },
+    "T097": {
+      "status": "DONE",
+      "did": "Wired the four blocking suites into CI as their own step on the same footing as tenant isolation, added test:auth-coverage to package.json, AND added the frontend job the repository never had plus a dependency-scan matrix covering both projects",
+      "files": [
+        ".github/workflows/ci.yml",
+        "backend/package.json"
+      ]
     }
   },
   "concerns": [
@@ -1323,7 +1339,16 @@
       "warnings": [
         "Two latent bugs were found by these tests rather than by review: a driver-string vs Date comparison that meant the lockout never fired, and refuse() throwing inside the transaction so every failed attempt and every audit entry rolled back"
       ]
+    },
+    {
+      "what": "Everything, both projects, after the CI wiring",
+      "command": "npm run check:env && npm test (backend) && npm test (frontend) && npm run test:auth-coverage",
+      "result": "backend 156 files / 1534 tests; frontend 35 files / 363 tests; the four blocking suites 4 files / 32 tests as their own step; check:env green with 24 keys.",
+      "warnings": [
+        "The new frontend CI job and the dependency-scan matrix have never run on GitHub - they are correct locally but the first real run may surface environment differences",
+        "dependency-scan will FAIL on backend for pre-existing critical CVEs in vitest devDependencies, unrelated to 003"
+      ]
     }
   ],
-  "last_action": "79/103. ALL FOUR FLOWS ARE BUILT END TO END, backend and frontend. The production build carries /ingresar, /verificar, /enrolar, /recuperar and the NextAuth handler. Backend 156 files / 1534 tests; frontend 35 files / 363 tests. NEXT: the remaining component tests (T068, T077, T086), the e2e specs (T061, T073, T091, T095), and Phase 7 polish (T092-T101 - audit completeness, refusal ordering, Spanish copy sweep, CI wiring, quickstart walkthrough, infra KMS key)."
+  "last_action": "80/103. CI now gates what it never did: the four SC-029 blocking suites as their own step, the FRONTEND job the repository never had (typecheck, lint, tests, production build), and a dependency-scan matrix over both projects. Backend 156/1534, frontend 35/363. REMAINING: component tests T068/T077/T086, e2e T061/T073/T091/T095, and polish T092/T093/T094/T096/T098/T099/T100/T101. NOTE: dependency-scan will fail on backend for PRE-EXISTING critical CVEs in vitest devDeps - needs its own bump PR."
 }

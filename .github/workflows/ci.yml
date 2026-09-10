@@ -142,8 +142,76 @@ jobs:
       - name: Cross-tenant leak suite (includes the no-context case)
         run: npm run test:isolation
 
+      # 003/T097, SC-029. ON THE SAME FOOTING AS TENANT ISOLATION — a failure
+      # blocks the merge, and the four run as their own step rather than being
+      # discharged by the full suite below.
+      #
+      # The constitution asks for that explicitly: "authentication is covered"
+      # IN AGGREGATE does not satisfy it, because each of these is a single
+      # misconfiguration that leaves every other test green while the protection
+      # is absent. That is the property that put tenant isolation on the list,
+      # and it is why this step sits beside it rather than inside `npm test`.
+      #
+      #   mfa-enforcement      — a second factor is demanded on 100% of sign-ins
+      #   mfa-no-disable-path  — no configuration value can switch it off
+      #   backup-codes         — issuance, single use, and no way to read them back
+      #   totp-secret-custody  — a dump without the key yields no working factor
+      - name: Blocking authentication coverage (SC-029)
+        run: npm run test:auth-coverage
+
       - name: Full suite with blocking coverage
         run: npm test -- --coverage
+
+  # 003. THE FRONTEND HAD NO CI AT ALL until this slice.
+  #
+  # 016a, 018 and 019 shipped with Playwright specs, component tests and unit
+  # tests that nothing ever ran: the `quality` job above is entirely
+  # `working-directory: backend`. Merge Rules say "never merge on red", and you
+  # cannot be green on something that is not executed.
+  #
+  # 003 is what makes it urgent rather than merely overdue: this slice puts the
+  # sign-in, challenge, enrollment and recovery screens in the browser, and
+  # FR-051's "nothing reaches browser storage" is a frontend property that only
+  # a frontend test can hold.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      # A throwaway for the build and the test run. Rotating it signs everyone
+      # out and loses nothing else: the API's session rows decide validity.
+      NEXTAUTH_SECRET: ci-only-secret-not-a-real-one
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and component tests
+        run: npm test
+
+      # The build is its own gate. A page that type-checks can still fail to
+      # render — a client hook in a server component, a missing Suspense
+      # boundary around useSearchParams — and every one of those is a screen
+      # that 500s in production while every test above passes.
+      - name: Production build
+        run: npm run build
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -158,18 +226,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Principle VI: "dependency vulnerability scanning in CI. No critical CVEs on
+  # main." Until 003 this ran only against `backend/`, so Next, React and the
+  # ~40 Radix packages the frontend carries were never scanned at all. The
+  # matrix closes that.
   dependency-scan:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [backend, frontend]
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ matrix.project }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
       - run: npm ci
       # No critical CVEs on main.
       - run: npm audit --audit-level=critical
