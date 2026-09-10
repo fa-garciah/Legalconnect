@@ -681,6 +681,10 @@
     {
       "note": "The PLATFORM SURFACE is still unauthenticated after 003. SessionGuard exempts @PlatformSurface() routes because there is nothing to authenticate them with: PO is a vendor role, not a tenant membership, so no PO identity exists to hold a session. 001s loopback binding remains the only control, and main.ts still warns it must not be network-reachable before slice 003 - a warning whose slice number is now stale but whose substance still holds. Closing this needs a spec that does not exist yet.",
       "step": "implement"
+    },
+    {
+      "note": "SPECIFICATION GAP blocking Phase 3 / T052. contracts/authentication.md requires a challengeToken that is short-lived, SINGLE-USE, and carries no identity the client can read - it is the state that makes POST /auth/factor reachable without a session existing yet (FR-003 forbids a session before the second factor). data-model.md specifies NO storage for it: five entities, none of them a pending challenge, and no FR in spec.md mentions challengeToken at all. Single-use plus opaque-to-the-client cannot both hold in a purely stateless token. PROPOSED RESOLUTION, same shape as the recent_code_digests deviation already recorded: two nullable columns on identity_factor - challenge_nonce_digest and challenge_expires_at - giving ONE pending challenge per identity, which is also the correct semantics since a fresh sign-in should supersede a prior challenge. Consumption is a compare-and-clear under FOR UPDATE inside claim_attempt or a sibling function, so single-use is a data-layer guarantee rather than an application convention. Needs a migration 0038 and a note in data-model.md. Recorded rather than guessed at because it decides the shape of T052, T053 and the four US1 contract tests.",
+      "step": "implement"
     }
   ],
   "decisions": [
@@ -732,5 +736,5 @@
       ]
     }
   ],
-  "last_action": "PHASE 1 AND PHASE 2 COMPLETE: 41/103 (T001-T041). Suite 143 files / 1443 tests green, typecheck and lint clean. The hard gate passes: lc_app is DENIED on all five tables, not merely filtered. NEXT: Phase 3 = US1 sign-in (T042-T064), the MVP. Tests T042-T051 first and seen to fail, then T052-T064."
+  "last_action": "PHASES 1 AND 2 COMPLETE: 41/103 (T001-T041), committed and pushed at c6ec339. Suite 143 files / 1443 tests green; typecheck, lint, check:env, verify:role, test:rls, test:isolation all green. NEXT: Phase 3 (US1, T042-T064) is BLOCKED ON A SPEC GAP recorded as a concern - challengeToken has no specified storage and cannot be both single-use and stateless. Resolve that first (proposed: two nullable columns on identity_factor as migration 0038, plus a data-model.md note), then write T042-T051 as failing tests before T052-T064."
 }
