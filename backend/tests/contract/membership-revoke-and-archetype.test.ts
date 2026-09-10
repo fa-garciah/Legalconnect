@@ -29,9 +29,10 @@ describe('membership revoke and archetype change', () => {
   async function freshMember(): Promise<string> {
     const migration = await connectAs('migration');
     try {
+      const suffix = `${Date.now()}-${Math.random()}`;
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, 'member@example.com', now()) RETURNING id`,
-        [`idp|member-${Date.now()}-${Math.random()}`],
+        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, $2, now()) RETURNING id`,
+        [`idp|member-${suffix}`, `member-${suffix}@example.com`],
       );
       const membership = await migration.query<{ id: string }>(
         `INSERT INTO membership (identity_id, tenant_id, archetype) VALUES ($1, $2, 'AA') RETURNING id`,
@@ -68,9 +69,10 @@ describe('membership revoke and archetype change', () => {
     let identityId: string;
     let membershipId: string;
     try {
+      const suffix = `${Date.now()}-${Math.random()}`;
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, 'live-check@example.com', now()) RETURNING id`,
-        [`idp|live-check-${Date.now()}`],
+        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, $2, now()) RETURNING id`,
+        [`idp|live-check-${suffix}`, `live-check-${suffix}@example.com`],
       );
       identityId = identity.rows[0]!.id;
       const membership = await migration.query<{ id: string }>(
@@ -107,9 +109,10 @@ describe('membership revoke and archetype change', () => {
     const migration = await connectAs('migration');
     let saIdentityId: string;
     try {
+      const suffix = `${Date.now()}-${Math.random()}`;
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, 'sa-actor@example.com', now()) RETURNING id`,
-        [`idp|sa-actor-${Date.now()}`],
+        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, $2, now()) RETURNING id`,
+        [`idp|sa-actor-${suffix}`, `sa-actor-${suffix}@example.com`],
       );
       saIdentityId = identity.rows[0]!.id;
       await migration.query(`INSERT INTO membership (identity_id, tenant_id, archetype) VALUES ($1, $2, 'SA')`, [

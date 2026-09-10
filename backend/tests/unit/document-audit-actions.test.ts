@@ -44,7 +44,10 @@ describe('007 document audit actions', () => {
     expect(TARGET_ENTITY_BY_ACTION['document_category.retired']).toBe('document_category');
   });
 
-  it('AUDIT_ACTIONS holds exactly 39 actions (31 inherited + 8 new)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(39);
+  // 003 adds twelve authentication actions (FR-042), so "inherited" is now 43.
+  // Updated rather than deleted, for the reason 007's own dependency-baseline
+  // comment gives: the check still has to fail loudly for the next slice.
+  it('AUDIT_ACTIONS holds exactly 51 actions (43 inherited + 8 from 007)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(51);
   });
 });

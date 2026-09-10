@@ -144,10 +144,42 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T02:42:36.529Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:03.868Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:04.281Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:04.647Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:11:05.063Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T015",
+  "currentTask": "T019",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -254,6 +286,35 @@
       "files": [
         "backend/drizzle/0035_identity_email_unique.sql"
       ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Extended the Drizzle schema with the five new tables, a customType bytea for the envelope-encrypted secret, and the identity email expression index",
+      "files": [
+        "backend/src/common/db/schema.ts"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Added the twelve audit actions and their TARGET_ENTITY_BY_ACTION entries, none channel-gated; also added migration 0036 extending the audit_event_action_known CHECK constraint, which T008 had missed",
+      "files": [
+        "backend/src/common/audit/actions.ts",
+        "backend/drizzle/0036_auth_audit_actions.sql"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Extended the sanitiser deny-list with code, digest and ciphertext (secret and backup_code were already present) and allowlisted plancode/previousplancode as references rather than data",
+      "files": [
+        "backend/src/common/audit/sanitise.ts"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Recorded the five new tables as deliberately unregistered, in the comment shape identity already uses, explaining that they are protected by grants rather than policies",
+      "files": [
+        "backend/src/common/db/tenant-scoped-tables.ts"
+      ]
     }
   },
   "concerns": [
@@ -263,6 +324,10 @@
     },
     {
       "note": "002 test-suite idempotency breaks once 0035 lands. The T015 pre-flight found 7 duplicate normalized emails in the local dev database - all test residue (member@example.com x9, already@example.com x3, etc.) from repeated 002 suite runs that create identities with FIXED emails and never clean them up. With the unique index in place, 002 suite passes on a fresh database and FAILS on the second run against the same one. This directly threatens T064, which requires re-running 002 full contract and integration suites and confirming they pass. Fix is per-run unique emails in 002 fixtures or teardown of created identities - decide before T064, not at it.",
+      "step": "implement"
+    },
+    {
+      "note": "MIGRATION RENUMBER: tasks.md assigns 0036_accept_invitation_v2.sql to T014, but 0036 is now taken by 0036_auth_audit_actions.sql - a migration T008 needed and did not have. T014 must therefore be written as 0037_accept_invitation_v2.sql when block 2E runs. Filename order is what migrate.ts sorts on, so the number matters and the task text is now stale.",
       "step": "implement"
     }
   ],
@@ -300,7 +365,15 @@
       "warnings": [
         "0035 guard fired correctly against the pre-existing test residue before the reset, naming the count and the addresses - the intended behaviour, verified rather than assumed"
       ]
+    },
+    {
+      "what": "Full backend suite after block 2B",
+      "command": "npm run typecheck && npm run lint && npm test",
+      "result": "134 test files, 1340/1340 pass. Integration passed against a database that already carried prior-run data, which is the idempotency proof the email-uniqueness fix needed.",
+      "warnings": [
+        "Reaching green required fixing 30 pre-existing failures this slice caused: 3 vocabulary count assertions (39 -> 51), the audit-fields sweep attempting to write the twelve auth actions as lc_app, and 7 test sites inserting identities with hardcoded emails"
+      ]
     }
   ],
-  "last_action": "Block 2A COMPLETE: T008-T013 + T015 done (14/103). Migrations 0030-0035 applied from scratch and verified; verify:role 4/4 and test:rls 31/31 green, which discharges T040 early. NEXT: block 2B (T016-T019) - Drizzle schema, the twelve audit actions plus TARGET_ENTITY_BY_ACTION, the sanitiser deny-list, and the tenant-scoped-tables comment. Reminders: T014 was MOVED to block 2E beside T035; and see the recorded concern about 002 suite idempotency before reaching T064."
+  "last_action": "Blocks 2A and 2B COMPLETE: T008-T013, T015-T019 done (18/103). Full backend suite green: 134 files, 1340/1340. Migrations 0030-0036 applied. The 002 test-idempotency concern recorded earlier is now RESOLVED - 7 sites parameterised. NEXT: block 2C (T020-T028), the cryptographic primitives, strict TDD - write T020-T023 tests first and WATCH THEM FAIL before T024-T028. Reminders: T014 must be 0037 not 0036; T014 stays in block 2E beside T035."
 }

@@ -58,9 +58,10 @@ describe('POST /internal/platform/tenants/:id/seed-administrator (US6)', () => {
     const tenantId = await freshTenant();
     const migration = await connectAs('migration');
     try {
+      const suffix = `${Date.now()}-${Math.random()}`;
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, 'already@example.com', now()) RETURNING id`,
-        [`idp|already-administered-${Date.now()}`],
+        `INSERT INTO identity (subject, email, mfa_enrolled_at) VALUES ($1, $2, now()) RETURNING id`,
+        [`idp|already-administered-${suffix}`, `already-administered-${suffix}@example.com`],
       );
       await migration.query(`INSERT INTO membership (identity_id, tenant_id, archetype) VALUES ($1, $2, 'SA')`, [
         identity.rows[0]!.id,

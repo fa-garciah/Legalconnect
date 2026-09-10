@@ -89,9 +89,13 @@ describe('membership resolution against real data (SC-001)', () => {
   it('a revoked membership is refused — US1 scenario 3, quickstart V4', async () => {
     const migration = await connectAs('migration');
     try {
+      // 003/0035 added a unique index on lower(btrim(email)). The subject was
+      // already per-run unique; the email was a fixed literal, so a second run
+      // against the same database collided. Both now derive from one suffix.
+      const suffix = Date.now();
       const { rows } = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email) VALUES ($1, 'revoked-test@example.com') RETURNING id`,
-        [`idp|revoked-test-${Date.now()}`],
+        `INSERT INTO identity (subject, email) VALUES ($1, $2) RETURNING id`,
+        [`idp|revoked-test-${suffix}`, `revoked-test-${suffix}@example.com`],
       );
       const testIdentityId = rows[0]!.id;
       await migration.query(
@@ -124,9 +128,11 @@ describe('membership resolution against real data (SC-001)', () => {
         [deactivatedTenantId],
       );
 
+      // Per-run unique email, for the reason the sibling test above states.
+      const suffix = Date.now();
       const { rows } = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email) VALUES ($1, 'deactivated-test@example.com') RETURNING id`,
-        [`idp|deactivated-test-${Date.now()}`],
+        `INSERT INTO identity (subject, email) VALUES ($1, $2) RETURNING id`,
+        [`idp|deactivated-test-${suffix}`, `deactivated-test-${suffix}@example.com`],
       );
       const testIdentityId = rows[0]!.id;
       await migration.query(

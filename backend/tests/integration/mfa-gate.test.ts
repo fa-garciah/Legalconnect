@@ -22,9 +22,13 @@ describe('MFA enrollment gate (FR-026)', () => {
     tenants = await seededTenantIds();
     const migration = await connectAs('migration');
     try {
+      // 003/0035 added a unique index on lower(btrim(email)), so a fixed literal
+      // email collides on the second run against the same database. Derived from
+      // the same per-run suffix the subject already used.
+      const suffix = Date.now();
       const identity = await migration.query<{ id: string }>(
-        `INSERT INTO identity (subject, email) VALUES ($1, 'unenrolled@example.com') RETURNING id`,
-        [`idp|unenrolled-${Date.now()}`],
+        `INSERT INTO identity (subject, email) VALUES ($1, $2) RETURNING id`,
+        [`idp|unenrolled-${suffix}`, `unenrolled-${suffix}@example.com`],
       );
       unenrolledIdentityId = identity.rows[0]!.id;
       await migration.query(

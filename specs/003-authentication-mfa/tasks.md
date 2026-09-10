@@ -139,10 +139,10 @@ they are the hard gate.
 
 ### Application-side registries
 
-- [ ] T016 Extend the Drizzle schema with the five new tables and the `identity` email index in `backend/src/common/db/schema.ts` (MODIFIES a slice 001/002 file)
-- [ ] T017 [P] Add the twelve audit actions from FR-042 to `AUDIT_ACTIONS` **and a `TARGET_ENTITY_BY_ACTION` entry for each** — the record type requires exhaustiveness — deciding none is channel-gated, in `backend/src/common/audit/actions.ts`. `audit-vocabulary-unchanged.test.ts` is a subset-and-count check on `001`/`002`'s sixteen and **needs no edit**, by its own design (MODIFIES a slice 001 file)
-- [ ] T018 [P] Extend the `assertNoSensitiveData` deny-list with `secret`, `code`, `digest`, `ciphertext` and `backupCode` in `backend/src/common/audit/sanitise.ts` — plan.md Constraints. Extends the existing sanitiser rather than adding a second mechanism (MODIFIES a slice 001 file)
-- [ ] T019 [P] Record the five new tables as deliberately unregistered in `backend/src/common/db/tenant-scoped-tables.ts`, as a comment in the shape `identity`'s already uses. **They carry no `tenant_id`, so `rls-coverage.test.ts` passes them without an exemption** — verified against that test's registry assertion, which scans for the column (MODIFIES a slice 001 file)
+- [x] T016 Extend the Drizzle schema with the five new tables and the `identity` email index in `backend/src/common/db/schema.ts` (MODIFIES a slice 001/002 file)
+- [x] T017 [P] Add the twelve audit actions from FR-042 to `AUDIT_ACTIONS` **and a `TARGET_ENTITY_BY_ACTION` entry for each** — the record type requires exhaustiveness — deciding none is channel-gated, in `backend/src/common/audit/actions.ts`. `audit-vocabulary-unchanged.test.ts` is a subset-and-count check on `001`/`002`'s sixteen and **needs no edit**, by its own design (MODIFIES a slice 001 file)
+- [x] T018 [P] Extend the `assertNoSensitiveData` deny-list with `secret`, `code`, `digest`, `ciphertext` and `backupCode` in `backend/src/common/audit/sanitise.ts` — plan.md Constraints. Extends the existing sanitiser rather than adding a second mechanism (MODIFIES a slice 001 file)
+- [x] T019 [P] Record the five new tables as deliberately unregistered in `backend/src/common/db/tenant-scoped-tables.ts`, as a comment in the shape `identity`'s already uses. **They carry no `tenant_id`, so `rls-coverage.test.ts` passes them without an exemption** — verified against that test's registry assertion, which scans for the column (MODIFIES a slice 001 file)
 
 ### Cryptographic primitives ⚠️ Write tests first, watch them fail
 

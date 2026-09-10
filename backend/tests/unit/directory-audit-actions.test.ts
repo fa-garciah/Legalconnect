@@ -27,7 +27,11 @@ describe('017 directory audit actions', () => {
     expect(TARGET_ENTITY_BY_ACTION['directory.position_assigned']).toBe('membership');
   });
 
-  it('AUDIT_ACTIONS holds exactly 39 actions (16 from 001/002, 3 from 017, 12 from 006, 8 from 007)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(39);
+  // 003 adds twelve authentication actions (FR-042). The count is updated rather
+  // than the assertion deleted, following the precedent 007 set for the dependency
+  // baseline: a future slice growing the vocabulary unnoticed should still fail
+  // here and have to say so out loud.
+  it('AUDIT_ACTIONS holds exactly 51 actions (16 from 001/002, 3 from 017, 12 from 006, 8 from 007, 12 from 003)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(51);
   });
 });
