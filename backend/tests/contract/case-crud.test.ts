@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 import { makeCaseFirm, nextSuffix, uniqueName, type Actor, type CaseFirm } from '../helpers/case-core';
@@ -44,7 +44,7 @@ describe('opening a case', () => {
   }
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     migration = await connectAs('migration');
     firm = await makeCaseFirm(migration, `CC Casos ${nextSuffix()}`, uniqueRfc());
     otherFirm = await makeCaseFirm(migration, `CC Casos Otra ${nextSuffix()}`, uniqueRfc());

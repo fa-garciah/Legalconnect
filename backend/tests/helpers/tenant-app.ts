@@ -21,6 +21,7 @@ import {
   type MembershipPort,
   type MembershipRecord,
 } from '../../src/common/tenant/membership';
+import { installIdentityStandIn } from './real-app';
 
 export function buildTenantTestModuleWithPort(port: MembershipPort) {
   @Module({
@@ -44,6 +45,7 @@ export async function createTenantApp(
   memberships: readonly MembershipRecord[],
 ): Promise<INestApplication> {
   const app = await NestFactory.create(buildTenantTestModule(memberships), { logger: false });
+  installIdentityStandIn(app);
   await app.init();
   return app;
 }
@@ -51,6 +53,7 @@ export async function createTenantApp(
 /** slice 002 — the real-adapter counterpart, for SC-001's re-run requirement. */
 export async function createTenantAppWithPort(port: MembershipPort): Promise<INestApplication> {
   const app = await NestFactory.create(buildTenantTestModuleWithPort(port), { logger: false });
+  installIdentityStandIn(app);
   await app.init();
   return app;
 }

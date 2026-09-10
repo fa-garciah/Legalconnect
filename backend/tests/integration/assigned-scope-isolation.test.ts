@@ -16,7 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 import { AssignedScopeResolver } from '../../src/modules/case-core/assigned-scope.resolver';
@@ -30,7 +30,7 @@ describe('the assigned resolver cannot see across tenants', () => {
   let caseInB: string;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     migration = await connectAs('migration');
     firmA = await makeCaseFirm(migration, `CC Aislamiento A ${nextSuffix()}`, uniqueRfc());
     firmB = await makeCaseFirm(migration, `CC Aislamiento B ${nextSuffix()}`, uniqueRfc());

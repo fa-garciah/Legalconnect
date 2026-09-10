@@ -6,7 +6,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -17,7 +17,7 @@ describe('inviting an already-member email (US5 scenario 2, FR-029)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });
@@ -60,9 +60,7 @@ describe('inviting an already-member email (US5 scenario 2, FR-029)', () => {
 
     const response = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', 'idp|dual-tenant-counsel')
-      .set('x-email', 'dual@example.com')
-      .send();
+      .send({ email: 'dual@example.com', credential: 'una-contrasena-larga-de-prueba' });
 
     // Refused generically (FR-029's guard), not a 500 from a unique-constraint
     // violation.

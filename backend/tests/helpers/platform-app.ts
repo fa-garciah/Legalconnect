@@ -14,6 +14,7 @@ import { AuditModule } from '../../src/modules/audit/audit.module';
 import { PlanModule } from '../../src/modules/plan/plan.module';
 import { PlatformContextInterceptor } from '../../src/common/db/platform-context';
 import { AuditInterceptor } from '../../src/common/audit/interceptor';
+import { installIdentityStandIn } from './real-app';
 
 @Module({
   imports: [TenantModule, AuditModule, PlanModule],
@@ -26,6 +27,7 @@ export class PlatformTestModule {}
 
 export async function createPlatformApp(): Promise<INestApplication> {
   const app = await NestFactory.create(PlatformTestModule, { logger: false });
+  installIdentityStandIn(app);
   await app.init();
   return app;
 }

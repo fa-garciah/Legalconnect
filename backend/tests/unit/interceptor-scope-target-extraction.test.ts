@@ -25,6 +25,7 @@ import request from 'supertest';
 import { AuthorizationInterceptor } from '../../src/common/authz/interceptor';
 import { Capability, ScopeTarget } from '../../src/common/authz/declare';
 import { PlatformSurface } from '../../src/common/permissions/guard';
+import { installIdentityStandIn } from '../helpers/real-app';
 
 /**
  * `@PlatformSurface()` so no tenant context is needed — this file is about parameter
@@ -76,6 +77,7 @@ describe('scope target extraction', () => {
 
   beforeAll(async () => {
     app = await NestFactory.create(TestModule, { logger: false });
+    installIdentityStandIn(app);
     await app.init();
   });
 

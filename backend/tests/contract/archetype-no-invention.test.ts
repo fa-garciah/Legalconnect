@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { MATRIX } from '../../src/common/authz/matrix';
@@ -19,7 +19,7 @@ describe('archetype meaning cannot be invented or edited through any surface', (
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });

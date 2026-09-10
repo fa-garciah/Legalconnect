@@ -15,7 +15,6 @@ import { Observable, firstValueFrom, from } from 'rxjs';
 import { sql } from 'drizzle-orm';
 import { appDb, type Tx } from '../db/client';
 import { ValidationFailed } from '../http/errors';
-import { firstHeaderValue } from '../http/header';
 
 const storage = new AsyncLocalStorage<{ tx: Tx; identityId: string }>();
 
@@ -39,6 +38,8 @@ export function currentIdentityId(): string {
 
 interface IncomingRequest {
   headers: Record<string, string | string[] | undefined>;
+  /** 003/T033. Set by `SessionGuard`, which runs before every interceptor. */
+  identityId?: string;
 }
 
 @Injectable()
@@ -49,9 +50,17 @@ export class IdentityContextInterceptor implements NestInterceptor {
 
   private async activate(context: ExecutionContext, next: CallHandler): Promise<unknown> {
     const request = context.switchToHttp().getRequest<IncomingRequest>();
-    const identityId = firstHeaderValue(request.headers, 'x-identity-id');
+
+    // 003/T033. From the resolved session, not from `x-identity-id`. The header
+    // was 002/D10's stand-in for a verification that did not exist yet; it does
+    // now, and a self-enumeration route reading an unverified header would let
+    // anyone list anyone's memberships.
+    const identityId = request.identityId;
 
     if (!identityId) {
+      // Should be unreachable — `SessionGuard` refuses before any interceptor
+      // runs. Kept as a loud failure rather than a silent one, because the cost
+      // of being wrong here is enumerating another person's memberships.
       throw new ValidationFailed('No authenticated identity was supplied.');
     }
 

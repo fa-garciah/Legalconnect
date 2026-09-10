@@ -27,6 +27,7 @@ import { PlatformSurface } from '../../../src/common/permissions/guard';
 import { InMemoryMembershipPort, MEMBERSHIP_PORT } from '../../../src/common/tenant/membership';
 import { IDENTITY_OUTSIDER, membershipFixtures, seededTenantIds, type SeededTenants } from '../../helpers/tenants';
 import type { MembershipRecord } from '../../../src/common/tenant/membership';
+import { installIdentityStandIn } from '../../helpers/real-app';
 
 @PlatformSurface()
 @Controller('probe-platform')
@@ -52,6 +53,7 @@ describe('TenantContextInterceptor skips a platform route when both surfaces coe
 
   beforeAll(async () => {
     app = await NestFactory.create(CombinedSurfaceModule, { logger: false });
+    installIdentityStandIn(app);
     await app.init();
   });
 

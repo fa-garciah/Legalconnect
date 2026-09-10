@@ -18,6 +18,7 @@ import {
 } from '../../src/common/tenant/membership';
 import { Capability } from '../../src/common/authz/declare';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
+import { installIdentityStandIn } from '../helpers/real-app';
 
 @Controller('probe')
 class UndeclaredProbeController {
@@ -69,6 +70,7 @@ describe('an undeclared route is unreachable', () => {
     // regardless of which MembershipPort resolves the membership itself.
     tenants = await seededTenantIds();
     app = await NestFactory.create(buildModule(tenants.a), { logger: false });
+    installIdentityStandIn(app);
     await app.init();
   });
 

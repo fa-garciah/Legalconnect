@@ -14,6 +14,7 @@ import request from 'supertest';
 import { AuthorizationInterceptor } from '../../src/common/authz/interceptor';
 import { PlatformSurface } from '../../src/common/permissions/guard';
 import { Capability } from '../../src/common/authz/declare';
+import { installIdentityStandIn } from '../helpers/real-app';
 
 @PlatformSurface()
 @Controller('probe')
@@ -36,6 +37,7 @@ describe('a route carrying both @PlatformSurface() and a tenant-scoped capabilit
 
   beforeAll(async () => {
     app = await NestFactory.create(TestModule, { logger: false });
+    installIdentityStandIn(app);
     await app.init();
   });
 

@@ -20,6 +20,7 @@ import {
 import { Capability } from '../../src/common/authz/declare';
 import { CAPABILITIES, type CapabilityDef, type CapabilityId } from '../../src/common/authz/capability';
 import { MATRIX } from '../../src/common/authz/matrix';
+import { installIdentityStandIn } from '../helpers/real-app';
 
 const TIER_GATED_ID = 'test.refusal_shapes_tier' as CapabilityId;
 
@@ -70,6 +71,8 @@ describe('refusal wire shapes', () => {
     (MATRIX as unknown as Record<string, Set<string>>)[TIER_GATED_ID] = new Set(['AA']);
 
     app = await NestFactory.create(buildModule(tenants.a), { logger: false });
+
+    installIdentityStandIn(app);
     await app.init();
   });
 

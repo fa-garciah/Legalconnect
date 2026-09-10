@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -15,7 +15,7 @@ describe('POST /tenant/invitations (US2)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });

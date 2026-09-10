@@ -29,6 +29,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { PLATFORM_SURFACE } from '../permissions/guard';
 import { sql } from 'drizzle-orm';
 import { appDb } from '../db/client';
 import { digestToken } from './session.port';
@@ -67,7 +68,37 @@ export class SessionGuard implements CanActivate {
     ]);
     if (isAuthSurface) return true;
 
+    // THE PLATFORM SURFACE STAYS EXEMPT, AND THIS IS A GAP RATHER THAN A DESIGN.
+    //
+    // 001 shipped it authenticating nothing, bound to loopback, with main.ts
+    // warning that it "must not be network-reachable before slice 003". This
+    // slice brings 002's TENANT surfaces onto the network — that is what
+    // research.md D10 is about — and it does not close the platform surface,
+    // because there is nothing here to close it with: PO is a vendor role and not
+    // a tenant membership, so no PO identity exists to hold a session, and
+    // inventing one would be a capability no spec asked for.
+    //
+    // The loopback binding therefore remains the control, unchanged, and
+    // main.ts's warning remains accurate with its slice number now stale. Recorded
+    // in .spec-context.json as a concern rather than left to be discovered by
+    // whoever first tries to expose this surface.
+    const isPlatformSurface = this.reflector.getAllAndOverride<boolean>(PLATFORM_SURFACE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPlatformSurface) return true;
+
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    // Already established by server-side wiring earlier in the chain. In
+    // PRODUCTION nothing does this — `AppModule` installs no such middleware, and
+    // `identityId` is a property on the request object, which no HTTP client can
+    // set: headers, query and body all land elsewhere. The only thing that
+    // populates it is `tests/helpers/real-app.ts`, which is where 002's
+    // `x-identity-id` stand-in now lives and the only place it may live (FR-041,
+    // SC-030 — accepted on ZERO network-reachable surfaces).
+    if (request.identityId) return true;
+
     const token = bearerToken(request.headers);
 
     // No token, an unknown token, an expired one and a revoked one all reach the

@@ -25,6 +25,7 @@ import {
   type MembershipPort,
   type MembershipRecord,
 } from '../../src/common/tenant/membership';
+import { installIdentityStandIn } from './real-app';
 
 @Controller('probe')
 export class ProbeController {
@@ -65,6 +66,7 @@ export async function createTestApp(
   memberships: readonly MembershipRecord[],
 ): Promise<INestApplication> {
   const app = await NestFactory.create(buildTestModule(memberships), { logger: false });
+  installIdentityStandIn(app);
   await app.init();
   return app;
 }
@@ -76,6 +78,7 @@ export async function createTestApp(
  */
 export async function createTestAppWithPort(port: MembershipPort): Promise<INestApplication> {
   const app = await NestFactory.create(buildTestModuleWithPort(port), { logger: false });
+  installIdentityStandIn(app);
   await app.init();
   return app;
 }

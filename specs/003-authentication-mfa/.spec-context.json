@@ -280,10 +280,58 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T03:32:58.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:35.366Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:35.818Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:36.218Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:36.638Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:37.103Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T05:09:37.559Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T032",
+  "currentTask": "T041",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -512,6 +560,49 @@
       "files": [
         "backend/src/common/auth/origin-throttle.ts"
       ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Replaced accept_invitation with the five-argument version as migration 0037 (not 0036 - taken), establishing identity_credential inside the existing transaction. Find-or-create re-keyed from subject to normalized email, which D9 forces",
+      "files": [
+        "backend/drizzle/0037_accept_invitation_v2.sql"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "Identity context now takes the identity from the resolved session rather than x-identity-id",
+      "files": [
+        "backend/src/common/identity/context.ts"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "Tenant middleware takes the identity from the session while KEEPING x-tenant-id, which was never an identity claim - it names which membership to activate",
+      "files": [
+        "backend/src/common/tenant/middleware.ts"
+      ]
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "Acceptance service generates the opaque subject in the product and passes the Argon2id digest as the fifth argument; email and credential moved from headers to the request body",
+      "files": [
+        "backend/src/modules/identity/accept-invitation.service.ts",
+        "backend/src/modules/identity/accept-invitation.controller.ts"
+      ]
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "Ran verify:role (4/4) and test:rls (31/31) - both pass unchanged with all five new tables present",
+      "files": [
+        "backend/drizzle"
+      ]
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Ran test:isolation - 001's suite passes unchanged, 12 files / 70 tests. Authentication precedes tenant selection and did not touch it",
+      "files": [
+        "backend/tests/integration/isolation"
+      ]
     }
   },
   "concerns": [
@@ -525,6 +616,10 @@
     },
     {
       "note": "MIGRATION RENUMBER: tasks.md assigns 0036_accept_invitation_v2.sql to T014, but 0036 is now taken by 0036_auth_audit_actions.sql - a migration T008 needed and did not have. T014 must therefore be written as 0037_accept_invitation_v2.sql when block 2E runs. Filename order is what migrate.ts sorts on, so the number matters and the task text is now stale.",
+      "step": "implement"
+    },
+    {
+      "note": "The PLATFORM SURFACE is still unauthenticated after 003. SessionGuard exempts @PlatformSurface() routes because there is nothing to authenticate them with: PO is a vendor role, not a tenant membership, so no PO identity exists to hold a session. 001s loopback binding remains the only control, and main.ts still warns it must not be network-reachable before slice 003 - a warning whose slice number is now stale but whose substance still holds. Closing this needs a spec that does not exist yet.",
       "step": "implement"
     }
   ],
@@ -543,6 +638,11 @@
       "decision": "Added a seventh column recent_code_digests jsonb to identity_factor, which data-model.md does not list",
       "why": "FR-020 requires a successfully used code be refused anywhere in FR-056 90-second window, and names claim_attempt() as its home. Enforcing that needs memory of which digests were already accepted for at least that window, and none of the six specified columns can hold it - the requirement was unimplementable as written. Placed on identity_factor rather than in a sixth table because data-model.md commits to five new entities and this entity is already described as holding the lockout state, which is the same class of per-identity verification state. Bounded by construction: at most three codes can legitimately be accepted in one window, and every call prunes older entries before appending. Stores digests only, never codes.",
       "rejected": "A sixth used_code table - rejected because it changes the slice shape to store a bounded scrap of data and contradicts the documented five-entity count"
+    },
+    {
+      "decision": "accept_invitation find-or-create now keys on the normalized email, not on subject",
+      "why": "D9 makes subject a value the PRODUCT generates at acceptance. A generated subject is new every time by construction, so keying find-or-create on it would find nothing ever: every acceptance would mint a fresh identity, and one human being with memberships in two firms would become two people with one credential each. 001/FR-021 would be silently false with nothing failing loudly. 0035s unique index on lower(btrim(email)) is what makes the email a legitimate key, and sign-in resolves a person by email for the same reason. Subject keeps its own meaning as the stable internal handle that survives an email change (002/FR-003, Technical Debt item 6).",
+      "rejected": "Keying on the generated subject as tasks.md implies - rejected because it silently breaks multi-tenant membership; the multi-tenant integration test is precisely what caught it"
     }
   ],
   "verified": [
@@ -572,5 +672,5 @@
       ]
     }
   ],
-  "last_action": "Blocks 2A-2D COMPLETE: 31/103. Backend suite 139 files / 1382 tests green. NEXT: block 2E - T014 (accept_invitation v2, MUST be numbered 0037 not 0036) plus T033/T034/T035, the header-to-session switch. These four must land together or 002 breaks. Then 2F (T036-T041), the lockdown gate."
+  "last_action": "Blocks 2A-2E COMPLETE plus T040/T041: 37/103. Full suite 139 files / 1382 tests green, isolation 70/70, rls 31/31, verify:role 4/4, check:env green. 002's routes are ON THE NETWORK behind real session verification. NEXT: block 2F (T036-T039) - the four lockdown tests; T040/T041 already discharged. Then Phase 3 (US1, T042-T064)."
 }

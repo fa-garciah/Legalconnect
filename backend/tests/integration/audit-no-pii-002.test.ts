@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -30,7 +30,7 @@ describe('no PII in this slice\'s audit entries (SC-012)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
 
@@ -50,9 +50,7 @@ describe('no PII in this slice\'s audit entries (SC-012)', () => {
 
     await request(app.getHttpServer())
       .post(`/identity/invitations/nonexistent-for-pii-sweep/accept`)
-      .set('x-subject', 'idp|pii-sweep')
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
   });
 
   afterAll(async () => {

@@ -12,7 +12,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { uniqueRfc } from '../helpers/rfc';
 
@@ -30,7 +30,7 @@ describe('PO is permitted exactly the 7 platform capabilities, over real HTTP', 
   let tenants: SeededTenants;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
   });
 

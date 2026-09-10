@@ -84,6 +84,11 @@ export async function runInTenantContext<T>(
 interface IncomingRequest {
   headers: Record<string, string | string[] | undefined>;
   principal?: ActivePrincipal;
+  /**
+   * 003/T034. Set by `SessionGuard`, which runs before every interceptor — that
+   * ordering is the whole reason it is a Guard and not an interceptor.
+   */
+  identityId?: string;
 }
 
 const header = (req: IncomingRequest, name: string): string | undefined =>
@@ -117,7 +122,22 @@ export class TenantContextInterceptor implements NestInterceptor {
 
   private async activate(context: ExecutionContext, next: CallHandler): Promise<unknown> {
     const request = context.switchToHttp().getRequest<IncomingRequest>();
-    const identityId = header(request, 'x-identity-id');
+
+    // 003/T034, research.md D10. The identity now comes from the RESOLVED SESSION,
+    // not from `x-identity-id`. That header was 002's deliberate stand-in — "real
+    // verification does not exist until slice 003" — and it is the reason every
+    // 002 surface stayed bound to loopback. It is gone: `SessionGuard` hashed a
+    // presented token, resolved it against this product's own `session` table, and
+    // put the answer here.
+    //
+    // `x-tenant-id` STAYS, and the distinction matters. It never was an identity
+    // claim: it names which of the caller's memberships to activate for this
+    // request, chosen by a person who may hold several (001/FR-021). Removing it
+    // would break 002/FR-013. What the session decides is WHO; what this header
+    // decides is WHICH FIRM — and the membership table, under RLS, is what says
+    // whether this identity may reach that tenant at all. Nothing in the session
+    // is trusted for that (002/FR-016).
+    const identityId = request.identityId;
     const tenantId = header(request, 'x-tenant-id');
     const channel: Channel = header(request, 'x-channel') === 'automated' ? 'automated' : 'interactive';
 

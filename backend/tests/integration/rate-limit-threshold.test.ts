@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
-import { createRealApp } from '../helpers/real-app';
+import { createAuthenticatedApp } from '../helpers/real-app';
 import { seededTenantIds, type SeededTenants } from '../helpers/tenants';
 import { seededIdentities, type SeededIdentities } from '../helpers/identities';
 import { connectAs } from '../helpers/db';
@@ -18,7 +18,7 @@ describe('per-reference failed-attempt threshold (research.md D8)', () => {
   let identities: SeededIdentities;
 
   beforeAll(async () => {
-    app = await createRealApp();
+    app = await createAuthenticatedApp();
     tenants = await seededTenantIds();
     identities = await seededIdentities();
   });
@@ -51,9 +51,7 @@ describe('per-reference failed-attempt threshold (research.md D8)', () => {
     for (let i = 0; i < 10; i += 1) {
       const response = await request(app.getHttpServer())
         .post(`/identity/invitations/${rawReference}/accept`)
-        .set('x-subject', `idp|attacker-${i}`)
-        .set('x-email', 'wrong@example.com')
-        .send();
+        .send({ email: 'wrong@example.com', credential: 'una-contrasena-larga-de-prueba' });
       expect(response.status).toBe(400);
     }
 
@@ -61,9 +59,7 @@ describe('per-reference failed-attempt threshold (research.md D8)', () => {
     // reference is spent, not the email check.
     const finalAttempt = await request(app.getHttpServer())
       .post(`/identity/invitations/${rawReference}/accept`)
-      .set('x-subject', 'idp|legitimate-invitee')
-      .set('x-email', email)
-      .send();
+      .send({ email: email, credential: 'una-contrasena-larga-de-prueba' });
     expect(finalAttempt.status).toBe(400);
     expect(finalAttempt.body.error.code).toBe('invitation_invalid');
   });
