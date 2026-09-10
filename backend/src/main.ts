@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { assertApplicationRoleIsSafe } from './common/db/client';
+import { assertKeyProviderIsSafe } from './common/auth/deployment-assertions';
 import { ensureUpcomingPartitions } from './modules/audit/partition-maintenance';
 
 function loadEnvFile(path: string): void {
@@ -25,6 +26,15 @@ async function bootstrap(): Promise<void> {
   // policy in place, every isolation test green, and no isolation whatsoever — so the
   // process refuses to start rather than starting unsafely.
   await assertApplicationRoleIsSafe();
+
+  // 003/T027, the same shape and for the same reason as the role check above: a
+  // single misconfiguration that leaves every test green and the protection
+  // absent. A deployed environment running the LOCAL key provider would wrap every
+  // TOTP secret under an environment variable rather than a key restricted and
+  // audited to the PAC/CSD standard (FR-016) — so a restored backup would yield
+  // working second factors, which is precisely what SC-008 says must be impossible.
+  // An assertion, not a warning, and deliberately with no override flag.
+  assertKeyProviderIsSafe();
 
   // Best-effort. A month with no partition waiting causes inserts into it to fail
   // later; it does not mean isolation is broken now, so unlike the role check above

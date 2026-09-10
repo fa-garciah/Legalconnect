@@ -146,15 +146,15 @@ they are the hard gate.
 
 ### Cryptographic primitives ⚠️ Write tests first, watch them fail
 
-- [ ] T020 [P] Unit test: the two Argon2id profiles are distinct, the interactive profile meets OWASP-grade parameters, and neither is reachable with the other's parameters, in `backend/tests/unit/argon2-profiles.test.ts` — [D6](./research.md#d6--argon2id-via-node-rsargon2-for-both-credentials-and-backup-codes-with-two-parameter-profiles)
-- [ ] T021 [P] Unit test: codes from the previous, current and next 30-second step are accepted; **every** step outside the 90-second window is refused; a used code is refused anywhere in the window, not only its own step, in `backend/tests/unit/totp-window.test.ts` — FR-020, FR-056, SC-034
-- [ ] T022 [P] Unit test: `KeyProvider` wraps and unwraps a data key; a ciphertext wrapped under one key reference does not unwrap under another; an unavailable key **throws rather than returning a falsy result**, in `backend/tests/unit/key-provider.test.ts` — [D5](./research.md#d5--totp-secrets-use-envelope-encryption-behind-a-keyprovider-port-kms-in-production-and-a-local-key-in-devci)
-- [ ] T023 [P] Unit test: generated backup codes are 128-bit random, exactly 10 per set, and no two sets collide, in `backend/tests/unit/backup-code-generation.test.ts` — FR-031
-- [ ] T024 Implement the two Argon2id profiles over `@node-rs/argon2` in `backend/src/common/auth/argon2.ts`, with the reduced high-entropy profile's justification stated in a comment so it is not later read as an oversight (depends on T020)
-- [ ] T025 Implement the `otplib` wrapper — 30-second step, 6 digits, ±1 step acceptance — in `backend/src/common/auth/totp.ts` (depends on T021)
-- [ ] T026 Implement the `KeyProvider` port with `KmsKeyProvider` and `LocalKeyProvider` in `backend/src/common/auth/key-provider.ts` (depends on T022)
-- [ ] T027 Add the startup assertion that **refuses to boot** when a deployed environment resolves the local key provider — an assertion, not a warning — in `backend/src/main.ts`, alongside the existing role-attribute assertions (MODIFIES a slice 001 file, depends on T026)
-- [ ] T028 Implement backup-code generation and the fixed-comparison-count `verifyAll` in `backend/src/modules/auth/backup-codes.ts` (depends on T023, T024)
+- [x] T020 [P] Unit test: the two Argon2id profiles are distinct, the interactive profile meets OWASP-grade parameters, and neither is reachable with the other's parameters, in `backend/tests/unit/argon2-profiles.test.ts` — [D6](./research.md#d6--argon2id-via-node-rsargon2-for-both-credentials-and-backup-codes-with-two-parameter-profiles)
+- [x] T021 [P] Unit test: codes from the previous, current and next 30-second step are accepted; **every** step outside the 90-second window is refused; a used code is refused anywhere in the window, not only its own step, in `backend/tests/unit/totp-window.test.ts` — FR-020, FR-056, SC-034
+- [x] T022 [P] Unit test: `KeyProvider` wraps and unwraps a data key; a ciphertext wrapped under one key reference does not unwrap under another; an unavailable key **throws rather than returning a falsy result**, in `backend/tests/unit/key-provider.test.ts` — [D5](./research.md#d5--totp-secrets-use-envelope-encryption-behind-a-keyprovider-port-kms-in-production-and-a-local-key-in-devci)
+- [x] T023 [P] Unit test: generated backup codes are 128-bit random, exactly 10 per set, and no two sets collide, in `backend/tests/unit/backup-code-generation.test.ts` — FR-031
+- [x] T024 Implement the two Argon2id profiles over `@node-rs/argon2` in `backend/src/common/auth/argon2.ts`, with the reduced high-entropy profile's justification stated in a comment so it is not later read as an oversight (depends on T020)
+- [x] T025 Implement the `otplib` wrapper — 30-second step, 6 digits, ±1 step acceptance — in `backend/src/common/auth/totp.ts` (depends on T021)
+- [x] T026 Implement the `KeyProvider` port with `KmsKeyProvider` and `LocalKeyProvider` in `backend/src/common/auth/key-provider.ts` (depends on T022)
+- [x] T027 Add the startup assertion that **refuses to boot** when a deployed environment resolves the local key provider — an assertion, not a warning — in `backend/src/main.ts`, alongside the existing role-attribute assertions (MODIFIES a slice 001 file, depends on T026)
+- [x] T028 Implement backup-code generation and the fixed-comparison-count `verifyAll` in `backend/src/modules/auth/backup-codes.ts` (depends on T023, T024)
 
 ### The session mechanism ⚠️ Write tests first
 

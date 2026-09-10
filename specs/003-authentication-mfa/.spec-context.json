@@ -176,10 +176,82 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T03:11:05.063Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:43.807Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.129Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.445Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:44.762Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.087Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.433Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:45.787Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:46.112Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T03:25:46.478Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T019",
+  "currentTask": "T028",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -315,6 +387,70 @@
       "files": [
         "backend/src/common/db/tenant-scoped-tables.ts"
       ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Unit test for the two Argon2id profiles: distinct, interactive meets OWASP floors, both argon2id, digests self-describe their profile, salting verified",
+      "files": [
+        "backend/tests/unit/argon2-profiles.test.ts"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Unit test for the TOTP window: three steps in accepted, every step outside refused, and an explicit test documenting that single-use CANNOT live in the verifier",
+      "files": [
+        "backend/tests/unit/totp-window.test.ts"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Unit test for KeyProvider: round-trip, ciphertext never contains plaintext, non-deterministic wrap, cross-key rejected, unavailable key THROWS, tampering rejected, short key refused",
+      "files": [
+        "backend/tests/unit/key-provider.test.ts"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Unit test for backup code generation: exactly 10, 130 bits each, no collisions within or across sets, ambiguous characters excluded, zero count refused",
+      "files": [
+        "backend/tests/unit/backup-code-generation.test.ts"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Implemented the two Argon2id profiles; neither hasher takes an options argument, which is what makes the profiles unreachable from each other's path",
+      "files": [
+        "backend/src/common/auth/argon2.ts"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Implemented the otplib wrapper with 30s step and 90s window; epochTolerance is in SECONDS not steps, which the outside-window test exists to catch",
+      "files": [
+        "backend/src/common/auth/totp.ts"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Implemented the KeyProvider port with LocalKeyProvider (AES-256-GCM) and KmsKeyProvider; unwrap throws rather than returning falsy",
+      "files": [
+        "backend/src/common/auth/key-provider.ts"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "Added assertKeyProviderIsSafe, called from main.ts beside assertApplicationRoleIsSafe: refuses to boot when a deployed environment resolves the local key provider. No override flag",
+      "files": [
+        "backend/src/common/auth/deployment-assertions.ts",
+        "backend/src/main.ts"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Implemented backup code generation and verifyAgainstSet with a fixed comparison count and no early exit, so the matched code's position is not observable",
+      "files": [
+        "backend/src/modules/auth/backup-codes.ts"
+      ]
     }
   },
   "concerns": [
@@ -375,5 +511,5 @@
       ]
     }
   ],
-  "last_action": "Blocks 2A and 2B COMPLETE: T008-T013, T015-T019 done (18/103). Full backend suite green: 134 files, 1340/1340. Migrations 0030-0036 applied. The 002 test-idempotency concern recorded earlier is now RESOLVED - 7 sites parameterised. NEXT: block 2C (T020-T028), the cryptographic primitives, strict TDD - write T020-T023 tests first and WATCH THEM FAIL before T024-T028. Reminders: T014 must be 0037 not 0036; T014 stays in block 2E beside T035."
+  "last_action": "Blocks 2A, 2B, 2C COMPLETE: 27/103. Full backend suite green: 138 files, 1372/1372. Crypto primitives done under strict TDD (all four tests seen failing on missing modules first). NEXT: block 2D (T029-T032) - session port, session guard, origin throttle. Then 2E (T014 as 0037 + T033-T035), then 2F (T036-T041)."
 }
