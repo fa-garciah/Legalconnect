@@ -1,3 +1,58 @@
+<!--
+SYNC IMPACT REPORT — 2026-09-04
+================================
+Version change: 1.4.1 → 1.5.0  (MINOR)
+
+Bump rationale: materially expanded guidance plus new sections. No Core Principle
+(I–VI) is removed, renamed or redefined — the identity provider is a Security
+Constraint and a Technology Constraint, not a principle. Principle II is
+*reinforced*: identity now lives under the same RLS as everything else. The
+amendment request named the base as v1.4.0; the document was actually at v1.4.1
+(the NestJS entitlement-interceptor correction), so this amendment is 1.4.1 →
+1.5.0. No content of 1.4.1 is lost.
+
+Modified sections (no titles renamed):
+  - Security Constraints › Authentication — provider decision replaced; Cognito
+    retained as "Superseded 2026-09-04"; mandatory MFA restated as a code
+    obligation with no disable path; backup code custody reformulated from
+    "named exception" to positive design obligation, requirements intact.
+  - Security Constraints › Sessions — Cognito GlobalSignOut/RevokeToken and the
+    "no API to list sessions" note removed. Product-owned sessions unchanged.
+  - Security Constraints › Data Residency — Cognito user pools removed from the
+    verified-services list; mx-central-1 infrastructure decision explicitly
+    unchanged.
+  - Technology Constraints › Stack — `Auth:` line rewritten.
+  - Development Workflow › Testing discipline — blocking coverage list extended
+    with MFA enforcement and TOTP secret encryption/decryption/verification.
+  - Recognised Technical Debt — items 1, 2, 8 amended.
+  - Governance — pending count 1 → 2.
+
+Added sections:
+  - Security Constraints › Authentication › "Custody of TOTP secrets".
+  - Technology Constraints › "Self-hosted identity — derived from Principle II
+    and the Authentication section" (replaces the "Amazon Cognito" section).
+  - Recognised Technical Debt item 10 — WebAuthn/passkeys are a build.
+  - Recognised Technical Debt item 11 — TOTP secret custody.
+  - "Consequences of the v1.5.0 Amendment" table.
+  - Data Residency › new [PENDING] on the scope of the AWS account blockage.
+
+Removed sections:
+  - Technology Constraints › "Amazon Cognito" (replaced, not deleted outright —
+    the decision itself is preserved as Superseded under Authentication).
+  - Recognised Technical Debt, prior item 10 (unconfirmed Cognito passkey
+    availability in mx-central-1) — struck as moot with the provider retired.
+
+Follow-up TODOs / deferred items:
+  - [PENDING] Scope of the AWS account blockage (Data Residency). Recorded rather
+    than assumed, per the amendment request's own instruction. Owner: whoever
+    holds the AWS account relationship at CC.
+  - [PENDING] PAC selection — pre-existing, untouched.
+  - specs/002-identity-membership/spec.md still names Cognito in Dependencies and
+    Out-of-Scope. Deliberately NOT corrected here: a PR is scoped to one slice
+    directory (Merge Rules). See the Consequences table.
+  - No RATIFICATION_DATE change: 2026-08-14 preserved.
+-->
+
 # LegalConnect MX — Constitution
 
 Governing document of the project. Spec Kit evaluates this document on every
@@ -141,92 +196,144 @@ review for any endpoint handling personal data.
 
 ### Authentication
 
-**Identity provider: Amazon Cognito user pools, Essentials tier.** Decided
-2026-08-21, closing the `[PENDING]` this section carried since v1.1.0. One shared
-user pool for the whole platform; a single app client. LegalConnect MX stores no
-passwords.
+**Identity provider: self-hosted — NextAuth (Auth.js) with the Credentials
+provider, plus `otplib` for TOTP, running against this product's own PostgreSQL.**
+Decided 2026-09-04, superseding the Cognito decision recorded below. LegalConnect
+MX stores no passwords in recoverable form; credential verification material is
+held only as a memory-hard hash, under the same rules this section imposes on
+backup codes.
 
 **Why this provider, stated plainly so the decision can be re-litigated on
 evidence rather than taste:**
 
-1. **It is the only candidate with data residency in Mexico.** Cognito has been
-   available in mx-central-1 with all three tiers since 2025-07-29. Every
-   alternative evaluated — Auth0, Logto, WorkOS, Clerk, Descope, Zitadel, Stytch,
-   Entra External ID, Google Identity Platform — hosts identity data in the United
-   States or Europe. For a product whose subject matter is covered by
-   attorney-client privilege and sold to Mexican firms, keeping identity data in
-   the same jurisdiction as the case files is both a compliance simplification and
-   a sales argument. See Data Residency.
-2. **It adds no vendor.** The stack is already AWS. No additional contract, no
-   additional data processor in the privacy notice, no additional external
-   dependency in front of the door to privileged material, and no additional
-   pass-through line in the iguala.
-3. **Cost.** Cognito Essentials includes 10,000 MAU per month at no charge, and
-   that allowance does not expire with the AWS free tier; beyond it, $0.015/MAU.
-   At the projected scale — roughly 110 users per tenant with EP13 active, 10:1
-   external to internal — twenty firms is about 2,200 MAU, inside the free
-   allowance. The nearest functional equivalent, Logto, is $120/month from the
-   first tenant. That difference lands directly on iguala margin, which is CC's,
-   not the client's.
-4. **It satisfies the three hard requirements below** — mandatory MFA that no
-   tenant administrator can relax, native WebAuthn, and sign-out that propagates
-   to the provider — without a tier jump.
+1. **It does not depend on an AWS account this project does not control today.**
+   Provisioning a Cognito user pool and confirming passkey support in
+   mx-central-1 both require account access that has been blocked with no
+   committed date. That blockage stopped slice `003-authentication-mfa`, and
+   through it `005-session-lifecycle`, `016a`'s real login, and every capability
+   that presupposes an authenticated principal. A dependency that cannot be
+   exercised is not a dependency; it is a halt. This decision removes it.
+2. **Identity and session data stay entirely in this product's own PostgreSQL,
+   under the same Row-Level Security as every other table, with no external
+   vendor in front of the door to privileged material.** This *strengthens* the
+   data-residency argument rather than weakening it. Previously identity records
+   sat with a processor that had to be named in the privacy notice and defended in
+   a due diligence review; now they sit in the same database, the same region and
+   the same backup jurisdiction as the case files they unlock. No additional
+   contract, no additional data processor, no additional pass-through line in the
+   iguala.
+3. **Cost per monthly active user is zero, at every scale.** The prior decision
+   was cost-justified by a 10,000 MAU free allowance and $0.015/MAU beyond it. A
+   self-hosted verifier has no per-user price at all, so EP13's projected external
+   population — roughly 110 users per tenant, 10:1 external to internal — adds no
+   identity cost as the tenant count grows, and the argument does not weaken at
+   the scale where the free allowance would have run out.
 
-**What this choice costs, and it is not nothing.** Cognito has no organizations
-primitive and no backup codes. The first is irrelevant: tenancy and the archetype
-matrix live in this product's PostgreSQL with Row-Level Security (Principle II),
-and were built that way in slice 001-tenant-foundation before this decision. The
-second is a real gap against a hard requirement of this document and is addressed
-by the named exception below.
+**What this choice costs, and it is not nothing.** Three capabilities that were
+bought are now built:
+
+- **WebAuthn/passkeys stop being a configuration change and become a
+  construction.** This was a disqualifying requirement in the original selection
+  and the single strongest argument for the prior provider. Recorded as Recognised
+  Technical Debt item 10.
+- **TOTP secret custody becomes this product's responsibility**, and unlike a
+  backup code a TOTP secret cannot be hashed. Recorded as Recognised Technical
+  Debt item 11 and governed by the custody rules below.
+- **Mandatory MFA loses its structural guarantee.** A user pool enforced it in a
+  place no tenant administrator could reach. The application now enforces it, and
+  the rules below say so explicitly rather than leaving it to be inferred from a
+  vendor's behaviour.
+
+**Superseded 2026-09-04 — Amazon Cognito user pools, Essentials tier.** Decided
+2026-08-21 and recorded here rather than deleted, following this document's
+practice for closed decisions, so the reasoning stays available if the
+circumstance that retired it changes. One shared user pool for the whole platform
+and a single app client, chosen for data residency in mx-central-1 (available
+there with all three tiers since 2025-07-29, unlike Auth0, Logto, WorkOS, Clerk,
+Descope, Zitadel, Stytch, Entra External ID and Google Identity Platform, all of
+which host identity data in the United States or Europe), for adding no vendor to
+an already-AWS stack, for a free MAU allowance that absorbed the projected scale,
+and for satisfying irrelaxable MFA, native WebAuthn and provider-propagated
+revocation without a tier jump. **Retired because the AWS account access required
+to provision the pool and to confirm passkey availability in mx-central-1 is
+blocked with no committed date, and slice 003 — with 005, 016a and every
+authenticated capability behind it — can no longer be held for it.** The residency
+argument that motivated the original choice is not lost by retiring it; it is
+served more directly by keeping identity in this product's own database.
+Reversing this decision if account access is restored is an amendment, not a
+default: it would reintroduce a processor and a per-MAU cost to recover a passkey
+configuration and an MFA guarantee that the rules below now place in code.
 
 **Requirements this provider satisfies, and which any replacement must also
 satisfy:**
 
 - **MFA enrollment is MANDATORY** for every user of the system, internal and
-  external. No exceptions, and no ability to relax it per tenant. Cognito enforces
-  this at the user pool, and Cognito has no notion of a tenant administrator, so
-  there is nobody below the platform who could relax it.
+  external. No exceptions, and no ability to relax it per tenant. **The
+  application enforces this in code.** The prior provider guaranteed it
+  structurally, at a user pool no tenant administrator could reach; that backing
+  is gone, so the guarantee is stated as a requirement on this codebase rather
+  than inherited from a vendor:
+  - There is **no configuration flag, environment variable, plan entitlement,
+    per-tenant setting or feature flag that disables MFA enrollment or the MFA
+    challenge.** A mechanism whose only purpose is to switch this off must not
+    exist to be misused, misconfigured or wrongly defaulted. Introducing one is a
+    constitution violation, not a configurable trade-off.
+  - An identity without a verified second factor reaches **no** authenticated
+    capability. The unenrolled state resolves to enrollment or to refusal, never
+    to access.
+  - **Coverage of the MFA enforcement path is complete and blocking in CI, on the
+    same footing as tenant isolation** (Principle II). Not "authentication is
+    covered" in aggregate: the assertions that an unenrolled identity is refused,
+    that a challenge is issued on every sign-in, and that no configuration value
+    alters either, are individually required and individually blocking. This is
+    the same bar Principle II holds, for the same reason — each is a single
+    misconfiguration that leaves every test green and the protection absent.
 - **MFA challenge on EVERY sign-in**, for every role. There is no trusted-device
-  mechanism and no suppression of the second factor. Cognito device tracking MUST
-  be configured to **"Don't remember"**; the "Always remember" setting substitutes
-  a device credential for the MFA challenge and is therefore prohibited.
+  mechanism and no suppression of the second factor. No device-remembering
+  capability may be built: substituting a device credential for the MFA challenge
+  is prohibited, whether a provider offers it or this product would implement it.
   Rationale: every access reaches material covered by attorney-client
   privilege; this product recognises no low-risk role.
-- **Native WebAuthn/passkey support**, even though passkeys are not enabled in
-  v1.0. Choosing a provider without it would turn future adoption into a provider
-  migration rather than a configuration change. Cognito supports passkeys from the
-  Essentials tier. **Regional availability of this specific capability in
-  mx-central-1 is not positively confirmed in AWS documentation — see Recognised
-  Technical Debt item 11.**
-- **Sign-out and revocation propagate to the provider.** Cognito GlobalSignOut
-  and RevokeToken provide this. Note that a revoked Cognito token still passes
-  naive signature-and-expiry validation, so the API must consult revocation state
-  rather than trusting the token — which this product does anyway, because
-  sessions are its own (see Sessions).
+- **A path to WebAuthn/passkeys that does not require replacing the identity
+  layer**, even though passkeys are not enabled in v1.0. The prior provider
+  satisfied this natively; it is now a build, and the build must land inside this
+  identity layer rather than by migrating off it. See Recognised Technical Debt
+  item 10.
+- **Sign-out and revocation are immediate and authoritative.** Sessions are this
+  product's own (see Sessions), so revocation is a write to its own table and
+  takes effect on the next request. There is no external provider holding a
+  parallel notion of validity, which removes a class of divergence the prior
+  decision had to work around.
 
 **Permitted factors (v1.0):**
 
 - **TOTP** (authenticator app) — the sole enrolled factor for every role in v1.0.
-- **Backup codes** — mandatory, issued at enrollment. Built by this product; see
-  the named exception below.
+  Implemented with `otplib`; secret custody is governed below.
+- **Backup codes** — mandatory, issued at enrollment. Built and custodied by this
+  product by design; see below.
 - **SMS is PROHIBITED**, as a primary factor and as a fallback. Rationale
   unchanged (SIM swap; per-message cost on every session given the permanent
   challenge), now reinforced by the fact that no factor in v1.0 requires it.
 - **Email OTP is DEFERRED, not permitted, in v1.0.** Earlier revisions of this
-  document allowed it for low-frequency external portal users. Three findings
-  retire that allowance for now: EP13, the only epic with such users, remains
-  unvalidated (Technical Debt item 2); Cognito cannot serve email MFA and
-  email-based account recovery from the same user pool, which would break
-  self-service recovery for precisely the users who have no other channel; and
-  Amazon SES is not available in mx-central-1. Reinstating email OTP requires an
+  document allowed it for low-frequency external portal users. The deferral rests
+  on two findings this amendment does not disturb: EP13, the only epic with such
+  users, remains unvalidated (Technical Debt item 2); and Amazon SES is not
+  available in mx-central-1. A third finding — that the prior provider could not
+  serve email MFA and email-based account recovery from one user pool — was
+  provider-specific and is **superseded 2026-09-04** with that provider. It is
+  marked superseded rather than deleted so the deferral is not later read as
+  resting on a reason that no longer exists. Reinstating email OTP requires an
   amendment, and the earliest sensible trigger is EP13's validation.
 
-**Named exception — custody of backup code material.** This document states that
-the platform stores no passwords, and that remains true. It does not store
-authentication factors either, with exactly one exception, granted here because
-the chosen provider does not offer the capability and this document requires it:
+**Custody of backup code material — by design, not by exception.** Earlier
+revisions granted this as a *named exception* to the rule that the platform stores
+no authentication factors, on the grounds that the chosen provider offered no
+backup codes. There is no longer an external MFA provider for this to be an
+exception to: with a self-hosted identity layer, building and holding this
+material **is** the design. It is therefore stated as a positive obligation,
+carrying every requirement it always carried, unweakened:
 
-- The platform MAY store backup codes for the sole purpose of recovering a lost
+- The platform stores backup codes for the sole purpose of recovering a lost
   second factor.
 - Codes MUST be stored only as hashes produced by a memory-hard function
   (Argon2id or scrypt), never in recoverable form, never in logs, never in error
@@ -240,9 +347,33 @@ the chosen provider does not offer the capability and this document requires it:
 - No archetype may read another person's codes, and no archetype may read any
   code at all — including PO and SA.
 
-Slice 003-authentication-mfa owns this construction. It is the price of the
-provider decision and is recorded as Recognised Technical Debt item 9 so it is not
-mistaken for a free capability.
+**Custody of TOTP secrets.** A TOTP secret differs from a backup code in the one
+respect that governs how it must be held: it MUST be readable on every
+verification, so **it cannot be hashed.** That makes it the most sensitive
+recoverable material in the database, and it is governed separately rather than
+folded into the rules above:
+
+- The secret is **encrypted at rest under an application-held key that is separate
+  from the database** — envelope encryption or KMS. A database dump, a restored
+  backup, or read access to the table MUST NOT be sufficient to derive a working
+  second factor. Storing the secret in plaintext, or encrypted under a key the
+  database itself holds, defeats the entire control.
+- The secret MUST NEVER appear — in plaintext or ciphertext — in logs, error
+  messages, exception payloads, traces, or the audit log. The audit log records
+  that enrollment or verification occurred, identifying the identity by reference,
+  never the material.
+- Access to the encryption key is restricted and audited **to the same standard
+  this document sets for PAC/CSD credentials**, including step-up MFA on
+  operations that touch it.
+- No archetype may read a TOTP secret, including PO and SA. Reset means
+  re-enrollment, never disclosure.
+- Coverage of the encryption, decryption and verification path is non-negotiable
+  and blocking in CI, on the same footing as tenant isolation.
+
+Slice 003-authentication-mfa owns all three constructions — the enforcement path,
+backup codes, and TOTP secret custody. They are the price of this provider
+decision and are recorded as Recognised Technical Debt items 8, 10 and 11 so they
+are not mistaken for free capabilities.
 
 **Step-up MFA is mandatory**, regardless of session age, for: creating or
 deactivating users, changes to the permission matrix, uploading or replacing
@@ -279,24 +410,46 @@ revokes it.
 - Refresh tokens are persisted server-side with device metadata and are
   individually revocable. **Pure stateless JWT is prohibited**:
   US09-EP12-ASC-ViewActiveSessions and US10-EP12-ASC-RevokeSession require it.
-  Revocation must also propagate to the provider.
-- Explicit sign-out invalidates the token immediately, server-side and at the
-  provider.
+- Explicit sign-out invalidates the token immediately, server-side.
 
-**Consequence of owning sessions:** Cognito has no API to list a user's active
-sessions, and that does not matter — the session inventory those two stories
-require is this product's own table. The provider is not asked for a capability it
-does not have.
+**Consequence of owning sessions:** the session inventory those two stories
+require is this product's own table, and revocation is a write to it. With a
+self-hosted identity layer there is no second system holding a parallel notion of
+session validity, so no external revocation state can disagree with this
+product's own — the divergence the prior provider decision had to guard against
+does not arise.
 
 ### Data Residency
 
 Provider: **AWS**. Region: **mx-central-1 — AWS Mexico (Central)**. Decided
 2026-08-21, closing the `[PENDING]` this section carried since v1.1.0.
 
-Verified available in that region: Cognito user pools (all three tiers), ECS with
-Fargate, RDS for PostgreSQL (through major version 18), S3, KMS with FIPS
-endpoints, SQS, Secrets Manager. The region has **three Availability Zones** and
-supports Multi-AZ RDS.
+Verified available in that region: ECS with Fargate, RDS for PostgreSQL (through
+major version 18), S3, KMS with FIPS endpoints, SQS, Secrets Manager. The region
+has **three Availability Zones** and supports Multi-AZ RDS.
+
+**The region decision is unchanged by the 2026-09-04 identity amendment.** That
+amendment retires the identity provider and nothing else: ECS, RDS, S3, KMS, SQS
+and Secrets Manager in mx-central-1 remain the infrastructure decision, and
+identity data now sits in this region more firmly than before, since it lives in
+RDS rather than at a provider. Cognito user pools were previously listed among the
+services verified here; that line is removed with the provider, not because
+regional availability changed.
+
+**[PENDING] — the scope of the AWS account blockage is not confirmed.** The
+identity amendment was written against a blockage described as preventing user
+pool provisioning and passkey verification, and this section assumes it is scoped
+to Cognito. If the blockage is in fact **account-wide**, then the paragraph above
+names a region this project also cannot provision today, and the item in question
+is the deployment target rather than the identity provider — a materially
+different problem with a different remedy. This is recorded as a pending rather
+than assumed in either direction, because only whoever holds the AWS relationship
+can distinguish the two cases. **Owner:** whoever holds the AWS account
+relationship at CC. **Resolution:** confirm in writing whether the blockage is
+scoped to Cognito provisioning or covers the account. If account-wide, this
+section is amended and the Walking Skeleton's deployment assumption is reopened;
+the identity decision above stands either way, since it is the case that no longer
+depends on the account.
 
 **One documented exception, and it must appear in the privacy notice.** Amazon SES
 is **not available** in mx-central-1. Transactional email — invitation delivery
@@ -369,7 +522,8 @@ DB:         PostgreSQL with enforced Row-Level Security
              (shared schema, tenant_id on every table)
 Backend:    NestJS (TypeScript) + Drizzle ORM
 Frontend:   Next.js (React), responsive web
-Auth:       Amazon Cognito user pools, Essentials tier — one pool, one app client
+Auth:       Self-hosted — NextAuth (Auth.js) Credentials provider + otplib TOTP;
+             identity and sessions in this product's own PostgreSQL
 Email:      Transactional provider outside mx-central-1 — [decided in slice 002 plan]
 CFDI:       PAC with multi-issuer support — [PENDING]
 Queues:     SQS + worker inside the same deployment
@@ -415,23 +569,39 @@ CI:         GitHub Actions
   test fails immediately if `NULLIF` is missing, which is what makes this rule
   enforced by construction rather than by memory.
 
-### Amazon Cognito — derived from Principle II and the Authentication section
+### Self-hosted identity — derived from Principle II and the Authentication section
 
-- **One user pool for the entire platform, one app client.** Pool-per-tenant and
-  app-client-per-tenant are both **prohibited**. Reasons: the 1,000 user pools per
-  region quota does not scale operationally, a global policy change would become
-  one API call per tenant, and — decisively — a person may hold membership in more
-  than one tenant (`001/FR-021`), which a pool-per-tenant model cannot represent
-  without duplicating the human being.
-- **Cognito holds no tenancy and no authorization.** It answers one question: is
-  this person who they claim to be. Which firm they may reach, and with what
-  archetype, is answered by this product's membership table under RLS. No token
-  claim is ever trusted as a source of tenant or archetype
-  (`002/FR-016`).
-- Device tracking MUST be **"Don't remember"** (see Authentication).
-- Because a revoked Cognito token still passes naive signature-and-expiry
-  validation, the API MUST validate against this product's own session state, never
-  against the token alone.
+- **One identity namespace for the entire platform.** A per-tenant identity store
+  — separate tables, separate schemas or separate credential namespaces keyed by
+  tenant — is **prohibited**, for the reason that decided it under the prior
+  provider and does not depend on that provider: a person may hold membership in
+  more than one tenant (`001/FR-021`), which a per-tenant identity model cannot
+  represent without duplicating the human being. `identity` is global; `membership`
+  is what binds a person to a firm.
+- **The identity layer holds no tenancy and no authorization.** It answers one
+  question: is this person who they claim to be. Which firm they may reach, and
+  with what archetype, is answered by this product's membership table under RLS.
+  No session claim, token claim or NextAuth callback payload is ever trusted as a
+  source of tenant or archetype (`002/FR-016`). This separation is what makes the
+  identity layer replaceable, and it is the reason this amendment touches no slice
+  that has already shipped.
+- **The `identity` table and the session table are tenant-global by design and
+  therefore carry no `tenant_id` and no RLS policy of their own.** They are the
+  documented exception to the RLS catalogue check above, not an oversight in it: a
+  person exists before and across tenants. Every table that resolves *from* an
+  identity to tenant data — `membership` first among them — is tenant-scoped and
+  policied normally. A slice that adds a tenant-scoped column to either of these
+  tables is changing this decision and needs an amendment.
+- **No device-remembering mechanism may be built** (see Authentication). The prior
+  provider had a setting for this that had to be held off; here the requirement is
+  that the capability not exist.
+- The API MUST validate every request against this product's own session state,
+  never against a bearer token's signature and expiry alone.
+- **`otplib` and the NextAuth Credentials provider are load-bearing dependencies
+  under Principle II's blast radius**, not incidental libraries: a defect or an
+  unreviewed upgrade in either is an authentication defect. They are pinned, and
+  their upgrades are reviewed as security changes rather than as routine
+  dependency bumps.
 
 ### Drizzle ORM — derived from Principle II
 
@@ -505,9 +675,11 @@ Each of these costs more than it contributes within the committed timeline:
   with which invoices can be issued in their name. It belongs in a secrets
   manager with KMS, with access recorded in the audit log, and step-up MFA
   mandatory to upload or replace it.
-- **`[PENDING]` — PAC selection.** This is now the only open pending in this
-  document. It does not block slices 002–010; it blocks slice 011-cfdi-stamping,
-  which additionally has no user stories in the catalog yet (Technical Debt item 4).
+- **`[PENDING]` — PAC selection.** It does not block slices 002–010; it blocks
+  slice 011-cfdi-stamping, which additionally has no user stories in the catalog
+  yet (Technical Debt item 4). This was the only open pending in the document
+  until 2026-09-04, when the identity amendment opened a second one — the scope of
+  the AWS account blockage, under Data Residency.
 
 ### Walking Skeleton — entry condition to Fase 1
 
@@ -553,8 +725,18 @@ in the `plan.md` Complexity Tracking section or blocks the merge.
 
 **Non-negotiable critical coverage.** Regardless of discipline, these paths
 require complete and blocking coverage in CI: authentication and sessions,
-**tenant isolation**, entitlement verification, **backup code issuance and
-consumption**, fee and billable-hour calculation, and CFDI generation.
+**tenant isolation**, **MFA enforcement** (that an unenrolled identity reaches no
+authenticated capability, that a challenge is issued on every sign-in, and that no
+configuration value alters either), entitlement verification, **backup code
+issuance and consumption**, **TOTP secret encryption, decryption and
+verification**, fee and billable-hour calculation, and CFDI generation.
+
+The three authentication entries are stated separately, and at the same level as
+tenant isolation, because the 2026-09-04 amendment moved them from a vendor's
+guarantee into this codebase. "Authentication is covered" in aggregate does not
+discharge them: each is a single misconfiguration that leaves every other test
+green while the protection is absent, which is precisely the property that put
+tenant isolation on this list.
 
 **Consciously accepted risk:** strict TDD in a team without prior practice
 reduces velocity by 15% to 30% during the first weeks. The Fase 1 commercial
@@ -600,18 +782,21 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
    that vector. **Claiming phishing resistance in commercial, sales or compliance
    material is prohibited.**
    _Review trigger:_ close of Discovery, or the first corporate client that
-   requires it in a security due diligence review. Enabling Cognito passkeys is
-   the remedy and is a configuration change, not a migration — which is why native
-   WebAuthn support was a disqualifying requirement in provider selection.
+   requires it in a security due diligence review. The remedy is still passkeys,
+   but **as of 2026-09-04 it is a build rather than a configuration change** —
+   see item 10. This item became more expensive to close, not more likely to
+   remain open: the same mitigation applies, and it now has to be written.
 
 2. **EP13 (Client Portal) is unvalidated.** It is treated as a core MVP epic but
    did not appear in the client-stated priorities during the April 2026
-   requirements session. Its authentication cost (MAU, external user onboarding,
-   MFA reset support) falls on CC's iguala margin. Requires re-validation in
-   Fase 0 before committing specs. Note that the Cognito free allowance of 10,000
-   MAU absorbs the projected external population for the first tens of firms, so
-   the MAU argument is now much weaker than when this item was written; the
-   support-volume argument is not.
+   requirements session. Its authentication cost (external user onboarding, MFA
+   reset support) falls on CC's iguala margin. Requires re-validation in Fase 0
+   before committing specs. **The MAU argument is retired as of 2026-09-04:** a
+   self-hosted identity layer has no per-user price, so the external population
+   carries no identity licence cost at any scale. The support-volume argument is
+   untouched and is now the whole of this item — every external user is an MFA
+   enrollment and a potential MFA reset, handled by people, and that cost does not
+   fall with the provider change.
 
 3. **External user onboarding does not exist.** EP13 has no user stories for
    invitation, enrollment or first access of a client to the portal. With
@@ -646,15 +831,17 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
    occur, when did it sync, which one wins). If it survives Discovery, the
    current quote is not deliverable.
 
-8. **Backup codes are built by this product, not bought.** Cognito provides none,
-   and this document requires them. The consequence is that LegalConnect MX
-   custodies authentication material it would otherwise have avoided entirely —
-   see the named exception under Authentication. This is the single largest
-   concession made in exchange for data residency in Mexico and a zero-cost
-   provider, and it is a real one: a bug in that path is an authentication bypass.
-   Coverage is blocking. Owned by slice 003.
-   _Review trigger:_ if a future provider offers backup codes with residency in
-   Mexico, this exception should be withdrawn rather than kept for convenience.
+8. **Backup codes are built by this product, not bought.** This document requires
+   them and no provider supplies them, so LegalConnect MX custodies authentication
+   material — see *Custody of backup code material* under Authentication. A bug in
+   that path is an authentication bypass. Coverage is blocking. Owned by slice 003.
+   **Reframed 2026-09-04:** this was recorded as a concession extracted by the
+   Cognito decision, remediable by a future provider that offered backup codes
+   with Mexican residency. With a self-hosted identity layer there is no such
+   provider to wait for, so this is no longer a gap against a bought capability
+   awaiting a better vendor — it is a permanent property of the design, and the
+   review trigger is withdrawn as vacuous. What remains is the obligation: build
+   it correctly, cover it blockingly, and never treat it as routine.
 
 9. **Transactional email leaves mx-central-1.** SES is not available in the
    region. Invitation and notification email therefore transits another
@@ -664,16 +851,46 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
    will ask about it, and the honest answer is that identity and case data stay in
    Mexico while transactional email does not.
 
-10. **Cognito passkey availability in mx-central-1 is not positively
-    confirmed.** AWS documents no regional exclusion for the capability, and the
-    launch announcement lists all three tiers, but no AWS source states feature
-    parity explicitly. Since native WebAuthn was a disqualifying requirement in
-    provider selection, this must be verified with AWS or by direct test **before
-    slice 003's plan is approved**, not at the moment passkeys are first needed.
-    If it turns out to be unavailable in the region, the choice is between the
-    region and the provider, and this constitution is amended either way.
+10. **WebAuthn/passkeys are now a build, not a setting.** Recorded 2026-09-04,
+    replacing the prior item on unconfirmed Cognito passkey availability in
+    mx-central-1 — that question is moot with the provider retired, and is struck
+    rather than carried. Native WebAuthn was a **disqualifying requirement** in
+    the original provider selection, and the prior provider satisfied it natively:
+    adopting passkeys was to be a configuration change. It is now a construction —
+    building and integrating a WebAuthn provider into this identity layer, e.g.
+    `@simplewebauthn` or Auth.js's own WebAuthn provider, with credential storage,
+    attestation handling, registration and authentication ceremonies, and a
+    migration path for identities already enrolled in TOTP.
+    **No date is committed, and this does not block v1.0**, for the reason the
+    original requirement anticipated rather than in spite of it: passkeys are not
+    enabled in v1.0 either way. What changed is the cost of enabling them later,
+    and the requirement that the build land *inside* this identity layer rather
+    than by migrating off it (see Authentication).
+    _Review trigger:_ item 1's trigger — the first corporate client that requires
+    phishing resistance in a security due diligence review — reaching which now
+    means scheduling development rather than changing a setting.
 
-Item 11 (the 004 archetype matrix did not exist yet — only SA was ever granted
+11. **TOTP secret custody is this product's responsibility, and TOTP secrets
+    cannot be hashed.** Recorded 2026-09-04, and deliberately separate from item 8:
+    a backup code is verified by comparing hashes and therefore never needs to be
+    recoverable, while a TOTP secret MUST be readable on every verification. That
+    single difference makes it the most sensitive recoverable material in the
+    database — a working second factor, derivable by anyone who can read the
+    column. The controls are in *Custody of TOTP secrets* under Authentication:
+    encryption at rest under an application-held key separate from the database
+    (envelope encryption or KMS), absolute exclusion from logs and the audit log,
+    key access restricted and audited to the PAC/CSD standard, no archetype ever
+    reading a secret, and blocking coverage. Owned by slice 003.
+    _Why it is debt and not merely a requirement:_ this product now holds material
+    whose compromise is an authentication bypass across every tenant at once, and
+    the control protecting it is key management — an operational discipline, not a
+    test that can prove itself green forever. A restored backup in a
+    less-protected environment is the realistic failure mode, and it is the one to
+    review.
+    _Review trigger:_ the first environment that restores a production backup, and
+    any change to where the application key is held.
+
+Item 12 (the 004 archetype matrix did not exist yet — only SA was ever granted
 anything, and `plan.entitlements` was written and read by nothing) is **struck**:
 slice 004 shipped the full matrix, the entitlement mechanism, and the scope port.
 
@@ -693,17 +910,90 @@ schedule pressure in the project.
   budget or client request. A violation can only be resolved by amending the
   constitution, never by ignoring it in a PR.
 - Every `[PENDING]` in this document must be closed before the end of Fase 0.
-  Entering Fase 1 with open pendings is a governance violation. **One remains:
-  PAC selection.**
+  Entering Fase 1 with open pendings is a governance violation. **Two remain: PAC
+  selection, and the scope of the AWS account blockage** (Data Residency, opened
+  2026-09-04). The identity amendment closed no pending and opened one — it
+  replaced a decision that was already closed, and the pending it added records a
+  fact about the blockage that motivated it rather than a choice still to be made.
 - Relaxing a principle de facto — without an amendment — invalidates the
   authority of the entire document. If a principle cannot be met, it is amended
   or removed; it is not ignored.
 
 ---
 
-**Version:** 1.4.1 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-08-26
+## Consequences of the v1.5.0 Amendment
+
+What the 2026-09-04 identity amendment leaves stale elsewhere in the repository.
+**None of these blocks a merge that has already happened**, and none is corrected
+in the amendment's own PR — a PR is scoped to a single slice directory plus its
+own catalog row (Merge Rules), and this one is scoped to the constitution.
+
+| Artifact | What is now stale | Blocks? | Who corrects it, and when |
+|---|---|---|---|
+| `specs/002-identity-membership/spec.md` | Names Cognito in **Dependencies** and **Out-of-Scope**. The slice's shipped behaviour is unaffected — 002 never called Cognito; it deliberately trusted no token claim for tenant or archetype (`002/FR-016`), which is exactly why this amendment touches no shipped code. | **No.** 002 is merged and its tests pass unedited. | A separate PR against `specs/002-identity-membership/` only. Text-only correction; no task is reopened and no code changes. |
+| `specs/003-authentication-mfa/` | Does not exist. It was blocked on AWS account access; that blocker is now removed by this amendment. Its `plan.md` must be written against NextAuth + `otplib`, and must cover the three constructions this document assigns it: MFA enforcement, backup codes, TOTP secret custody. | **No** — nothing to block. | `/speckit-specify` then `/speckit-plan` on a new `003` directory. This is the amendment's whole point. |
+| `specs/005-session-lifecycle/` | Does not exist. Was blocked transitively behind 003. Any prior note that revocation must propagate to an external provider is void — Sessions no longer says so. | **No.** | After 003. Step-up MFA remains 005's, unchanged by this amendment. |
+| `specs/016a-frontend-shell/` | Shipped `principal.fixture.json` as the documented seam for a login that did not exist (`016a`/FR-023, research.md D5). The fixture is still correct as a seam; what changes is what replaces it. | **No.** The seam was built to be replaced wholesale by one file. | Slice 003, replacing `src/session/principal.ts`. `016a` needs no amendment. |
+| `specs/registro-specs-mvp.md` | Lists `003` as blocked by *"Verificar passkeys de Cognito en `mx-central-1`… Requiere acceso a AWS"*, and carries that blocker as item 2 of §4 — which propagates to `005` and `016`. All of it is superseded. | **No.** Coordination document, not a SpecKit artifact. | Whoever next updates the registro. Note it is dated 2026-08-21 and is already stale on other rows (it lists `004`, `006` and `007` as *POR ESCRIBIR*; all three have shipped). |
+| `infra/` (Terraform) | Provisions no Cognito today, so nothing to remove. Its region assumption depends on the new `[PENDING]` above, not on this amendment. | **No.** | Only if the AWS blockage turns out to be account-wide. |
+| Privacy notice / LFPDPPP text | Previously had to name an identity processor. It no longer does — identity data stays in RDS in mx-central-1. The transactional-email transfer (Technical Debt item 9) is unaffected and must still be declared. | **No.** | Whoever owns the privacy notice, when it is next revised. This change removes an obligation rather than adding one. |
+| Commercial / sales material | The "identity data resident in Mexico" claim is **strengthened**, not weakened. The prohibition on claiming phishing resistance (Technical Debt item 1) is unchanged and now harder to lift. Any material citing a Cognito MAU allowance as the cost basis is stale. | **No.** | CC commercial, when next revised. |
+
+**Not affected, stated explicitly so it is not re-litigated:** the archetype codes
+and the permission matrix; SMS prohibited; Email OTP deferred (its Cognito-specific
+rationale is marked superseded, the deferral itself untouched); step-up MFA as
+slice 005's; case-file data residency; the RLS mechanism and the null-safe
+predicate rule; every slice already merged.
+
+---
+
+**Version:** 1.5.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-09-04
 
 ### Amendment History
+
+- **1.5.0** — **Identity provider replaced: Amazon Cognito → self-hosted NextAuth
+  (Auth.js) Credentials provider + `otplib` TOTP, on this product's own
+  PostgreSQL.** The Cognito decision is marked **Superseded 2026-09-04** and
+  retained rather than deleted. Reason: the AWS account access required to
+  provision the user pool and to confirm passkey availability in mx-central-1 is
+  blocked with no committed date, and it was holding slice `003`, and behind it
+  `005`, `016a`'s real login, and every authenticated capability. New rationale:
+  no dependency on an uncontrolled AWS account; identity and session data entirely
+  in this product's own Postgres under RLS with no external processor, which
+  strengthens the residency argument rather than weakening it; zero per-MAU cost
+  at every scale. **Mandatory MFA restated as a code obligation** — no flag,
+  env var, entitlement or per-tenant setting may disable enrollment or the
+  challenge, such a mechanism may not exist, and coverage of the enforcement path
+  is blocking in CI at the same level as tenant isolation. **Backup code custody
+  reformulated from a "named exception" into a positive design obligation** (there
+  is no longer an external MFA provider for it to be an exception to), with every
+  prior requirement intact: Argon2id/scrypt, single-use, re-issuance replaces the
+  set, issuance/consumption/exhaustion/re-issuance audited, no archetype reads any
+  code, blocking coverage. **New: custody of TOTP secrets** — not hashable because
+  they must be readable on every verification, therefore encrypted at rest under
+  an application key separate from the database (envelope encryption or KMS),
+  never in logs or the audit log, key access restricted and audited to the PAC/CSD
+  standard, blocking coverage. Sessions: Cognito `GlobalSignOut`/`RevokeToken` and
+  the "no API to list sessions" note removed; product-owned sessions unchanged.
+  Data Residency: Cognito user pools removed from the verified-services list, the
+  mx-central-1 infrastructure decision explicitly unchanged, and **a new
+  `[PENDING]` recording that the scope of the AWS account blockage is unconfirmed**
+  — recorded rather than assumed, because an account-wide blockage would make the
+  region, not the provider, the affected decision. Technical Debt: item 1's remedy
+  reclassified from configuration to build; item 2's MAU argument retired and the
+  support-volume argument isolated; item 8 reframed as permanent design rather
+  than a vendor concession, its review trigger withdrawn as vacuous; the item on
+  unconfirmed Cognito passkey regional availability **struck** and replaced by
+  **new item 10 (WebAuthn/passkeys are a build, no date committed, does not block
+  v1.0)**; **new item 11 (TOTP secret custody)**, kept separate from item 8
+  because a hashable secret and a readable one are different problems. Technology
+  Constraints: the `Auth:` stack line and the provider-derived section rewritten,
+  the latter adding that `identity` and the session table are tenant-global by
+  design and are the documented exception to the RLS catalogue check. Blocking
+  coverage list extended with MFA enforcement and TOTP secret handling. Governance
+  pending count 1 → 2. Added the **Consequences of the v1.5.0 Amendment** table.
+  Untouched by design: SMS prohibited, Email OTP deferred, archetypes, permission
+  matrix, step-up MFA as slice 005's, case-file residency.
 
 - **1.4.1** — Corrected the third row of the NestJS cross-cutting mechanism table:
   "Tier entitlement → Global guard" is now "Global interceptor", the same
@@ -712,7 +1002,9 @@ schedule pressure in the project.
   principal — both are set by interceptors that run after every Guard. Slice 004
   shipped `AuthorizationInterceptor`, deciding permission, scope and entitlement
   together. Walking skeleton item 4 marked complete; Recognised Technical Debt
-  item 11 struck.
+  item 11 struck — that was the absent-archetype-matrix item, which v1.5.0's
+  renumbering moved to item 12; it is not the TOTP custody item that holds number
+  11 today.
 - **1.4.0** — Closed two of the three `[PENDING]` items. **Identity provider:
   Amazon Cognito user pools, Essentials tier**, one shared pool and one app
   client, chosen for data residency in Mexico, absence of an additional vendor,
