@@ -88,10 +88,34 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T02:20:17.214Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:34:05.594Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:36:25.062Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T02:36:25.389Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T007",
+  "currentTask": "T010",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -148,6 +172,28 @@
       "files": [
         "backend/tests/helpers/db.ts"
       ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Created the lc_auth LOGIN role, its audit_event INSERT policy restricted to the twelve actions with tenant_id IS NULL, and narrowed lc_app's audit_event_own_tenant to exclude all sixteen; registered LC_AUTH_PASSWORD in migrate.ts. Applied and verified against the live database.",
+      "files": [
+        "backend/drizzle/0030_lc_auth_role.sql",
+        "backend/drizzle/migrate.ts"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Created identity_credential with zero lc_app grants, INSERT for lc_identity_writer, SELECT + column-scoped UPDATE(digest,updated_at) for lc_auth. Applied and verified.",
+      "files": [
+        "backend/drizzle/0031_identity_credential.sql"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Created identity_factor (secret_ciphertext, key_reference, confirmed_at, lockout counters) with zero lc_app grants, plus claim_attempt() SECURITY DEFINER owned by lc_auth applying the FR-020 replay guard across the full 90s window, FR-021 counter and 15-minute lockout in one FOR UPDATE step. PUBLIC execute revoked. Applied and verified.",
+      "files": [
+        "backend/drizzle/0032_identity_factor.sql"
+      ]
     }
   },
   "concerns": [
@@ -161,6 +207,16 @@
       "decision": "next-auth pinned at 5.0.0-beta.32 (Auth.js v5) rather than 4.24.15 stable",
       "why": "T058 needs frontend/src/middleware.ts and T056 needs a server-side session read. v5 is App-Router-native: auth() works in middleware, server components and route handlers. v4 is Pages-Router-first and its App Router gate is the deprecated next-auth/middleware withAuth wrapper. Both declare next ^16 and react ^19 peers, so compatibility is not the differentiator. Risk is bounded by D1: NextAuth verifies nothing, holds no adapter and no session strategy - it is cookie, CSRF and redirect transport only, and the product session table is the sole authority. Frontend npm audit stays at 0 vulnerabilities.",
       "rejected": "next-auth 4.24.15 stable - rejected because reaching App Router middleware through it means depending on a deprecated Pages-Router API for the authentication gate, which is worse standing than a pinned beta in a confined transport role"
+    },
+    {
+      "decision": "The five new tables are OWNED BY lc_migration with explicit grants to lc_auth; only the SECURITY DEFINER functions are OWNED BY lc_auth",
+      "why": "data-model.md Roles says lc_auth Owns the five new tables, but every per-entity Grants table in the same document lists privileges GRANTED to lc_auth - which only makes sense if it is a grantee, not the owner. The per-entity tables are the precise statement and the Roles row is loose prose. Function ownership by lc_auth is required and is not loose: resolve_session() is the one function lc_app may EXECUTE, and it only yields lc_auth reach on session if lc_auth owns it. This also follows 0015s precedent (OWNER TO lc_identity_writer on the definer function) and keeps the runtime auth connection unable to DROP or ALTER the tables it reads.",
+      "rejected": "Making lc_auth the table owner - rejected because it would let the runtime connection drop authentication tables, and because ownership would make the explicit grants the data model specifies redundant and untestable: auth-grants-lockdown.test.ts asserts what lc_auth was granted, which is vacuous if it owns everything"
+    },
+    {
+      "decision": "Added a seventh column recent_code_digests jsonb to identity_factor, which data-model.md does not list",
+      "why": "FR-020 requires a successfully used code be refused anywhere in FR-056 90-second window, and names claim_attempt() as its home. Enforcing that needs memory of which digests were already accepted for at least that window, and none of the six specified columns can hold it - the requirement was unimplementable as written. Placed on identity_factor rather than in a sixth table because data-model.md commits to five new entities and this entity is already described as holding the lockout state, which is the same class of per-identity verification state. Bounded by construction: at most three codes can legitimately be accepted in one window, and every call prunes older entries before appending. Stores digests only, never codes.",
+      "rejected": "A sixth used_code table - rejected because it changes the slice shape to store a bounded scrap of data and contradicts the documented five-entity count"
     }
   ],
   "verified": [
@@ -174,5 +230,5 @@
       ]
     }
   ],
-  "last_action": "Phase 1 complete and committed (819b18b) - T001-T007 done, 7/103. NEXT: Phase 2 Foundational, T008-T041, starting with migration 0030_lc_auth_role.sql. Docker available. Phase 2 is SAFE TO INTERRUPT: migrate.ts tracks applied migrations in its own table, so a partial set applies and the rest applies on the next run. Commit at the internal boundaries T015 / T019 / T028 / T032 / T041. Two pairs must not be split: T014+T035 (accept_invitation replacement and its caller) and T031+T033+T034 (session guard and the header-to-session switch)."
+  "last_action": "Phase 2 partial: T008-T010 done (10/103). Migrations 0030-0032 written, APPLIED to the local DB and verified: lc_app gets permission denied on identity_credential and identity_factor, claim_attempt is OWNER lc_auth SECURITY DEFINER with PUBLIC revoked. NEXT: T011 (backup_code + consume_backup_code), T012 (session + refresh_token + resolve_session + rotate_refresh), T013 (identity email unique index + duplicate guard), T015 (duplicate pre-flight). Then block 2B (T016-T019). Reminder: T014 was deliberately MOVED to block 2E to sit beside T035, its caller."
 }

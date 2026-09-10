@@ -33,6 +33,12 @@ const ROLE_PASSWORD_ENV: ReadonlyArray<readonly [string, string]> = [
   ['lc_app', 'LC_APP_PASSWORD'],
   ['lc_platform', 'LC_PLATFORM_PASSWORD'],
   ['lc_retention', 'LC_RETENTION_PASSWORD'],
+  // 003's lc_auth. LOGIN like the three above — see 0030_lc_auth_role.sql for why
+  // it cannot be NOLOGIN like lc_audit_writer and lc_identity_writer. Without an
+  // entry here the role exists with no password and DATABASE_URL_AUTH cannot
+  // connect, which surfaces as every authentication test failing to open a client
+  // rather than as anything resembling a configuration problem.
+  ['lc_auth', 'LC_AUTH_PASSWORD'],
 ];
 
 async function main(): Promise<void> {
