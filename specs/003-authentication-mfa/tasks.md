@@ -248,7 +248,7 @@ changed.
 - [x] T065 [P] [US2] Contract test `POST /auth/enrollment/begin` and `POST /auth/enrollment/confirm`: the secret is returned **exactly once**, an unconfirmed row satisfies no challenge, beginning again discards the prior unconfirmed secret, an enrolled identity is refused, and `confirmed_at` and `identity.mfa_enrolled_at` are set **in the same transaction**, in `backend/tests/contract/enrollment.test.ts` — FR-009 to FR-012
 - [x] T066 [P] [US2] **BLOCKING (SC-029)** Integration test: **exhaustive** inspection of every environment variable, config value, plan entitlement and tenant setting, asserting 0 alter whether enrollment or the challenge occurs. **An inspection test, not a behavioural one, and exhaustive rather than sampled**, in `backend/tests/integration/mfa-no-disable-path.test.ts` — FR-007, SC-004
 - [x] T067 [P] [US2] **BLOCKING (SC-029)** Integration test: a dump restored without the key yields 0 working factors; no secret appears in logs, error payloads, traces or `audit_event` after a full enrollment and sign-in; and an authenticator app is the only enrollable type with **no SMS and no email-code option on any surface**, in `backend/tests/integration/totp-secret-custody.test.ts` — FR-008, FR-013, FR-014, SC-007, SC-008
-- [ ] T068 [P] [US2] Component test for the enrollment screen: the QR and the manual-entry secret, Spanish copy, both viewports, and **nothing written to `localStorage`, `sessionStorage` or IndexedDB**, in `frontend/tests/component/auth/Enrollment.test.tsx` — FR-051, SC-028
+- [x] T068 [P] [US2] Component test for the enrollment screen: the QR and the manual-entry secret, Spanish copy, both viewports, and **nothing written to `localStorage`, `sessionStorage` or IndexedDB**, in `frontend/tests/component/auth/Enrollment.test.tsx` — FR-051, SC-028
 
 ### Implementation for User Story 2
 
@@ -278,7 +278,7 @@ and leaves the rest usable, and that no surface anywhere returns the set again.
 - [x] T074 [P] [US3] **BLOCKING (SC-029)** Integration test: exactly 10 codes issued once; all 10 stored as irreversible memory-hard digests; consuming 1 invalidates exactly that 1 with **0 collateral invalidations**; a consumed code is refused **identically to one that never existed**; exhaustion is audited as a distinct event; and advancing the clock a year leaves all 10 valid — **no time-based expiry**, in `backend/tests/integration/backup-codes.test.ts` — FR-023 to FR-031, SC-010 to SC-016, SC-031
 - [ ] T075 [P] [US3] Integration test: **enrollment does not complete without the codes** — if issuance fails the whole transaction fails and the identity remains unenrolled, with no state in which a confirmed factor exists and no codes do, in `backend/tests/integration/enrollment-atomic-with-codes.test.ts` — FR-023
 - [ ] T076 [P] [US3] Integration test: **0 routes return the codes again for any archetype including SA and PO**, asserted by route-table inspection rather than by attempting each, in `backend/tests/integration/backup-codes-unreadable.test.ts` — FR-024, FR-029, SC-006
-- [ ] T077 [P] [US3] Component test: the codes are presented for recording, the person must acknowledge before proceeding, and **none is written to browser storage**, in `frontend/tests/component/auth/BackupCodes.test.tsx` — FR-051, SC-028
+- [x] T077 [P] [US3] Component test: the codes are presented for recording, the person must acknowledge before proceeding, and **none is written to browser storage**, in `frontend/tests/component/auth/BackupCodes.test.tsx` — FR-051, SC-028
 
 ### Implementation for User Story 3
 
@@ -309,7 +309,7 @@ reachable until a new factor is confirmed.
 - [ ] T083 [P] [US4] Integration test: two simultaneous recoveries presenting the same **last unconsumed** code yield exactly one success and one consumption, in `backend/tests/integration/concurrency/last-backup-code.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
 - [ ] T084 [P] [US4] Integration test: response times for a match early in the set versus late show **no usable difference**, in `backend/tests/integration/backup-code-timing.test.ts` — [D11](./research.md#d11--backup-code-verification-tries-every-unconsumed-code-with-no-early-exit-timing-signal)
 - [ ] T085 [P] [US4] Integration test: recovery-path re-issuance requires **0 step-up checks**; standalone re-issuance is reachable from **0 production surfaces**; the previous factor no longer satisfies a challenge; abandoning re-enrollment leaves no access and an unenrolled identity; and an identity with all 10 consumed is refused with **no alternative path offered**, in `backend/tests/integration/recovery-reenrollment.test.ts` — FR-032, SC-015, SC-033
-- [ ] T086 [P] [US4] Component test for the recovery screen: reached from the challenge screen rather than a separate flow, Spanish copy, both viewports, in `frontend/tests/component/auth/Recovery.test.tsx`
+- [x] T086 [P] [US4] Component test for the recovery screen: reached from the challenge screen rather than a separate flow, Spanish copy, both viewports, in `frontend/tests/component/auth/Recovery.test.tsx`
 
 ### Implementation for User Story 4
 

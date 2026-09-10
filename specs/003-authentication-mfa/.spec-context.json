@@ -680,10 +680,34 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-10T16:53:35.642Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T068",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:00.731Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T077",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:01.066Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T086",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-10T16:59:01.395Z"
     }
   ],
   "telemetryInstanceId": "dfa8eb8b-5821-411e-9153-bfe650edc946",
-  "currentTask": "T099",
+  "currentTask": "T086",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1278,6 +1302,27 @@
         "backend",
         "frontend"
       ]
+    },
+    "T068": {
+      "status": "DONE",
+      "did": "Component test for the enrollment screen: both the QR payload AND a manual key, Spanish copy, uniform refusal, and nothing written to browser storage",
+      "files": [
+        "frontend/tests/component/auth/Enrollment.test.tsx"
+      ]
+    },
+    "T077": {
+      "status": "DONE",
+      "did": "Component test for the one-time code display: ten codes shown once, an acknowledgement gate before proceeding, no control offering re-display, and nothing persisted",
+      "files": [
+        "frontend/tests/component/auth/Enrollment.test.tsx"
+      ]
+    },
+    "T086": {
+      "status": "DONE",
+      "did": "Component test for the recovery screen: reached from the challenge with its token, hands to RE-ENROLLMENT and never to the dashboard, uniform refusal, nothing persisted",
+      "files": [
+        "frontend/tests/component/auth/Recovery.test.tsx"
+      ]
     }
   },
   "concerns": [
@@ -1335,6 +1380,11 @@
       "decision": "Resolved the challengeToken storage gap with two nullable columns on identity_factor plus issue/peek/consume functions (migration 0038), and granted lc_auth read on identity (migration 0039)",
       "why": "0038: the contract requires single-use and client-opacity, which no stateless token can provide - a self-contained token cannot invalidate itself, and without single-use one credential verification mints unlimited sessions. Per-identity state with a minute of lifetime is the same class as the lockout counters already on that table, and at most one challenge is live at a time by design. A partial unique index on the digest lets the server resolve the identity FROM the token, which client-opacity requires. peek and consume are separate so a wrong code spends an attempt without burning the challenge - otherwise FR-021s five attempts are unreachable in practice. 0039: identity granted SELECT to lc_app only, so sign-in could read the credential and the factor but not the row connecting them to an email. Needs both a GRANT and a POLICY because RLS is FORCED - a grant alone returns zero rows, the quietest possible failure at the one step where no-such-person and cannot-read must not be confused.",
       "rejected": "A sixth pending_challenge table - rejected because data-model.md commits to five entities and this is two columns with a minute of lifetime; and scoping lc_auth to a self-row policy - impossible, since which row that is, is the question sign-in asks"
+    },
+    {
+      "decision": "Renamed src/middleware.ts to src/proxy.ts with the export renamed to proxy()",
+      "why": "frontend/AGENTS.md warns that this Next.js version has breaking changes and that the bundled docs must be read before writing code. They record that the middleware.js convention is DEPRECATED in Next 16 and renamed to proxy.js - same functionality, new file and export names. The build was already emitting the route as Proxy (Middleware), i.e. accepting the old name under compatibility. Written against the current convention rather than left for a codemod, because this file is new in this slice and there is nothing to preserve.",
+      "rejected": "Leaving middleware.ts and running @next/codemod later - rejected because it ships a deprecation in brand-new code and the migration is a two-line rename"
     }
   ],
   "verified": [

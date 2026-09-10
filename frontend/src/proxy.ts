@@ -1,6 +1,13 @@
 /**
  * T058 — the unauthenticated and unenrolled redirects. FR-052.
  *
+ * NAMED `proxy.ts`, NOT `middleware.ts`. The middleware convention is
+ * DEPRECATED in Next.js 16 and renamed to `proxy` — same functionality, new
+ * file and export names (node_modules/next/dist/docs, file-conventions/
+ * middleware.md). Written against the current convention rather than migrated
+ * later by a codemod, since this file is new in this slice and there is nothing
+ * to preserve.
+ *
  * WHY A REDIRECT AND NOT A HALF-POPULATED SCREEN. A person whose session the
  * backend has invalidated — revoked, expired, or killed by a detected refresh
  * reuse — still has a browser cookie. Without this, their next navigation renders
@@ -23,7 +30,7 @@ const PUBLIC_PATHS = ['/ingresar', '/verificar', '/enrolar', '/recuperar', '/ace
 /** NextAuth's cookie, in both the plain and the __Secure- forms. */
 const SESSION_COOKIES = ['authjs.session-token', '__Secure-authjs.session-token'];
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   const isPublic = PUBLIC_PATHS.some(

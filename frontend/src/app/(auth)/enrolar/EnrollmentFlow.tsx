@@ -175,8 +175,15 @@ export function EnrollmentFlow(): React.JSX.Element {
           {stage.otpauthUri}
         </p>
         <div className="space-y-1">
-          <Label htmlFor="secret">Clave para ingreso manual</Label>
-          <p id="secret" className="font-mono text-sm tracking-wider">
+          {/* NOT a <Label htmlFor>. A <p> is not a labellable element, so the
+              association silently does not exist for a screen reader — the
+              markup looks right and announces the value with no name. An
+              aria-label on the value itself is what actually carries it. */}
+          <p className="text-sm font-medium">Clave para ingreso manual</p>
+          <p
+            className="font-mono text-sm tracking-wider"
+            aria-label="Clave para ingreso manual"
+          >
             {stage.secret}
           </p>
         </div>
