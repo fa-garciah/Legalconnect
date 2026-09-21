@@ -45,9 +45,10 @@ describe('007 document audit actions', () => {
   });
 
   // 003 adds twelve authentication actions (FR-042), so "inherited" is now 43.
-  // Updated rather than deleted, for the reason 007's own dependency-baseline
-  // comment gives: the check still has to fail loudly for the next slice.
-  it('AUDIT_ACTIONS holds exactly 51 actions (43 inherited + 8 from 007)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(51);
+  // 005 adds three more on top of 007's own eight (research.md D8). Updated
+  // rather than deleted, for the reason 007's own dependency-baseline comment
+  // gives: the check still has to fail loudly for the next slice.
+  it('AUDIT_ACTIONS holds exactly 54 actions (43 inherited + 8 from 007 + 3 from 005)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(54);
   });
 });

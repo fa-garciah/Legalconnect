@@ -47,9 +47,27 @@ export interface AuthenticatedRequest {
   headers: Record<string, string | string[] | undefined>;
   /** Set by this guard, read by the tenant and identity contexts. */
   identityId?: string;
+  /**
+   * 005-session-lifecycle, research.md D2/D4. Set by this guard from
+   * `resolve_session()`'s widened return, ONLY when a real session was resolved
+   * (never for the `x-identity-id` test stand-in, and never for the auth/platform
+   * surfaces this guard exempts below — neither resolves a session at all).
+   * `AuthorizationInterceptor` reads these three to decide idle/absolute expiry and
+   * to call `touch_session()` — never before that check has already passed (D2).
+   */
+  sessionId?: string;
+  lastSeenAt?: Date;
+  familyCreatedAt?: Date;
 }
 
-function bearerToken(headers: AuthenticatedRequest['headers']): string | null {
+/**
+ * Exported for `sign-out.controller.ts` and `step-up.controller.ts` (005). Both
+ * routes are `@AuthSurface()` — this guard's own check for that marker returns
+ * early without resolving anything, so those two controllers extract and resolve
+ * their own presented token, on `lc_auth`'s connection, the same way `sign-in`
+ * and `refresh` already handle their own body-carried credentials.
+ */
+export function bearerToken(headers: AuthenticatedRequest['headers']): string | null {
   const raw = headers.authorization;
   const value = Array.isArray(raw) ? raw[0] : raw;
   if (!value) return null;
@@ -106,13 +124,19 @@ export class SessionGuard implements CanActivate {
     // a session had ever existed (FR-022's discipline, applied to the session).
     if (!token) throw new UnauthorizedException('No autenticado.');
 
-    const result = await appDb().execute<{ identity_id: string }>(
-      sql`SELECT identity_id FROM resolve_session(${digestToken(token)})`,
-    );
-    const identityId = result.rows[0]?.identity_id;
-    if (!identityId) throw new UnauthorizedException('No autenticado.');
+    const result = await appDb().execute<{
+      id: string;
+      identity_id: string;
+      last_seen_at: string | Date;
+      family_created_at: string | Date;
+    }>(sql`SELECT id, identity_id, last_seen_at, family_created_at FROM resolve_session(${digestToken(token)})`);
+    const row = result.rows[0];
+    if (!row?.identity_id) throw new UnauthorizedException('No autenticado.');
 
-    request.identityId = identityId;
+    request.identityId = row.identity_id;
+    request.sessionId = row.id;
+    request.lastSeenAt = new Date(row.last_seen_at);
+    request.familyCreatedAt = new Date(row.family_created_at);
     return true;
   }
 }

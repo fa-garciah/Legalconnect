@@ -112,6 +112,14 @@ export const AUDIT_ACTIONS = [
   'signin.failed',
   'challenge.failed',
   'account.locked',
+  // Slice 005 (research.md D8). Sign-out and step-up verification. Like 003's
+  // twelve, NONE is channel-gated and both are written with tenant_id NULL
+  // (0042's policy). `session.expired` / `tenant.session_revoked` are
+  // DELIBERATELY ABSENT — FR-011 and FR-015 both require idle/absolute expiry
+  // and tenant-deactivation's effect on a session to get NO dedicated entry.
+  'session.signed_out',
+  'stepup.verified',
+  'stepup.failed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -212,6 +220,13 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'signin.failed': 'identity',
   'challenge.failed': 'identity_factor',
   'account.locked': 'identity_factor',
+  // Slice 005. The subject of a sign-out is the SESSION whose family was
+  // revoked — session.signed_out names it directly, the same directness
+  // enrollment.* gives identity_factor above. Step-up verification names the
+  // elevation it mints or refuses to mint.
+  'session.signed_out': 'session',
+  'stepup.verified': 'step_up_elevation',
+  'stepup.failed': 'step_up_elevation',
 };
 
 export type Channel = 'interactive' | 'automated';

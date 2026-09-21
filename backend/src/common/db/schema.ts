@@ -623,6 +623,12 @@ export const session = pgTable(
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
     deviceMetadata: jsonb('device_metadata').notNull().default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    // 005-session-lifecycle, research.md D1. Idle clock — written ONLY by
+    // touch_session(), only after the idle/absolute check has already passed.
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    // Absolute clock, anchored to the refresh-token FAMILY's origin — copied
+    // forward unchanged by rotate_refresh() at every rotation, never reset.
+    familyCreatedAt: timestamp('family_created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('session_identity_live_idx')
@@ -678,3 +684,33 @@ export type IdentityFactor = typeof identityFactor.$inferSelect;
 export type BackupCode = typeof backupCode.$inferSelect;
 export type Session = typeof session.$inferSelect;
 export type RefreshToken = typeof refreshToken.$inferSelect;
+
+/**
+ * step_up_elevation: a database-backed, single-use, two-minute elevation
+ * (005-session-lifecycle, research.md D6). Identity-scoped, not tenant-scoped, for
+ * the same reason identity_credential/identity_factor are — a step-up verification
+ * authenticates a person, not a tenant. lc_app holds no table privilege at all;
+ * its only reach is EXECUTE on consume_step_up().
+ */
+export const stepUpElevation = pgTable(
+  'step_up_elevation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    identityId: uuid('identity_id')
+      .notNull()
+      .references(() => identity.id, { onDelete: 'cascade' }),
+    /** One of the five `stepUp: true` capability ids — validated in the application. */
+    capability: text('capability').notNull(),
+    tokenDigest: text('token_digest').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('step_up_elevation_identity_capability_idx')
+      .on(t.identityId, t.capability)
+      .where(sql`${t.consumedAt} IS NULL`),
+  ],
+);
+
+export type StepUpElevation = typeof stepUpElevation.$inferSelect;

@@ -120,6 +120,11 @@ describe('capability declared everywhere', () => {
       'SignInController',
       'EnrollmentController',
       'RecoveryController',
+      // 005-session-lifecycle. Both resolve their own presented token rather than
+      // relying on SessionGuard/AuthorizationInterceptor's ordinary path — see
+      // sign-out.controller.ts / step-up.controller.ts and research.md D4.
+      'SignOutController',
+      'StepUpController',
     ];
 
     const ungated = routeHandlers().filter((h) => !h.capability);
