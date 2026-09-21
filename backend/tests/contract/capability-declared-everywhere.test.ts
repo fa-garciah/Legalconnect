@@ -12,7 +12,7 @@ import type { INestApplication } from '@nestjs/common';
 import { DiscoveryModule, DiscoveryService, NestFactory, Reflector } from '@nestjs/core';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { AppModule } from '../../src/app.module';
-import { CAPABILITIES, capabilityDef, type CapabilityId } from '../../src/common/authz/capability';
+import { CAPABILITIES, STEP_UP_CAPABILITIES, capabilityDef, type CapabilityId } from '../../src/common/authz/capability';
 import { CAPABILITY } from '../../src/common/authz/declare';
 import { AUTH_SURFACE, PLATFORM_SURFACE } from '../../src/common/permissions/guard';
 
@@ -170,5 +170,34 @@ describe('capability declared everywhere', () => {
       (h) => h.isPlatform && h.capability && capabilityDef(h.capability).scope === 'tenant',
     );
     expect(violations).toEqual([]);
+  });
+
+  it('005-session-lifecycle, research.md D9: exactly 1 stepUp capability is platform-surfaced, and it is invitation.issue_seed', () => {
+    // `AuthorizationInterceptor`'s step-up gate skips any caller with no
+    // `identityId` — structurally, only the platform surface (`PO`) has none.
+    // That skip is deliberately narrow, not a general "no caller, no step-up"
+    // escape hatch: this assertion is what keeps it narrow. If a future
+    // `stepUp: true` capability is ever declared on `@PlatformSurface()`, it
+    // silently inherits the same identity-less exemption unless someone
+    // consciously revisits research.md D9 first — this test is what forces
+    // that revisit rather than the exemption spreading unnoticed.
+    const platformStepUp = routeHandlers().filter(
+      (h) => h.isPlatform && h.capability && STEP_UP_CAPABILITIES.has(h.capability),
+    );
+    expect(platformStepUp.map((h) => h.capability)).toEqual(['invitation.issue_seed']);
+
+    // The other direction: every OTHER stepUp capability's route requires a
+    // real identity — none is reachable from the platform surface, and none is
+    // ungated (auth-surface). A step-up gate that silently no-ops for any of
+    // these would be the "identity-less callers slip through" failure this
+    // slice's implementation report was careful to rule out.
+    const otherStepUp = routeHandlers().filter(
+      (h) => h.capability && STEP_UP_CAPABILITIES.has(h.capability) && h.capability !== 'invitation.issue_seed',
+    );
+    for (const handler of otherStepUp) {
+      expect(handler.isPlatform, `${handler.controller}.${handler.method}`).toBe(false);
+      expect(handler.isAuthSurface, `${handler.controller}.${handler.method}`).toBe(false);
+    }
+    expect(otherStepUp.length).toBe(STEP_UP_CAPABILITIES.size - 1);
   });
 });

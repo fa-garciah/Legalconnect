@@ -310,6 +310,39 @@ idle/absolute expiry and tenant-deactivation's effect on a session get no dedica
 
 ---
 
+## D9 — `invitation.issue_seed`'s step-up gate is deferred by non-exposure, confirmed during implementation
+
+**Found during implementation, not anticipated by D2 or by spec.md.** `invitation.issue_seed` is one
+of the five `stepUp: true` capabilities (D2/spec.md is a citation of the registry as it stood at
+planning time), but it is reachable only from the platform-admin surface
+(`@PlatformSurface()`, `seed.controller.ts`), which authenticates nothing today — `PO` is a vendor
+role, not a tenant membership, and holds no session for a step-up elevation to attach to
+(`004/research.md` D9: "PO is a property of the surface, not of a claim"). Enforcing the gate
+unconditionally would make this capability permanently unreachable, a regression to an
+already-shipped `002` platform flow.
+
+**Decision, confirmed 2026-09-21.** The gate (`AuthorizationInterceptor`'s step-up consumption block)
+is scoped to callers who hold an identity to elevate; `PO` — and therefore this one capability — falls
+outside its reach entirely, exactly as it already falls outside idle/absolute expiry and outside
+`SessionGuard` itself. This is not a new kind of exception: it is the same "deferred by non-exposure"
+posture the constitution and prior slices already apply to capabilities not yet reachable in
+production (`002/research.md` D10; `003/contracts/recovery.md`'s standalone re-issuance).
+
+**Why this is closed rather than left as a silent `if`.** A condition that happens to be true today
+(`PO` has no identity) is not the same as a rule that stays true. `capability-declared-everywhere.test.ts`
+gained an assertion that **exactly one** `stepUp: true` capability is platform-surfaced today, and
+that it is this one. A future capability marked both `stepUp: true` and `@PlatformSurface()` fails
+that test immediately — the same decision this note records has to be made again, deliberately,
+rather than silently inherited from this slice's exemption.
+
+**New technical debt, recorded rather than solved here.** Whichever future slice network-exposes the
+platform-admin surface owns building real `PO` authentication and, if any platform capability still
+needs it, step-up for that surface. None of the platform surface's other rows (`data-model.md`'s rows
+11–16 in `004`'s numbering) carry `stepUp: true` today, so this is not yet load-bearing — but it will
+be the moment one does.
+
+---
+
 ## Summary of what changed against the spec draft
 
 Nothing in `spec.md` is contradicted. Two things spec.md left as `plan.md` decisions (per its own

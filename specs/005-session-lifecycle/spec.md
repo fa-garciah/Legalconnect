@@ -4,7 +4,8 @@
 
 **Created**: 2026-09-21
 
-**Status**: Draft — ready for `/speckit-plan` pending confirmation of Assumption D3 (see Resolved Decisions)
+**Status**: Implemented. D3 confirmed 2026-09-21 (Option A). D4 — a gap found during implementation,
+not anticipated by this draft — confirmed the same day. See Resolved Decisions.
 
 **Input**: User description: "Own everything `003-authentication-mfa` deliberately left open about how long
 access lives once it's granted: idle and absolute session expiry by role class, explicit sign-out
@@ -27,11 +28,11 @@ guidance to prefer an informed default over a blocking marker. Full reasoning fo
 |---|---|---|---|
 | D1 | Session expiry values by role class | Three classes, six fixed numbers — **not open**, a citation | `.specify/memory/constitution.md`, § Sessions |
 | D2 | Which capabilities require step-up | The five capability-registry rows already marked `stepUp: true` — **not open**, a citation | `backend/src/common/authz/capability.ts`, enforced by `registry-shape.test.ts` |
-| D3 | Session handling on tenant deactivation | **Informed default, not yet confirmed** — Option A (rely on existing refusal-at-activation) adopted pending sign-off | `001/research.md` D13; carries a real technical constraint (session is tenant-global, `003/FR-037`) |
+| D3 | Session handling on tenant deactivation | **Confirmed 2026-09-21 — Option A.** Rely on existing refusal-at-activation. No new revocation mechanism added to `session`/`refresh_token` | `001/research.md` D13; `003/FR-037`; confirmed as a technical-shape decision, not escalated |
 
-D3 is the one item in this spec that is a judgement call rather than a fact. It is flagged again in
-Assumptions and Named Risks, and it is the one item the Approval Checklist should not pass without
-explicit confirmation from whoever owns this decision at CC.
+D3 was the one item in this spec that was a judgement call rather than a fact when this draft was
+written. It is now confirmed — see Resolved Decisions and Named Risks for the rationale and the one
+unverified-but-not-blocking caveat it carries.
 
 ---
 
@@ -374,13 +375,32 @@ introduces no entity of its own.
   capability row and building its route is **out of scope here** — it is `003`'s domain, to be
   delivered as a small follow-up amendment that consumes this slice's mechanism once it exists, the
   same dependency shape `002`'s four capabilities already have on `005`.
-- **D3 — tenant-deactivation handling is an informed default, flagged for confirmation.** This spec
-  adopts Option A from the pre-specification research: rely on `001`'s existing refusal-at-activation
-  rather than building new per-membership revocation on `session`/`refresh_token`. The alternative
-  (Option B, explicit revocation) would require giving those tables a tenant or membership dimension
-  they deliberately don't have (`003/FR-037`), and would need to be scoped so it doesn't sign a
-  multi-tenant identity out of tenants that were not deactivated. This is the one assumption in this
-  spec that substitutes for a decision nobody has explicitly signed off yet — see Named Risks.
+- **D3 — tenant-deactivation handling: confirmed, Option A.** This spec adopts Option A: rely on
+  `001`'s existing refusal-at-activation rather than building new per-membership revocation on
+  `session`/`refresh_token`. Confirmed 2026-09-21. Rationale: Option B (explicit per-membership
+  revocation) would require giving those tables a tenant or membership dimension they were
+  deliberately built without (`003/FR-037`), for a difference no caller can observe — the tenant is
+  unreachable on the next request either way. Treated as a technical-shape decision, closed at the
+  implementation level rather than escalated further. **One caveat, unverified and not blocking**: if
+  CC's commercial material or the contract with Felipe's firm represents tenant deactivation as
+  literally invalidating every session as a verifiable security property, Option A does not satisfy
+  that literally — the session row still exists, merely inert for that tenant. Worth a quick check
+  against anything already represented externally; see Named Risks.
+- **D4 — `invitation.issue_seed`'s step-up gate: confirmed, deferred by non-exposure.** Found during
+  implementation, not anticipated by this draft. `invitation.issue_seed` is one of the five
+  `stepUp: true` capabilities, but it is reachable only from the platform-admin surface
+  (`001/contracts/platform-admin.md`), which has no `PO` session and no identity — nothing for a
+  step-up challenge to run against. The gate skips identity-less callers for this one capability,
+  leaving it exactly as reachable as it was before this slice. This is the same "deferred by
+  non-exposure" posture already applied to five other `stepUp: true` capabilities that aren't
+  reachable yet (`002/research.md` D10; `003/contracts/recovery.md`) — not a new kind of exception.
+  Confirmed 2026-09-21, closed by: a code comment at the gate citing this posture
+  (`common/authz/interceptor.ts`), and a regression test
+  (`capability-declared-everywhere.test.ts`) asserting exactly one `stepUp: true` capability is
+  platform-surfaced today, so a future addition can't inherit the exemption silently. New technical
+  debt recorded, not resolved here: whichever future slice network-exposes the platform-admin surface
+  owns building real `PO` authentication and step-up for it — none of that surface's other rows carry
+  `stepUp: true` today either.
 - **`PO` (platform operator) is out of scope for session-class purposes.** The platform-admin surface
   remains not network-exposed (`001/contracts/platform-admin.md`), so `PO` has no authenticated
   session for this slice to govern yet.
@@ -425,12 +445,14 @@ exercise sign-out and the step-up challenge — administrative UI is `014`.
 
 ## Named Risks
 
-**D3 is a judgement call standing in for a decision, not a fact.** Everything else in this spec cites
-an already-settled source; `US11`'s resolution does not. If whoever owns this decision at CC prefers
-Option B (explicit per-membership revocation) once they see the multi-tenant-session constraint laid
-out in Assumptions, `FR-012`–`FR-015` and `SC-007` need revisiting before implementation, not after.
-This is flagged here precisely so it isn't discovered during `/speckit-plan` or, worse, during
-implementation.
+**D3 is confirmed (2026-09-21), closed as a technical-shape decision.** Option A was adopted:
+extending `001`'s existing refusal-at-activation, no new revocation machinery on
+`session`/`refresh_token`. **One caveat remains open, unverified and explicitly not blocking**:
+whether CC's commercial material or the contract with Felipe's firm represents tenant deactivation as
+literally invalidating every session as a verifiable security property. Option A does not satisfy
+that literally — the session row still exists, merely inert for that tenant, until it separately
+expires or is signed out. Worth a quick check against anything already represented externally; not
+something this spec or its implementation can verify from inside the repository.
 
 **`US11`'s title reads as stronger than what this spec delivers under D3.** "Deactivation revokes all
 sessions" suggests a positive action on the session table; what's actually specified is that access
@@ -444,6 +466,14 @@ dead when their tenant is deactivated — it simply stops working against that t
 session inventory later needs to derive "is this session still meaningful" from membership status,
 not from the session row alone. Recorded here so it isn't rediscovered as a surprise then.
 
+**D4 is confirmed (2026-09-21), closed as deferred-by-non-exposure.** `invitation.issue_seed`'s
+step-up gate is not enforceable against `PO` (no identity exists to hold an elevation), so the gate
+skips identity-less callers for this one capability. Recorded as new technical debt, not resolved
+here: whichever future slice network-exposes the platform-admin surface owns building real `PO`
+authentication and step-up for it. A regression test
+(`capability-declared-everywhere.test.ts`) keeps this exemption from silently spreading to a future
+platform-surfaced `stepUp: true` capability.
+
 ---
 
 ## Resolved Decisions
@@ -452,7 +482,8 @@ not from the session row alone. Recorded here so it isn't rediscovered as a surp
 |---|---|---|---|
 | D1 | What are the idle/absolute expiry values per role class? | Three classes, six fixed values, taken verbatim from the constitution — not derived here. | FR-007, FR-008, SC-002–004 |
 | D2 | Which capabilities require step-up? | Exactly the five capability-registry rows already marked `stepUp: true`. `case.manage_team` explicitly excluded. Standalone backup-code re-issuance is real but out of scope for this slice's own PR. | FR-017, FR-018, SC-005, SC-006 |
-| D3 | How does tenant deactivation affect live sessions? | **Informed default, pending confirmation.** Option A — extend `001`'s existing refusal-at-activation. No new revocation machinery on `session`/`refresh_token`, because sessions are deliberately tenant-global (`003/FR-037`). | FR-012–FR-015, SC-007, Named Risks |
+| D3 | How does tenant deactivation affect live sessions? | **Confirmed 2026-09-21.** Option A — extend `001`'s existing refusal-at-activation. No new revocation machinery on `session`/`refresh_token`, because sessions are deliberately tenant-global (`003/FR-037`). One unverified, non-blocking caveat against external commercial material — see Named Risks. | FR-012–FR-015, SC-007, Named Risks |
+| D4 | Does `invitation.issue_seed`'s step-up gate apply to `PO`, who has no identity? | **Confirmed 2026-09-21 — no.** Deferred by non-exposure, the same posture already applied to five other not-yet-reachable `stepUp: true` capabilities. Found during implementation, not anticipated by this draft. | `common/authz/interceptor.ts`, `capability-declared-everywhere.test.ts`, Named Risks |
 
 ---
 

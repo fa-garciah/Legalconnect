@@ -45,8 +45,8 @@ generated here as a first pass, not a substitute for a CC-technical review befor
       `stepUp: true` rows exactly, enforced by `backend/tests/unit/registry-shape.test.ts`.
 - [x] Audit events enumerated per operation (Principle V) — FR-006, FR-021; FR-011 and FR-015
       explicitly state which lifecycle events do *not* get a dedicated entry, and why
-- [ ] **D3 confirmed by whoever owns this decision at CC.** This is the one gate this pass cannot
-      close on its own — it's a judgement call standing in for a decision, not a citable fact. See
+- [x] **D3 confirmed by whoever owns this decision at CC.** Confirmed 2026-09-21 — Option A. One
+      unverified, non-blocking caveat carried forward against external commercial material; see
       spec.md Named Risks. Technical premise re-verified directly against schema: `backend/src/
       common/db/schema.ts` lines 614-658 confirm `session`/`refresh_token` carry no tenant or
       membership FK (`003/FR-037` is real, not just asserted), so Option A remains a defensible
@@ -59,12 +59,15 @@ generated here as a first pass, not a substitute for a CC-technical review befor
 
 ## Notes
 
-**17 of 18 pass on this pass**, up from 16/18 on the first draft. Every citation in this spec (D1,
-D2, `003/FR-034`, `003/FR-037`, `003/FR-038`, `001/research.md` D13, `001/FR-006`, the catalog
-entries, and the `session`/`refresh_token` schema) was independently re-verified against the live
-repository on 2026-09-21 and found to match exactly — no drift. `specs/005-session-lifecycle/` did
-not exist prior to this pass; this is a fresh draft, not stale prior work, consistent with `003/
-FR-038` and `004`'s capability rows explicitly deferring to `005`.
+**18 of 18 pass.** D3 was confirmed 2026-09-21 (Option A), closing the one gate this checklist could
+not close on its own. Every citation in this spec (D1, D2, `003/FR-034`, `003/FR-037`, `003/FR-038`,
+`001/research.md` D13, `001/FR-006`, the catalog entries, and the `session`/`refresh_token` schema)
+was independently re-verified against the live repository on 2026-09-21 and found to match exactly —
+no drift. `specs/005-session-lifecycle/` did not exist prior to this pass; this is a fresh draft, not
+stale prior work, consistent with `003/FR-038` and `004`'s capability rows explicitly deferring to
+`005`. Implementation is complete (1642/1642 tests passing) — this checklist's original scope
+(requirements-quality) is done; D4, a gap surfaced during implementation and confirmed the same day,
+is tracked in spec.md's Resolved Decisions and Named Risks rather than reopening this checklist.
 
 Two ambiguities identified during this pass were folded directly into spec.md rather than left as
 review-only notes, since they were the kind of gap an implementer would otherwise have had to guess

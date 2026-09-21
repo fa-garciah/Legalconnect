@@ -4,10 +4,11 @@
 
 **Input**: Feature specification from `/specs/005-session-lifecycle/spec.md`
 
-**Status**: Phase 0 and Phase 1 complete. Ready for `/speckit-tasks`. Not ready for
-`/speckit-implement` — one blocking item below (Assumption D3's sign-off, carried from `spec.md`
-unresolved) and one non-blocking design default (`research.md` D3's identity-only fallback) need a
-name attached before merge.
+**Status**: Implemented and merged to `spec005-session-lifecycle`. All 47 tasks complete, 1642/1642
+tests passing. Assumption D3 confirmed 2026-09-21 (Option A) — the one blocking item this plan
+carried is closed. `invitation.issue_seed`'s step-up gap, found during implementation and not
+anticipated by this plan, is confirmed the same day as deferred-by-non-exposure. See Open Items for
+both resolutions and the non-blocking items that remain genuinely open.
 
 ## Summary
 
@@ -248,27 +249,39 @@ Narrow, named, carries the tests `research.md` and `quickstart.md` both name.
 
 ## Open Items for the CC technical lead
 
-**Blocking:**
+**Resolved:**
 
-1. **`spec.md`'s Assumption D3 needs an explicit owner's sign-off**, carried unresolved from spec.md
-   into this plan rather than closed here. `research.md` D7 confirms the *technical* premise Option A
-   depends on (sessions really are tenant-global in the shipped schema, `001`'s refusal-at-activation
-   really is per-request with no cache) — but confirming the premise is not the same as confirming the
-   decision. If Option B is preferred once this premise is understood, `FR-012`–`FR-015`, `SC-007`,
-   and this plan's D7 all need revisiting before `/speckit-implement`, not after.
+1. **`spec.md`'s Assumption D3 — confirmed 2026-09-21, Option A.** `research.md` D7 confirmed the
+   *technical* premise (sessions really are tenant-global in the shipped schema, `001`'s
+   refusal-at-activation really is per-request with no cache); the decision itself is now also
+   confirmed, closed as a technical-shape decision rather than escalated further. **One caveat carried
+   forward, unverified and explicitly not blocking**: whether CC's commercial material or the contract
+   with Felipe's firm represents tenant deactivation as literally invalidating every session — Option
+   A does not satisfy that literally, only that the tenant becomes unreachable. Worth checking against
+   anything already represented externally.
+2. **`invitation.issue_seed`'s step-up gate — confirmed 2026-09-21, deferred by non-exposure.** Found
+   during implementation, not anticipated by this plan or spec.md: the capability is `stepUp: true`
+   but reachable only from the platform surface, where `PO` has no identity to hold an elevation. The
+   gate skips identity-less callers for this one capability — the same posture already applied to
+   five other not-yet-reachable `stepUp: true` capabilities. Closed by a code comment at the gate
+   (`common/authz/interceptor.ts`) and a regression test
+   (`capability-declared-everywhere.test.ts`) asserting exactly one `stepUp: true` capability is
+   platform-surfaced, so a future addition can't silently inherit the exemption. **New technical debt
+   recorded, not resolved here**: whichever future slice network-exposes the platform-admin surface
+   owns building real `PO` authentication and step-up for it.
 
-**Non-blocking:**
+**Non-blocking, still open:**
 
-2. **The identity-only-route fallback (tightest class, `SA`'s numbers) is a plan-level default, not a
+3. **The identity-only-route fallback (tightest class, `SA`'s numbers) is a plan-level default, not a
    spec-cited fact** (`research.md` D3). It affects exactly two routes — accept own invitation, read
    own memberships (`004` D8's `self`-scope rows) — both narrow and low-risk by `004`'s own reasoning.
    Flagged so it's a recorded choice rather than a default nobody decided.
-3. **Step-up has no lockout of its own** (`research.md` D6, "Rejected" note). A wrong step-up code
+4. **Step-up has no lockout of its own** (`research.md` D6, "Rejected" note). A wrong step-up code
    does not count toward `003/FR-021`'s 5-attempt lockout, because doing so would mean this slice's
    new route reads and writes `identity_factor`'s lockout columns directly. Left open rather than
    silently absent — worth a small follow-up once someone confirms whether unlimited step-up attempts
    is an acceptable gap or needs its own counter.
-4. **Two minutes for a step-up elevation's lifetime is this plan's own number, not spec.md's or the
+5. **Two minutes for a step-up elevation's lifetime is this plan's own number, not spec.md's or the
    constitution's** (`research.md` D6). `spec.md`'s Assumptions explicitly leave the mechanism to
    `plan.md`; this is that decision, recorded so a future reader doesn't go looking for it in the
    constitution and not find it.

@@ -184,20 +184,28 @@ export class AuthorizationInterceptor implements NestInterceptor {
     // not before — an identity without the underlying permission is refused by
     // the ordinary check above and never reaches this gate at all.
     //
-    // KNOWN GAP, undocumented by this slice's design docs and deliberately not
-    // silently papered over: one of the five `stepUp: true` capabilities,
-    // `invitation.issue_seed`, is exposed on the PLATFORM surface, where
-    // `caller.identityId` is always `null` (`PO` is a vendor role, not a tenant
-    // membership — "no PO identity exists to hold a session", session.guard.ts's
-    // own comment). A step-up elevation is minted for an `identity_id`; PO has
-    // none, so enforcing this unconditionally would make that capability
-    // PERMANENTLY UNREACHABLE — a severe regression to an already-shipped 002
-    // platform flow (`seed-first-administrator.test.ts`), not a narrowing this
-    // slice's spec ever states an intent to make. The gate is therefore scoped to
-    // callers who HAVE an identity to elevate; `PO` falls outside its reach
-    // entirely, the same way it already falls outside idle/absolute above and
-    // outside `SessionGuard` itself. Flagged here for the technical lead rather
-    // than resolved unilaterally — see this slice's final implementation report.
+    // CONFIRMED — deferred by non-exposure (research.md D9), the same posture
+    // this codebase already applies to every `stepUp: true` capability that
+    // isn't reachable yet. One of the five, `invitation.issue_seed`, is exposed
+    // on the PLATFORM surface, where `caller.identityId` is always `null` (`PO`
+    // is a vendor role, not a tenant membership — "no PO identity exists to hold
+    // a session", session.guard.ts's own comment). A step-up elevation is minted
+    // for an `identity_id`; PO has none, so enforcing this unconditionally would
+    // make the capability PERMANENTLY UNREACHABLE — a regression to an
+    // already-shipped 002 platform flow (`seed-first-administrator.test.ts`),
+    // not a narrowing this slice's spec ever states an intent to make. The gate
+    // is therefore scoped to callers who HAVE an identity to elevate; `PO` falls
+    // outside its reach entirely, the same way it already falls outside
+    // idle/absolute above and outside `SessionGuard` itself.
+    //
+    // This is NOT a general bypass for a missing caller — it is structurally
+    // singular. `capability-declared-everywhere.test.ts`'s "exactly one stepUp
+    // capability is platform-surfaced" assertion is what keeps it that way: a
+    // future `stepUp: true` capability added to the platform surface fails that
+    // test, forcing the same decision to be made again rather than silently
+    // inheriting this exemption. Whichever future slice network-exposes the
+    // platform-admin surface owns building real `PO` authentication and step-up
+    // for it (research.md D9) — recorded as technical debt, not solved here.
     //
     // ALSO SKIPPED WHEN `request.sessionId` IS ABSENT — the identical judgment
     // call made above for idle/absolute, applied a second time to the same root
