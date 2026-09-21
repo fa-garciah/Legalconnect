@@ -90,6 +90,13 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
   //
   //   identity_credential, identity_factor, backup_code, session, refresh_token
   //
+  // 005-session-lifecycle adds a sixth, step_up_elevation, for the identical
+  // reason: it hangs off an identity (research.md D6), carries no tenant_id, and
+  // is protected by GRANTS (lc_app holds no table privilege at all, only EXECUTE
+  // on consume_step_up()) rather than by an RLS policy. Verified by
+  // session-lifecycle-grants-lockdown.test.ts, the same permission-denied shape
+  // auth-grants-lockdown.test.ts already established for the other five.
+  //
   // The constitution states this exception directly for identity and session
   // data: "The `identity` table and the session table are tenant-global by design
   // and therefore carry no tenant_id and no RLS policy of their own... a person

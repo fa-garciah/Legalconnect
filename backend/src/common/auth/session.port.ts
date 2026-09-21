@@ -38,8 +38,12 @@ export interface MintedSession {
 }
 
 export interface ResolvedSession {
+  readonly id: string;
   readonly identityId: string;
   readonly expiresAt: Date;
+  /** 005-session-lifecycle, research.md D2. */
+  readonly lastSeenAt: Date;
+  readonly familyCreatedAt: Date;
 }
 
 /** Device metadata. CARRIES NO PERSONAL DATA beyond user-agent class and coarse origin. */
@@ -104,11 +108,25 @@ export async function mintSession(
  * discloses whether a token ever existed.
  */
 export async function resolveSession(tx: AuthTx, accessToken: string): Promise<ResolvedSession | null> {
-  const result = await tx.execute<{ identity_id: string; expires_at: Date }>(
-    sql`SELECT identity_id, expires_at FROM resolve_session(${digestToken(accessToken)})`,
+  const result = await tx.execute<{
+    id: string;
+    identity_id: string;
+    expires_at: Date;
+    last_seen_at: Date;
+    family_created_at: Date;
+  }>(
+    sql`SELECT id, identity_id, expires_at, last_seen_at, family_created_at FROM resolve_session(${digestToken(accessToken)})`,
   );
   const row = result.rows[0];
-  return row ? { identityId: row.identity_id, expiresAt: new Date(row.expires_at) } : null;
+  return row
+    ? {
+        id: row.id,
+        identityId: row.identity_id,
+        expiresAt: new Date(row.expires_at),
+        lastSeenAt: new Date(row.last_seen_at),
+        familyCreatedAt: new Date(row.family_created_at),
+      }
+    : null;
 }
 
 export type RotationOutcome =
@@ -180,4 +198,15 @@ export async function revokeAllSessionsFor(tx: AuthTx, identityId: string): Prom
   await tx.execute(
     sql`UPDATE session SET revoked_at = now() WHERE identity_id = ${identityId} AND revoked_at IS NULL`,
   );
+}
+
+/**
+ * 005-session-lifecycle, research.md D5. Explicit sign-out — revokes the WHOLE
+ * refresh-token family sharing `sessionId`'s family, not just the presented row
+ * (FR-003, FR-004). Idempotent: a second call against an already-dead family is a
+ * no-op (FR-005), which is what `sign_out()` itself guarantees rather than
+ * something this wrapper adds.
+ */
+export async function signOut(tx: AuthTx, sessionId: string): Promise<void> {
+  await tx.execute(sql`SELECT sign_out(${sessionId})`);
 }

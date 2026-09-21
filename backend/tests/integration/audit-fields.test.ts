@@ -68,6 +68,14 @@ const RESERVED_TO_AUTH_WRITER: readonly string[] = [
   'signin.failed',
   'challenge.failed',
   'account.locked',
+  // 005-session-lifecycle, backend/drizzle/0042: the same exclusion, one slice
+  // later. Reserved to lc_auth by the same policy shape 0030 established, for the
+  // same reason — sign-out and step-up verification are exactly the kind of event
+  // a forged or suppressed entry would attack. Their own coverage is
+  // tests/integration/session-lifecycle-audit-actions.test.ts.
+  'session.signed_out',
+  'stepup.verified',
+  'stepup.failed',
 ];
 
 const UNCONDITIONAL = AUDIT_ACTIONS.filter(
@@ -126,23 +134,26 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it("covers every action in the vocabulary — fifty-one (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve)", () => {
+  it("covers every action in the vocabulary — fifty-four (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three)", () => {
     // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024 /
-    // 007-FR-019 / 003-FR-042 without a test reaching it.
+    // 007-FR-019 / 003-FR-042 / 005 research.md D8 without a test reaching it.
     //
-    // 003's twelve are counted here but exercised by
-    // tests/integration/auth-audit-actions.test.ts rather than by this sweep —
-    // see RESERVED_TO_AUTH_WRITER above. Counting them here anyway is deliberate:
-    // this assertion's job is to notice vocabulary growth, and excluding an action
-    // from the count because it is tested elsewhere would defeat that.
-    expect(AUDIT_ACTIONS).toHaveLength(51);
+    // 003's twelve and 005's three are counted here but exercised by
+    // tests/integration/auth-audit-actions.test.ts and
+    // tests/integration/session-lifecycle-audit-actions.test.ts respectively,
+    // rather than by this sweep — see RESERVED_TO_AUTH_WRITER above. Counting them
+    // here anyway is deliberate: this assertion's job is to notice vocabulary
+    // growth, and excluding an action from the count because it is tested
+    // elsewhere would defeat that.
+    expect(AUDIT_ACTIONS).toHaveLength(54);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
     // monitoring job from inflating the log it watches.
     expect(GATED).toHaveLength(5);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
-    expect(UNCONDITIONAL).toHaveLength(39 - 5 - 4);
+    expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
+    expect(UNCONDITIONAL).toHaveLength(54 - 5 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

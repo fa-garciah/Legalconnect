@@ -412,6 +412,30 @@ export class NotWithdrawn extends HttpException {
   }
 }
 
+/**
+ * 005-session-lifecycle, research.md D6. Deliberately distinguishable from a
+ * wrong-code refusal at `/auth/step-up` itself (401, uniform, same shape 003
+ * already uses): "you must complete step-up" discloses nothing the caller does
+ * not already know — ordinary permission has already been decided in their
+ * favour by the time this is thrown (Edge Cases: "the ordinary permission
+ * refusal applies first"). Returned when the `X-Step-Up-Token` header is absent,
+ * the token is expired, already consumed, or was minted for a different
+ * capability.
+ */
+export class StepUpRequired extends HttpException {
+  constructor() {
+    // Deliberately FLAT — { error, message } — not `errorBody()`'s nested
+    // { error: { code, message } } shape 004's other refusals use.
+    // contracts/session-lifecycle.md fixes this exact shape, matching the flat
+    // uniform refusal `sign-in.service.ts`'s own `refuse()` already uses for
+    // `/auth/factor` (FR-020's family of refusals, not 004's).
+    super(
+      { error: 'step_up_required', message: 'Se requiere verificación adicional.' },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
 export class LimitsExceeded extends HttpException {
   constructor(exceeded: ReadonlyArray<{ limit: string; current: number; target: number }>) {
     super(

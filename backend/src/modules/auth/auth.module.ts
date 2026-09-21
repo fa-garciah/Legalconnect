@@ -13,10 +13,21 @@ import { RecoveryController } from './recovery.controller';
 import { SignInService } from './sign-in.service';
 import { EnrollmentService } from './enrollment.service';
 import { RecoveryService } from './recovery.service';
+// 005-session-lifecycle.
+import { SignOutController } from './sign-out.controller';
+import { SignOutService } from './sign-out.service';
+import { StepUpController } from './step-up.controller';
+import { StepUpService } from './step-up.service';
 
 @Module({
-  controllers: [SignInController, EnrollmentController, RecoveryController],
-  providers: [SignInService, EnrollmentService, RecoveryService],
-  exports: [SignInService, EnrollmentService, RecoveryService],
+  controllers: [
+    SignInController,
+    EnrollmentController,
+    RecoveryController,
+    SignOutController,
+    StepUpController,
+  ],
+  providers: [SignInService, EnrollmentService, RecoveryService, SignOutService, StepUpService],
+  exports: [SignInService, EnrollmentService, RecoveryService, SignOutService, StepUpService],
 })
 export class AuthModule {}
