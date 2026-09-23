@@ -88,11 +88,24 @@ describe('the theme contract', () => {
     expect(text).toMatch(/tw-animate-css/);
   });
 
-  it('declares a dark variant, so the components dark: classes can ever activate', () => {
-    // Every ported component carries `dark:` classes. Under the previous version this was
-    // a config key; here it is a custom variant. Omit it and those classes never fire —
-    // again silently.
-    expect(css()).toMatch(/@custom-variant\s+dark|prefers-color-scheme|\[data-theme/);
+  /**
+   * REPLACED BY `020-design-language`, D1 — deliberately inverted, not relaxed.
+   *
+   * This assertion demanded a dark variant be declared so the ported components' `dark:`
+   * classes could fire. It was satisfied, and it was satisfying nothing: `globals.css`
+   * carried a full `.dark` palette and NOTHING IN THE PRODUCT EVER APPLIED THE CLASS —
+   * no toggle, no system-preference listener, no server-rendered attribute. It had never
+   * rendered once.
+   *
+   * `020`'s D1 removes it rather than completing it, and the assertion follows the
+   * decision. This is a contract change the spec authorises, which is a different act
+   * from bending a test to accommodate a look (020/SC-003). Dark mode returns as its own
+   * story, with a control, a persistence decision and its own contrast table.
+   */
+  it('declares no theme that nothing can reach', () => {
+    const text = css();
+    expect(text, 'an unreachable .dark palette is worse than none').not.toMatch(/^\.dark\s*\{/m);
+    expect(text).not.toMatch(/@custom-variant\s+dark/);
   });
 
   it('sets the brand primary rather than leaving the vendor default', () => {
@@ -108,7 +121,7 @@ describe('the theme contract', () => {
     const text = css();
     const resolve = (name: string, depth = 0): string => {
       if (depth > 4) return '';
-      const m = new RegExp(`--${name}\s*:\s*([^;]+);`).exec(text);
+      const m = new RegExp(`--${name}\\s*:\\s*([^;]+);`).exec(text);
       if (!m) return '';
       const value = m[1].trim();
       const ref = /^var\(--([a-z-]+)\)$/.exec(value);
@@ -118,6 +131,112 @@ describe('the theme contract', () => {
     expect(resolve('color-primary').toLowerCase(), 'the brand must reach --color-primary').toContain(
       '3730a3',
     );
+  });
+});
+
+/**
+ * `020-design-language` — the identity contract, on top of `018`'s token contract.
+ *
+ * `018` proved the theme was COMPLETE: every role a component references exists. It could
+ * not prove the theme was DECIDED, and it was not — the typeface came from
+ * `create-next-app`, and there was no type scale, no density and no shape decision
+ * anywhere. These assertions cover the decisions rather than the coverage.
+ */
+const LAYOUT = join(process.cwd(), 'src/app/layout.tsx');
+const layout = (): string => readFileSync(LAYOUT, 'utf8');
+
+describe('the identity contract (020)', () => {
+  it('loads no scaffold typeface — FR-002, SC-002', () => {
+    // `Geist` arrived with `create-next-app`. Nobody chose it, and it was the single
+    // clearest signal the product sent that it was a scaffold rather than a product.
+    //
+    // Asserted against what the file IMPORTS and CALLS, not against the word appearing:
+    // the comment above the replacement names what it replaced, which is worth keeping,
+    // and a test that forbade naming it would be testing the prose.
+    const text = layout();
+    expect(text, 'no font may be imported from the scaffold family').not.toMatch(
+      /import\s*\{[^}]*Geist[^}]*\}\s*from/,
+    );
+    expect(text, 'no scaffold font may be instantiated').not.toMatch(/\bGeist(_Mono)?\s*\(/);
+  });
+
+  it('loads exactly two families: a serif for display, a sans for interface — FR-002', () => {
+    const text = layout();
+    expect(text).toMatch(/Newsreader/);
+    expect(text).toMatch(/Public_Sans/);
+  });
+
+  it('exposes the display family as its own token, so headings do not hardcode it — FR-002', () => {
+    expect(css()).toMatch(/--font-display\s*:/);
+  });
+
+  it('defines a named type scale rather than ad-hoc sizes — FR-001', () => {
+    const text = css();
+    const steps = ['display', 'heading', 'body', 'small', 'caption'];
+    const missing = steps.filter((s) => !new RegExp(`--text-${s}\\s*:`).test(text));
+    expect(missing, 'type-scale steps absent from globals.css').toEqual([]);
+  });
+
+  it('defines the secondary accent the brand cannot carry — FR-005', () => {
+    // One case needs a second hue: telling a natural person from an organisation, and
+    // marking a suspended matter. `018` had to reach for `accent` and `secondary` to fake
+    // it and recorded that as a gap in its own addendum.
+    const text = css();
+    expect(text).toMatch(/--accent-warm\s*:/);
+    expect(text).toMatch(/--accent-warm-tint\s*:/);
+  });
+
+  it('keeps the decided brand and its pressed state — FR-004', () => {
+    const text = css().toLowerCase();
+    expect(text).toContain('#3730a3');
+    expect(text).toContain('#2d2582');
+  });
+
+  it('grounds the product on a warm surface rather than pure white — FR-006, D3', () => {
+    const text = css();
+    const m = /--background\s*:\s*([^;]+);/.exec(text);
+    expect(m, '--background must be defined').not.toBeNull();
+    expect(m![1].trim().toLowerCase(), 'a pure-white ground makes indigo read as generic SaaS')
+      .not.toMatch(/^#fff(fff)?$/);
+  });
+
+  it('names its density rather than guessing per screen — FR-008', () => {
+    const text = css();
+    const steps = ['control-h', 'row-h', 'card-p', 'page-gutter'];
+    const missing = steps.filter((s) => !new RegExp(`--space-${s}\\s*:`).test(text));
+    expect(missing, 'density tokens absent from globals.css').toEqual([]);
+  });
+
+  it('renders record identifiers with tabular figures — FR-003', () => {
+    expect(css()).toMatch(/font-variant-numeric:\s*tabular-nums/);
+  });
+});
+
+/**
+ * WCAG 1.4.11: a control's boundary needs 3:1 against what surrounds it. `--input` was
+ * `#e4ddd1` — 1.35:1 on a card — so every form field in the product was identifiable only by
+ * a fill barely different from the card. Found by `design:design-critique`, 2026-09-22.
+ */
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) =>
+    v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+}
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+function token(name: string): string {
+  const m = new RegExp(`--${name}\\s*:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(css());
+  if (!m) throw new Error(`--${name} is not a six-digit hex`);
+  return m[1]!;
+}
+
+describe('control boundaries are perceivable (WCAG 1.4.11)', () => {
+  it('the input border reaches 3:1 on the card and on the ground', () => {
+    expect(contrast(token('input'), token('card'))).toBeGreaterThanOrEqual(3);
+    expect(contrast(token('input'), token('background'))).toBeGreaterThanOrEqual(3);
   });
 });
 

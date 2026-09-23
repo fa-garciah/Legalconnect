@@ -157,7 +157,7 @@ export function CaseRegister({ archetype }: CaseRegisterProps): React.JSX.Elemen
   return (
     <section className="flex flex-col gap-6" aria-labelledby="expedientes-heading">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 id="expedientes-heading" className="text-3xl font-bold tracking-tight">
+        <h1 id="expedientes-heading" className="font-display text-display font-semibold tracking-tight">
           Expedientes
         </h1>
         {mayCreate ? (

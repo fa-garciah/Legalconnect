@@ -87,10 +87,19 @@ Every other epic depends on this one.
 | **US18-EP00-FND-SeeLoadingState** | System User | A region backed by a network request shows it is loading | FND |
 | **US19-EP00-FND-SeeErrorState** | System User | A failed request shows a state offering retry, opaque or remedy-specific per cause | FND |
 | **US20-EP00-FND-SeeEmptyState** | System User | A successful response with zero records shows a clear empty state | FND |
+| **US21-EP00-FND-ApplyProductVisualIdentity** | System User | One visual identity — type scale, palette, density and shape — that every module renders in, defined once and changed in one place | FND |
 
 > **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation; US13 and US15 by
 > slice 002-identity-membership; US11 and US14 by slice 004-authorization-entitlements;
 > US17–US20 by slice 016a-frontend-shell. **Pending:** US09 → IT2.
+>
+> **US21 added 2026-09-21**, on the same reasoning and the same precedent. `016a` gave
+> the product a shell and `018` gave it a component library and a token contract; neither
+> gave it a decided *look*. The typeface in `layout.tsx` is `create-next-app`'s scaffold
+> default, the palette was extracted from a prototype's markup, and there is no type scale,
+> density or shape decision anywhere. A visual identity is architecture every later frontend
+> slice inherits — not business capability any existing story covers — so it enters the
+> catalog rather than arriving as unbacked commits. Raises EP00 from 20 to 21 stories.
 >
 > **US17–US20 added 2026-08-26**, closing 016a-frontend-shell's own Principle I
 > traceability gap — the persistent navigation shell and its three feedback states

@@ -104,6 +104,11 @@ describe('SignInForm (T051)', () => {
     expect(screen.getByLabelText('Correo electrónico')).toHaveFocus();
     await userEvent.tab();
     expect(screen.getByLabelText('Contraseña')).toHaveFocus();
+    // Added with the show/hide control (2026-09-22). "Every control by keyboard alone" is
+    // the assertion's own promise, so the new control is asserted here rather than skipped:
+    // a toggle a keyboard user cannot reach would be the regression.
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Mostrar contraseña' })).toHaveFocus();
     await userEvent.tab();
     expect(screen.getByRole('button', { name: 'Continuar' })).toHaveFocus();
   });

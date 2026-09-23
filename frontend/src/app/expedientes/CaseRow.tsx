@@ -40,7 +40,7 @@ const ABSENT = '—';
 export function CaseRow({ item, closing, onOpen }: CaseRowProps): React.JSX.Element {
   return (
     <TableRow>
-      <TableCell className="font-medium">{item.fileNumber}</TableCell>
+      <TableCell className="font-display font-semibold">{item.fileNumber}</TableCell>
       <TableCell>{item.client.legalName}</TableCell>
       <TableCell>{item.matterType?.name ?? ABSENT}</TableCell>
       <TableCell>{item.venue?.name ?? ABSENT}</TableCell>

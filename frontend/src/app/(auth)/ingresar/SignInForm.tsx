@@ -17,9 +17,9 @@
  */
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { ArrowRight, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { IconField, PasswordField } from '../fields';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -66,32 +66,30 @@ export function SignInForm(): React.JSX.Element {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </div>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <IconField
+        id="email"
+        name="email"
+        label="Correo electrónico"
+        icon={Mail}
+        type="email"
+        autoComplete="username"
+        placeholder="nombre@despacho.mx"
+        required
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </div>
+      <PasswordField
+        id="password"
+        name="password"
+        label="Contraseña"
+        autoComplete="current-password"
+        placeholder="Tu contraseña"
+        required
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
 
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -99,13 +97,15 @@ export function SignInForm(): React.JSX.Element {
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      {/*
+        "Continuar", not the reference's "Iniciar sesión": after this step the person is NOT
+        signed in yet — the second factor comes next, and the label says so honestly. It is
+        also the name 23 tests across the unit, component and e2e tiers already address.
+      */}
+      <Button type="submit" className="h-[var(--space-control-h)] w-full gap-2" disabled={pending}>
         {pending ? 'Verificando…' : 'Continuar'}
+        {pending ? null : <ArrowRight aria-hidden className="h-4 w-4" />}
       </Button>
-
-      <p className="text-xs text-muted-foreground">
-        Se te pedirá tu segundo factor en el siguiente paso.
-      </p>
     </form>
   );
 }

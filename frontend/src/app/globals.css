@@ -2,107 +2,149 @@
 @import "tw-animate-css";
 
 /*
- * 018-frontend-clients — the design system's theme.
+ * The product's visual language. `020-design-language` (US21-EP00-FND), on top of
+ * `018-frontend-clients`'s token contract.
  *
- * This file IS the version migration. research.md D1: the 49 vendored components in
- * `src/components/ui/` are stock and unmodified, contain no `@apply`, and reference only
- * token utilities — `bg-primary`, `border-input`, `ring-ring`. Under the previous major
- * version those utilities came from a JavaScript config; here they come from the `@theme`
- * block below. The utility names are identical either way, which is why the components
- * needed no editing and this file needed rewriting.
+ * WHAT `018` LEFT AND WHAT THIS CHANGES. `018` proved the theme was COMPLETE — every role
+ * the 49 ported components reference exists, and `theme-tokens.test.tsx` fails when one
+ * goes missing. It could not prove the theme was DECIDED, and it was not: the palette was
+ * extracted from a prototype's markup, the typeface was `create-next-app`'s scaffold
+ * default, and there was no type scale, no density and no shape decision anywhere. This
+ * file now carries all four.
  *
- * Get a token name wrong and that component renders unstyled — not throwing, not empty,
- * just quietly wrong. `tests/component/theme-tokens.test.tsx` exists for exactly that.
+ * The 49 components are still stock and still reference only token utilities, so this
+ * file remains the whole surface: a change to the identity is a change here, and nowhere
+ * else (FR-013). That property is `018`'s and it is preserved deliberately.
  *
  * `tw-animate-css` replaces the prototype's animation plugin, which targets the previous
- * version's plugin API and does not load here (research D2). Six utilities depend on it:
- * animate-in, animate-out, animate-accordion-down, animate-accordion-up,
+ * version's plugin API and does not load here (018/research D2). Six utilities depend on
+ * it: animate-in, animate-out, animate-accordion-down, animate-accordion-up,
  * animate-caret-blink, animate-pulse.
+ *
+ * NO DARK VARIANT IS DECLARED — 020/D1, and it is a removal rather than an omission. This
+ * file carried a full `.dark` palette and nothing in the product ever applied the class:
+ * no toggle, no system-preference listener, no server-rendered attribute. It had never
+ * rendered once. A second complete palette nobody can reach costs every future slice a
+ * `dark:` decision it cannot test, so it is gone. Dark mode returns as its own story, with
+ * a control, a persistence decision and its own contrast table.
  */
-
-/*
- * The dark variant. Was a config key under the previous version; here it is declared.
- * Every ported component carries `dark:` classes and none of them would ever activate
- * without this line.
- */
-@custom-variant dark (&:is(.dark *));
 
 /*
  * ---------------------------------------------------------------------------
- * The palette.
+ * The palette. 020/FR-004 to FR-006.
  *
- * research.md D3, and the one part of this slice that is written rather than copied.
+ * THE BRAND IS NOT REOPENED. `#3730A3` was confirmed as the decided brand on 2026-08-28,
+ * not as a generator's placeholder, and `020` inherits it rather than re-deciding it.
  *
- * The prototype's own theme variables are the VENDOR DEFAULTS — its `--primary` is a
- * near-black. Its actual brand never reached its theme at all: `#3730A3` appears fifty
- * times as `bg-[#3730A3] hover:bg-[#2D2582]`, an inline override on components that
- * already supported `bg-primary`.
- *
- * So these values were extracted from its markup and put where they belong. The rendered
- * result is the prototype's; what changed is that a palette change is now one edit here
- * instead of ninety-two across the app — and that `variant="default"` is already branded,
- * so no screen in this slice writes a colour literal (contracts/design-system.md §3.4).
- *
- * Confirmed as the decided brand rather than a generator's placeholder, 2026-08-28.
+ * THE NEUTRALS ARE WARM AND THE BRAND IS COOL, ON PURPOSE (020/D3). Indigo on a warm
+ * ground reads as ink on paper, which is the right register for a product whose subject is
+ * matters and case files. The same indigo on pure white reads as generic SaaS. The pairing
+ * was chosen from rendered options on 2026-09-21, not tolerated.
  * ---------------------------------------------------------------------------
  */
 :root {
-  /* Brand. #3730A3 indigo, with #2D2582 as its pressed/hover partner. */
+  /* Brand. Unchanged from 018 — #3730A3 indigo, #2D2582 as its pressed partner. */
   --brand: #3730a3;
   --brand-hover: #2d2582;
   --brand-tint: #eef2ff;
 
-  /* Surfaces. */
-  --background: #ffffff;
-  --foreground: #1a1a1a;
+  /*
+   * The second hue, and the one case that genuinely needs it (FR-005).
+   *
+   * `018`'s own addendum records reaching for `accent` and `secondary` to tell an
+   * organisation from a natural person, and noting that adding a real role "would make the
+   * reference reachable; that is a token-set decision, not a component one." This is that
+   * decision: ochre, for natural-person avatars and for a suspended matter. Two glances
+   * apart from the brand in hue, not merely in lightness.
+   */
+  --accent-warm: #b8843f;
+  --accent-warm-tint: #f6ecdd;
+  --accent-warm-foreground: #8a6124;
+
+  /* Surfaces. Warm neutrals — the ground, the rail and the borders share one family. */
+  --background: #faf8f3;
+  --foreground: #1a1714;
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #1a1714;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
+  --popover-foreground: #1a1714;
+  /* The navigation rail, one step warmer than the ground so it reads as a surface. */
+  --rail: #f3f0e9;
 
   /* Semantic roles. */
   --primary: var(--brand);
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b7280;
+  --primary-foreground: #faf8f3;
+  --secondary: #f3f0e9;
+  --secondary-foreground: #1a1714;
+  --muted: #f3f0e9;
+  /* 4.62:1 on --background. The lightest this may go and still pass FR-012. */
+  --muted-foreground: #6e6459;
   --accent: var(--brand-tint);
   --accent-foreground: var(--brand);
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
+  /* Warmer than the vendor's #dc2626, so a refusal belongs to this palette. 5.94:1. */
+  --destructive: #b3261e;
+  --destructive-foreground: #faf8f3;
 
-  /* Structure. `ring` follows the brand so focus is visibly ours (FR-025). */
-  --border: #e4e4e7;
-  --input: #e4e4e7;
+  /* Structure. `ring` follows the brand so focus is visibly ours (018/FR-025). */
+  --border: #e4ddd1;
+  /*
+   * The FIELD border, split from `--border` on purpose. `--border` draws decorative dividers
+   * and card edges, which WCAG does not require to be perceivable. A form field's edge is
+   * different: WCAG 1.4.11 wants 3:1 so a person can find the control at all. At `#e4ddd1`
+   * it was 1.35:1 on a card — every field in the product was identifiable only by a fill
+   * barely distinct from the card around it. `#968a77` is 3.39:1 on the card and 3.19:1 on
+   * the ground, and stays in the warm neutral family. Found by `design:design-critique`,
+   * 2026-09-22; asserted in `theme-tokens.test.tsx`.
+   */
+  --input: #968a77;
   --ring: var(--brand);
 
-  /* The prototype derived three corner sizes from one value; so do we. */
-  --radius: 0.5rem;
-}
+  /*
+   * Corners. One value, three derivations — the shape `018` established, retuned.
+   *
+   * 0.875rem = 14px at the `lg` step, which is the card radius the chosen direction
+   * draws. NOT a pill: `--radius` drives every `rounded-md` surface in the library,
+   * dialogs and popovers included, and a pill dialog is not what was chosen. Pill-shaped
+   * BUTTONS and INPUTS need `button.tsx` and `input.tsx` edited, which is 020/D2 and
+   * scoped separately so this token layer lands and is verified on its own first.
+   */
+  --radius: 0.875rem;
 
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #171717;
-  --card-foreground: #ededed;
-  --popover: #171717;
-  --popover-foreground: #ededed;
+  /*
+   * ---------------------------------------------------------------------------
+   * The type scale. FR-001.
+   *
+   * Five named steps. A screen picks a step; it does not pick a pixel. The point is not
+   * that these numbers are special — it is that they are DECIDED, so two screens built
+   * three months apart agree, which ad-hoc `text-[15px]` never delivers.
+   * ---------------------------------------------------------------------------
+   */
+  /* 44px — the one marketing-weight line the product has: the sign-in brand panel. Added as
+     a step rather than pasted as `text-[2.75rem]`, per FR-013. */
+  --text-hero: 2.75rem;
+  --text-display: 2rem;      /* 32px — the page title, in the serif */
+  --text-heading: 1.0625rem; /* 17px — card and section headings, in the serif */
+  --text-body: 0.875rem;     /* 14px — interface default */
+  --text-small: 0.8125rem;   /* 13px — secondary rows, table cells */
+  --text-caption: 0.71875rem;/* 11.5px — badges, column headers, meta */
 
-  --primary: #6366f1;
-  --primary-foreground: #0a0a0a;
-  --secondary: #27272a;
-  --secondary-foreground: #ededed;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #ededed;
-  --destructive: #ef4444;
-  --destructive-foreground: #0a0a0a;
-
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #6366f1;
+  /*
+   * ---------------------------------------------------------------------------
+   * Density. FR-008.
+   *
+   * The component library's defaults are marketing-page airy. This is software somebody
+   * reads for eight hours: long lists, wide tables, repeated scanning. Four tokens, so a
+   * screen never guesses.
+   *
+   * `--space-control-h` stays at 44px rather than shrinking with the rest — it is the
+   * minimum comfortable touch target, and density is not a reason to make controls hard
+   * to hit.
+   * ---------------------------------------------------------------------------
+   */
+  --space-control-h: 2.625rem; /* 42px — buttons, inputs, selects */
+  --space-row-h: 3rem;         /* 48px — table rows */
+  --space-card-p: 1.25rem;     /* 20px — card padding */
+  --space-page-gutter: 2rem;   /* 32px — the content region's own margin */
 }
 
 /*
@@ -130,17 +172,36 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* 020's additions, as utilities: `bg-rail`, `bg-accent-warm-tint`, `text-accent-warm`. */
+  --color-rail: var(--rail);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-tint: var(--accent-warm-tint);
+  --color-accent-warm-foreground: var(--accent-warm-foreground);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+
+  /*
+   * The two families (FR-002). `--font-sans` is what every component inherits; a heading
+   * that wants the serif asks for `font-display`, never for a family name.
+   */
+  --font-sans: var(--font-public-sans);
+  --font-display: var(--font-newsreader);
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  /* The scale, as utilities: `text-display`, `text-heading`, `text-body`, … */
+  --text-hero: var(--text-hero);
+  --text-display: var(--text-display);
+  --text-heading: var(--text-heading);
+  --text-body: var(--text-body);
+  --text-small: var(--text-small);
+  --text-caption: var(--text-caption);
 
   /*
    * Accordion keyframes. These lived in the prototype's JS config rather than in its
-   * animation plugin, so they move here with the rest of the theme — `accordion.tsx`
+   * animation plugin, so they live here with the rest of the theme — `accordion.tsx`
    * references `animate-accordion-down` / `-up` and would silently not animate without
    * them.
    */
@@ -174,5 +235,27 @@
   body {
     background: var(--color-background);
     color: var(--color-foreground);
+    font-size: var(--text-body);
+  }
+
+  /*
+   * Record identifiers line up (FR-003).
+   *
+   * A column of file numbers, RFCs or dates in proportional figures does not align, and a
+   * misaligned column of identifiers is genuinely harder to scan — which is most of what
+   * anybody does on the case register. Applied by element rather than by utility so a
+   * screen cannot forget: every `<td>`, and anything explicitly marked.
+   */
+  td,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * The serif carries the product's voice: page titles, card headings, and the file
+   * number itself, which is the one piece of data a lawyer looks for first.
+   */
+  .font-display {
+    font-family: var(--font-display);
   }
 }

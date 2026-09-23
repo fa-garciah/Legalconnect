@@ -68,7 +68,7 @@ export function ClientCard({ client, onEdit, onChangeStatus }: ClientCardProps):
               <Icon className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <h2 className="truncate font-medium">{client.legalName}</h2>
+              <h2 className="truncate font-display text-heading font-semibold">{client.legalName}</h2>
               <p className="mt-1 truncate text-sm text-muted-foreground">{KIND_LABEL[client.kind]}</p>
             </div>
           </div>

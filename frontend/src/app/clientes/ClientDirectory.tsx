@@ -153,7 +153,7 @@ export function ClientDirectory({ archetype }: ClientDirectoryProps): React.JSX.
   return (
     <section className="flex flex-col gap-4" aria-labelledby="clientes-heading">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 id="clientes-heading" className="text-3xl font-bold tracking-tight">
+        <h1 id="clientes-heading" className="font-display text-display font-semibold tracking-tight">
           Directorio de Clientes
         </h1>
         {mayCreate ? (
