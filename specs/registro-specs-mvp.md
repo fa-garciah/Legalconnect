@@ -1,6 +1,11 @@
 # LegalConnect MX — Registro de Specs del MVP
 
 **Fecha:** 2026-08-21 · **Constitución:** v1.4.0 · **Backlog:** `master-user-story-catalog.md` (172 US, EP00–EP16)
+> **AVISO (2026-09-21):** el inventario de la §2 de este documento está desactualizado.
+> Cinco slices que aquí figuran como «POR ESCRIBIR» están en `main`. El inventario vigente
+> vive en [`plan-paralelo-2026-09.md`](./plan-paralelo-2026-09.md). Las §3 y §4 de este
+> documento siguen siendo válidas y sin resolver.
+
 **Estado:** autoritativo para inventario de specs. Complementa `speckit/slice-roadmap.md`,
 que sigue siendo autoritativo para reparto y protocolo de conflictos.
 
