@@ -84,7 +84,14 @@ describe('POST /auth/factor (T043)', () => {
     );
     const body = JSON.stringify(response.body);
     expect(body).not.toContain(tenants.a);
-    expect(body).not.toContain('MP');
+    // NOT a substring check for 'MP'. The body carries two random base64url tokens, and a
+    // two-letter code turns up inside random text often enough to fail roughly one run in
+    // fifty — it did on 2026-09-23. The key set is already pinned exactly above, so an
+    // archetype could only leak as a field VALUE; that is what is checked. A tenant id is a
+    // 36-character UUID and cannot collide by chance, so its substring check stays.
+    for (const value of Object.values(response.body as Record<string, unknown>)) {
+      expect(value).not.toBe('MP');
+    }
   });
 
   it('the emitted access token actually authenticates a request', async () => {

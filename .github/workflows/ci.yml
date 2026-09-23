@@ -27,21 +27,6 @@ jobs:
           --health-cmd "pg_isready -U lc_migration -d legalconnect"
           --health-interval 5s --health-timeout 5s --health-retries 12
 
-      # 007-document-management, research.md D6. The document suites exercise real
-      # S3-API behaviour — signing, expiry, cross-tenant pre-signed URL isolation —
-      # against MinIO rather than a mock, so CI needs the same service local dev runs.
-      # Without it the whole document tier fails here while passing on a developer's
-      # machine, which is the worst way for a gate to be wrong.
-      minio:
-        image: minio/minio:edge-cicd
-        env:
-          MINIO_ROOT_USER: lc_minio_ci
-          MINIO_ROOT_PASSWORD: lc_minio_ci_password
-        ports: ['9000:9000']
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 5s --health-timeout 5s --health-retries 12
-
     env:
       DATABASE_URL_MIGRATION: postgresql://lc_migration:lc_migration_ci@localhost:5432/legalconnect
       DATABASE_URL_APP: postgresql://lc_app:lc_app_ci@localhost:5432/legalconnect
@@ -100,17 +85,34 @@ jobs:
 
       - run: npm ci
 
-      # Creates the bucket the application expects. `docker-compose.yml` does this for
-      # local dev via its `minio-bucket` service; GitHub's `services:` block has no
-      # equivalent, so it is a step here. Both exist because MinIO comes up HEALTHY with
-      # no bucket in it, and every upload then fails with a 500 that looks like
-      # application code.
+      # 007-document-management, research.md D6. The document suites exercise real
+      # S3-API behaviour — signing, expiry, cross-tenant pre-signed URL isolation —
+      # against MinIO rather than a mock, so CI needs the same service local dev runs.
+      #
+      # A STEP, NOT A `services:` CONTAINER, and pinned on quay.io — both forced, not chosen.
+      # `minio/minio` no longer exists on Docker Hub: from the merge of 005 onward every
+      # run died at "Initialize containers" with "pull access denied", before checkout, so
+      # main was red and not one backend test ran. The old `edge-cicd` tag existed only
+      # because it starts `server /data` by default; the standard image needs that argument,
+      # and GitHub's `services:` block cannot pass one. It also no longer ships `curl`, so
+      # health is polled from the runner instead of from inside the container.
+      - name: Start the object store
+        run: |
+          docker run -d --name lc-minio -p 9000:9000             -e MINIO_ROOT_USER=lc_minio_ci -e MINIO_ROOT_PASSWORD=lc_minio_ci_password             quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/live && exit 0
+            sleep 2
+          done
+          docker logs lc-minio
+          exit 1
+
+      # Creates the bucket the application expects. MinIO comes up HEALTHY with no bucket
+      # in it, and every upload then fails with a 500 that looks like application code.
+      # Uses the `mc` shipped inside the MinIO image rather than downloading a binary.
       - name: Create the object-store bucket
         run: |
-          curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
-          chmod +x /tmp/mc
-          /tmp/mc alias set ci http://localhost:9000 lc_minio_ci lc_minio_ci_password
-          /tmp/mc mb --ignore-existing ci/legalconnect-documents-ci
+          docker exec lc-minio mc alias set ci http://localhost:9000 lc_minio_ci lc_minio_ci_password
+          docker exec lc-minio mc mb --ignore-existing ci/legalconnect-documents-ci
 
       # Leads the quality gates because a drifted environment makes every gate below it
       # fail for reasons that have nothing to do with the code — three separate incidents

@@ -27,6 +27,13 @@
  * decision, not a maintenance one.
  */
 import { describe, expect, it } from 'vitest';
+/*
+ * 2026-09-23 — two VERSION bumps, no new dependency. `drizzle-orm` ^0.44 -> ^0.45.3 closes
+ * GHSA-gpj5-g38j-94v9 (SQL injection via improperly escaped identifiers), and
+ * `@nestjs/platform-express` ^11.0 -> ^11.2.6 closes a high advisory. Both were raised by
+ * `npm audit` while clearing the red dependency-scan gate. The set of packages is unchanged,
+ * which is what this test exists to guard.
+ */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -36,9 +43,9 @@ const BASELINE_DEPENDENCIES = {
   '@aws-sdk/s3-request-presigner': '^3.1120.0',
   '@nestjs/common': '^11.0.0',
   '@nestjs/core': '^11.0.0',
-  '@nestjs/platform-express': '^11.0.0',
+  '@nestjs/platform-express': '^11.2.6',
   '@node-rs/argon2': '2.2.0',
-  'drizzle-orm': '^0.44.0',
+  'drizzle-orm': '^0.45.3',
   otplib: '13.5.0',
   pg: '^8.13.0',
   'reflect-metadata': '^0.2.2',
