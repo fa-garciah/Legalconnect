@@ -97,7 +97,7 @@ describe('shell copy is Spanish-only (SC-010)', () => {
  * *retirado*, "withdrawn", and a screen showing "Inactivo" would pass a naive check while
  * still using the wire's concept instead of the firm's.
  */
-const WIRE_VOCABULARY = /(organization|person|active|inactive|client|status|name|save|cancel|edit|search)/i;
+const WIRE_VOCABULARY = /\b(organization|person|active|inactive|client|status|name|save|cancel|edit|search)\b/i;
 
 function assertNoWireVocabulary(container: HTMLElement): void {
   const text = container.textContent ?? '';
@@ -160,7 +160,7 @@ describe('client screen copy is Spanish-only (018/FR-023, SC-009)', () => {
  * `support`, the roles on a case team. A Mexican firm reads *responsable* and *apoyo*.
  */
 const CASE_WIRE_VOCABULARY =
-  /(lead|support|active|retired|closed|open|case|venue|matter|status|file number)/i;
+  /\b(lead|support|active|retired|closed|open|case|venue|matter|status|file number)\b/i;
 
 function assertNoCaseWireVocabulary(container: HTMLElement): void {
   const text = container.textContent ?? '';

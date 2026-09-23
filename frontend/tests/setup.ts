@@ -68,6 +68,21 @@ if (typeof Element !== 'undefined') {
   Element.prototype.releasePointerCapture ??= function releasePointerCapture(): void {};
 }
 
+if (typeof document !== 'undefined') {
+  /*
+   * `input-otp` (003's code fields) polls `document.elementFromPoint` on a timer to detect
+   * password-manager overlays. jsdom does not implement it, so every suite mounting a code
+   * field threw eight UNCAUGHT exceptions from a timer — after its assertions had passed.
+   * Vitest reported the suite green and the run with "8 errors", which is exactly the shape
+   * of a test that turns intermittent in CI: the throw lands in whichever test happens to be
+   * running when the timer fires. `null` is what the real API returns for a point outside
+   * any element, so the library's own no-overlay branch is the one exercised.
+   */
+  document.elementFromPoint ??= function elementFromPoint(): Element | null {
+    return null;
+  };
+}
+
 afterEach(() => {
   cleanup();
 });

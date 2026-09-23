@@ -96,7 +96,7 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
 
   describe('each of the five gated capabilities, individually (SC-005)', () => {
     it('invitation.issue: refused without a token, succeeds once one is presented', async () => {
-      const { identity, membershipId: _ } = await memberWithArchetype('MP');
+      const { identity } = await memberWithArchetype('MP');
       const accessToken = await signInFully(identity);
       const email = `stepup-invite-target-${Date.now()}@example.com`;
 
