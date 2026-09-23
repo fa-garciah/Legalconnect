@@ -22,6 +22,7 @@ describe('apiFetch', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
     vi.mocked(getPrincipal).mockResolvedValue({
+      authenticated: true,
       identityId: 'identity-1',
       memberships: [],
     });

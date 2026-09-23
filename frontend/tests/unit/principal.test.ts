@@ -55,7 +55,20 @@ describe('getPrincipal (T050 — real session read)', () => {
     } as Response);
 
     const principal = await subject();
-    expect(Object.keys(principal).sort()).toEqual(['identityId', 'memberships']);
+    /*
+     * AMENDED, NOT WEAKENED. `003`'s SC-024 promised that replacing the fixture with a real
+     * call broke no consumer — six slices and eighteen files read this shape. That promise
+     * holds and is what the assertions below check: `identityId` and `memberships` are
+     * still here, still typed the same, still mean the same thing.
+     *
+     * `authenticated` is ADDED beside them, because the absence of a way to tell "your
+     * session died" from "you belong to no firm" produced a screen with no navigation, no
+     * firm to choose and no sign-out control — found by opening the product, not by any
+     * test. Exact key equality was the wrong instrument for the guarantee it was defending:
+     * it forbids adding a field, which breaks nobody, while permitting a field to change
+     * meaning, which breaks everybody.
+     */
+    expect(Object.keys(principal).sort()).toEqual(['authenticated', 'identityId', 'memberships']);
     expect(typeof principal.identityId).toBe('string');
     expect(Array.isArray(principal.memberships)).toBe(true);
     for (const membership of principal.memberships) {
@@ -100,16 +113,19 @@ describe('getPrincipal (T050 — real session read)', () => {
     // reports, it does not police.
     readAccessToken.mockResolvedValue(null);
     const principal = await subject();
-    expect(principal).toEqual({ identityId: '', memberships: [] });
+    expect(principal).toEqual({ authenticated: false, identityId: '', memberships: [] });
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it('returns an empty principal when the API refuses or the network fails', async () => {
     readAccessToken.mockResolvedValue('a-token-the-api-has-revoked');
+    // `authenticated: false` for BOTH — a refused token and an unreachable API are the
+    // same thing to the caller, and both must now send the person to sign in rather than
+    // strand them on a screen they cannot leave.
     vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response);
-    expect(await subject()).toEqual({ identityId: '', memberships: [] });
+    expect(await subject()).toEqual({ authenticated: false, identityId: '', memberships: [] });
 
     vi.mocked(fetch).mockRejectedValue(new Error('network down'));
-    expect(await subject()).toEqual({ identityId: '', memberships: [] });
+    expect(await subject()).toEqual({ authenticated: false, identityId: '', memberships: [] });
   });
 });

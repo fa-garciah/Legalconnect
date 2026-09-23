@@ -24,6 +24,7 @@
  */
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { authorizeEnrollmentHandoff } from '@/session/enrollment-handoff';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -71,6 +72,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // somebody is.
         return { id: 'api-session', ...session };
       },
+    }),
+    /**
+     * The enrollment handoff. `POST /auth/enrollment/confirm` already minted a session —
+     * this is the only way it reaches the cookie, because the confirm call has to stay in
+     * the component so the ten backup codes can be shown before they are gone forever.
+     *
+     * It verifies rather than trusts: `authorizeEnrollmentHandoff` presents the token to
+     * the API and keeps it only if the API resolves it. See that module for why this is not
+     * a hole.
+     */
+    Credentials({
+      id: 'enrollment-handoff',
+      name: 'LegalConnect (enrollment)',
+      credentials: {
+        accessToken: { type: 'text' },
+        refreshToken: { type: 'text' },
+        expiresAt: { type: 'text' },
+      },
+      authorize: (raw) => authorizeEnrollmentHandoff(raw as Record<string, unknown>),
     }),
   ],
   callbacks: {

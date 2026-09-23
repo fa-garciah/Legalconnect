@@ -8,17 +8,22 @@
  * header is gone — it asserted an identity nothing had verified (FR-041) — and this
  * module no longer sends it.
  *
- * IT DOES NOT YET SEND A REPLACEMENT, AND THAT IS AN OPEN ITEM RATHER THAN AN
- * OVERSIGHT. This wrapper runs in the BROWSER, and the access credential lives in an
- * httpOnly cookie precisely so that script on the page cannot read it (FR-051). So
- * the token cannot simply be attached here: reading it in JS would undo the property
- * that keeps it out of reach of anything injected into the page.
+ * THAT OPEN ITEM IS NOW CLOSED, AND THIS FILE IS WHERE IT SHOWS. This wrapper runs in
+ * the BROWSER, and the access credential lives in an httpOnly cookie precisely so that
+ * script on the page cannot read it (FR-051). So the token cannot be attached here:
+ * reading it in JS would undo the property that keeps it out of reach of anything
+ * injected into the page. Every browser-direct call therefore answered 401 — the client
+ * directory and the case register could not load a single row, on any screen, ever.
  *
- * D1 settles the server-side path — `getPrincipal()` reads the cookie in a server
- * component and presents a bearer token — and does not address browser-direct calls.
- * Resolving it means choosing between a Next route-handler proxy that attaches the
- * credential server-side, and same-site cookie auth on the API. Recorded in
- * .spec-context.json; both options are real and the choice is not this task's.
+ * Of the two options this file recorded — a Next route-handler proxy attaching the
+ * credential server-side, or same-site cookie auth on the API — the first was taken.
+ * `src/app/api/lc/[...path]/route.ts` holds it and the reasoning. The consequence here is
+ * one line: the base URL is now SAME-ORIGIN and relative, so the browser never addresses
+ * the API directly and never needs a credential it is not allowed to hold.
+ *
+ * Nothing else in this file changed. `x-tenant-id` is still attached here, the FormData
+ * content-type rule is unchanged, and the returned shape is identical — so `006`, `007`,
+ * `018` and `019` call exactly what they called before.
  *
  * `x-tenant-id` is unchanged and stays, because it never was an identity claim: it
  * selects WHICH of the caller's memberships to activate, and `membership` under RLS
@@ -38,7 +43,13 @@ export type ApiResult<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly status: number | null; readonly body: ErrorBody | null };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+/*
+ * Same-origin and relative, on purpose. The proxy route lives at this path, reads the
+ * httpOnly cookie on the server and forwards to the real API — so `NEXT_PUBLIC_API_BASE_URL`
+ * is no longer read in the browser at all. It stays in the environment because the proxy
+ * itself reads it, server-side, where it is not inlined into the client bundle.
+ */
+const API_BASE_URL = '/api/lc';
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
   const activeTenant = readActiveTenantClient();

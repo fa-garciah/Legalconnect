@@ -17,6 +17,7 @@
  *    left, the codes are gone for good, and the person needs to have understood
  *    that before leaving.
  */
+import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,17 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 const REFUSED = 'No fue posible completar el acceso. Revisa tus datos e inténtalo de nuevo.';
 
+/** What `/auth/enrollment/confirm` returns beside the codes, and which used to be thrown away. */
+interface ApiSession {
+  readonly accessToken: string;
+  readonly refreshToken: string;
+  readonly expiresAt: string;
+}
+
 type Stage =
   | { name: 'loading' }
   | { name: 'register'; secret: string; otpauthUri: string; token: string }
-  | { name: 'codes'; codes: string[] }
+  | { name: 'codes'; codes: string[]; session: ApiSession }
   | { name: 'failed' };
 
 export function EnrollmentFlow(): React.JSX.Element {
@@ -90,8 +98,28 @@ export function EnrollmentFlow(): React.JSX.Element {
         setCode('');
         return;
       }
-      const body = (await response.json()) as { backupCodes: string[] };
-      setStage({ name: 'codes', codes: body.backupCodes });
+      /*
+       * THE SESSION IS KEPT NOW. This read `{ backupCodes }` alone and discarded the three
+       * session fields beside it, so enrollment ended with no cookie and `proxy.ts` bounced
+       * the person straight back to `/ingresar`. It is handed to NextAuth below, once the
+       * codes have been acknowledged — not here, because the codes must be seen first and
+       * navigating away is what destroys them.
+       */
+      const body = (await response.json()) as {
+        backupCodes: string[];
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: string;
+      };
+      setStage({
+        name: 'codes',
+        codes: body.backupCodes,
+        session: {
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken,
+          expiresAt: body.expiresAt,
+        },
+      });
     } catch {
       setError(REFUSED);
     } finally {
@@ -150,8 +178,21 @@ export function EnrollmentFlow(): React.JSX.Element {
 
         <Button
           className="w-full"
-          disabled={!acknowledged}
-          onClick={() => {
+          disabled={!acknowledged || pending}
+          onClick={async () => {
+            setPending(true);
+            // Establishes the cookie from the session enrollment already minted. Without
+            // this the push below lands on `proxy.ts`, which sees no session and redirects
+            // to `/ingresar` — which is exactly what used to happen.
+            const result = await signIn('enrollment-handoff', {
+              ...stage.session,
+              redirect: false,
+            });
+            setPending(false);
+            if (result?.error) {
+              setError(REFUSED);
+              return;
+            }
             router.push('/');
             router.refresh();
           }}

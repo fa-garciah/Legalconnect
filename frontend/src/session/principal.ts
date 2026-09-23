@@ -26,8 +26,16 @@ import type { Principal } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
-/** Nobody signed in. A shape, not a throw — see the note in session-store.ts. */
-const ANONYMOUS: Principal = { identityId: '', memberships: [] };
+/**
+ * Nobody signed in. A shape, not a throw — see the note in session-store.ts.
+ *
+ * `authenticated: false` is the load-bearing field. It used to be inferable only from an
+ * empty `memberships`, which is ALSO what a signed-in identity belonging to no firm looks
+ * like (002/FR-011) — and the shell rendered the same dead end for both: no navigation, no
+ * firm to choose, and no sign-out control, because the rail that holds it was not drawn.
+ * Somebody whose session had expired could neither get in nor get out.
+ */
+const ANONYMOUS: Principal = { authenticated: false, identityId: '', memberships: [] };
 
 interface MembershipsResponse {
   readonly identityId?: string;
@@ -59,6 +67,10 @@ export async function getPrincipal(): Promise<Principal> {
 
   const body = (await response.json()) as MembershipsResponse;
   return {
+    // The API answered, so the session it resolved is live. Everything below is what that
+    // session is entitled to see — possibly nothing, which is a valid state and not the
+    // same as not being signed in.
+    authenticated: true,
     identityId: body.identityId ?? '',
     memberships: body.items ?? [],
   };
