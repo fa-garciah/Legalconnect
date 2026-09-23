@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { OtpauthQr } from './OtpauthQr';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 const REFUSED = 'No fue posible completar el acceso. Revisa tus datos e inténtalo de nuevo.';
@@ -210,11 +211,9 @@ export function EnrollmentFlow(): React.JSX.Element {
           Escanea este código en tu aplicación de autenticación, o ingresa la clave
           manualmente.
         </p>
-        {/* The otpauth URI is what a QR renders; the bare secret is the manual
-            fallback the contract requires alongside it. */}
-        <p className="break-all rounded-md border bg-muted/40 p-3 font-mono text-xs" data-testid="otpauth-uri">
-          {stage.otpauthUri}
-        </p>
+        {/* The QR encodes the otpauth URI; the bare secret below is the manual fallback
+            the contract requires alongside it. This used to print the raw URI as text. */}
+        <OtpauthQr uri={stage.otpauthUri} />
         <div className="space-y-1">
           {/* NOT a <Label htmlFor>. A <p> is not a labellable element, so the
               association silently does not exist for a screen reader — the

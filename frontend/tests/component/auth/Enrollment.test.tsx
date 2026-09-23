@@ -76,7 +76,15 @@ describe('EnrollmentFlow (T068, T077)', () => {
     // screen types the key; a person with no manual-entry option cannot enroll
     // at all from a laptop.
     await reachRegisterStage();
-    expect(screen.getByTestId('otpauth-uri')).toHaveTextContent('otpauth://totp/');
+    // A REAL QR, not the raw URI printed as text. The screen said "Escanea este código" and
+    // showed an `otpauth://` string — found by `design:design-critique` on 2026-09-22: a
+    // person enrolling from a phone had to type a 32-character key by hand. The image
+    // encodes exactly the URI the API returned, generated in the browser so the secret is
+    // never sent to a third-party service.
+    const qr = await screen.findByRole('img', { name: /código qr/i });
+    const src = qr.getAttribute('src') ?? '';
+    expect(src.startsWith('data:image/svg+xml')).toBe(true);
+    expect(decodeURIComponent(src)).toContain('<svg');
     expect(screen.getByText(SECRET)).toBeInTheDocument();
   });
 

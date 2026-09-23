@@ -57,7 +57,8 @@ test.describe('enrollment, end to end', () => {
     await credentialStep(page, E2E.unenrolledEmail);
     await page.getByRole('button', { name: 'Comenzar registro' }).click();
 
-    await expect(page.getByTestId('otpauth-uri')).toContainText('otpauth://totp/');
+    // A real QR image now, not the raw otpauth URI printed as text (2026-09-23).
+    await expect(page.getByRole('img', { name: /código qr/i })).toBeVisible();
     await expect(page.getByLabel('Clave para ingreso manual')).toBeVisible();
   });
 
