@@ -23,6 +23,7 @@
  * trip the other four get.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
 import type { Client } from 'pg';
@@ -78,9 +79,12 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
   }
 
   async function freshInvitee(): Promise<string> {
+    // The EMAIL needs the same uniqueness as the subject. It used `Date.now()` alone, and two
+    // calls in one millisecond collided on the identity email index (0035) — CI, 2026-09-23.
+    const unique = randomUUID();
     const { rows } = await migration.query<{ id: string }>(
       `INSERT INTO identity (subject, email) VALUES ($1, $2) RETURNING id`,
-      [`idp|stepup-invitee-${Date.now()}-${Math.random()}`, `stepup-invitee-${Date.now()}@example.com`],
+      [`idp|stepup-invitee-${unique}`, `stepup-invitee-${unique}@example.com`],
     );
     return rows[0]!.id;
   }
@@ -98,7 +102,7 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
     it('invitation.issue: refused without a token, succeeds once one is presented', async () => {
       const { identity } = await memberWithArchetype('MP');
       const accessToken = await signInFully(identity);
-      const email = `stepup-invite-target-${Date.now()}@example.com`;
+      const email = `stepup-invite-target-${randomUUID()}@example.com`;
 
       const withoutToken = await request(server())
         .post('/tenant/invitations')
@@ -124,7 +128,7 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
     it('invitation.revoke: refused without a token, succeeds once one is presented', async () => {
       const { identity } = await memberWithArchetype('MP');
       const accessToken = await signInFully(identity);
-      const email = `stepup-revoke-target-${Date.now()}@example.com`;
+      const email = `stepup-revoke-target-${randomUUID()}@example.com`;
 
       // Issue the invitation to revoke (via a fresh step-up of its own).
       const issueCode = await generateAt(identity.secret, Math.floor(Date.now() / 1000) + 30);
@@ -241,7 +245,7 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
       const tenantOne = await freshTenant();
       const response = await request(server())
         .post(`/internal/platform/tenants/${tenantOne}/seed-administrator`)
-        .send({ email: `platform-seed-${Date.now()}@example.com` });
+        .send({ email: `platform-seed-${randomUUID()}@example.com` });
       // Succeeds exactly as it did before this slice (seed-first-administrator.test.ts,
       // 002) — the step-up gate is scoped to callers with an identity, and PO has
       // none. A step-up header has no effect on it either way.
@@ -251,7 +255,7 @@ describe('step-up MFA (SC-005, SC-006, US2)', () => {
       const withHeader = await request(server())
         .post(`/internal/platform/tenants/${tenantTwo}/seed-administrator`)
         .set('x-step-up-token', 'irrelevant')
-        .send({ email: `platform-seed-2-${Date.now()}@example.com` });
+        .send({ email: `platform-seed-2-${randomUUID()}@example.com` });
       expect(withHeader.status).toBe(201);
     });
   });

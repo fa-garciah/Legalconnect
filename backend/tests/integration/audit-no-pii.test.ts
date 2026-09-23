@@ -18,6 +18,24 @@ describe('audit metadata sanitiser', () => {
     ).not.toThrow();
   });
 
+  /*
+   * Added 2026-09-23. `walk()` ends with `if (typeof value === 'object')`, and no test ever
+   * reached it with a value that is none of null, string, number, boolean, array or object —
+   * a bigint, a symbol, a function. Vitest 2's coverage did not count that implicit else;
+   * Vitest 5's does, and `src/common/audit/**` is on the constitution's 100% blocking list.
+   * The behaviour is asserted rather than the threshold lowered.
+   *
+   * Such values are passed over: none of them survives the JSON serialisation the audit row is
+   * stored as, so there is no content to inspect. The KEY is still checked by the parent,
+   * which is the part that matters — a credential cannot slip in by being wrapped in a thunk.
+   */
+  it('passes over values JSON cannot store, but still refuses a sensitive key holding one', () => {
+    expect(() =>
+      assertNoSensitiveData({ count: 10n, marker: Symbol('m'), render: () => 'x' }),
+    ).not.toThrow();
+    expect(() => assertNoSensitiveData({ password: () => 'hunter2' })).toThrow(SensitiveDataInAudit);
+  });
+
   it('accepts identifiers, which are references rather than personal data', () => {
     expect(() =>
       assertNoSensitiveData({ tenantId: 'a-uuid', membershipId: 'another-uuid' }),
