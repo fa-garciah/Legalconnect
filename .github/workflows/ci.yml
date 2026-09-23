@@ -45,6 +45,9 @@ jobs:
       # slice 003, so it binds to loopback. CI sets it explicitly rather than relying on
       # main.ts's default, so the value under test is the value documented.
       PLATFORM_BIND_HOST: 127.0.0.1
+      # Added to `.env.example` by 018's CORS fix and never copied here. It went unnoticed for
+      # a month because this job died at "Initialize containers" before reaching check:env.
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
       # Every key `.env.example` declares must be set here — `check:env` below asserts
       # exactly that, so CI proves the documented set is sufficient to run the
       # application rather than merely that a developer's own `.env` happens to work.
