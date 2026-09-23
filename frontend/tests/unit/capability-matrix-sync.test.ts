@@ -83,6 +83,18 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'case.create': new Set(['MP', 'CM', 'SA']),
   'case.change_status': new Set(['MP', 'AA', 'CM', 'SA']),
   'case.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
+
+  /*
+   * Rows 22-24, from 017/spec.md's Capability Matrix, added by `014-admin-ui` (`/configuracion`
+   * is the first screen keyed to them). Columns there are MP AA PL CM BM SA PO.
+   *
+   *   | 22 | Assign a member's position   | MP ✅ AA ❌ PL ❌ CM ❌ BM ❌ SA ✅ PO ❌ |
+   *   | 23 | Define the position catalog  | MP ✅ AA ❌ PL ❌ CM ❌ BM ❌ SA ✅ PO ❌ |
+   *   | 24 | Read own tenant's directory  | MP ✅ AA ✅ PL ✅ CM ✅ BM ✅ SA ✅ PO ❌ |
+   */
+  'directory.assign_position': new Set(['MP', 'SA']),
+  'directory.manage_catalog': new Set(['MP', 'SA']),
+  'directory.read': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

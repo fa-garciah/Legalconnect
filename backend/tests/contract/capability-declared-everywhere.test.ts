@@ -35,7 +35,7 @@ interface RouteHandler {
  * visible.
  */
 const NO_ROUTE_YET: readonly CapabilityId[] = [
-  'membership.read_tenant',
+  // `membership.read_tenant` (row 5) left this list in 014: `GET /tenant/members`.
   'plan.read_own_tenant',
   'identity.read_registry',
   'identity.hard_delete',
@@ -154,11 +154,14 @@ describe('capability declared everywhere', () => {
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 
-  it('T039: membership.read_tenant and plan.read_own_tenant are registered, decidable, and claimed by no route', () => {
+  // 014 gave `membership.read_tenant` its route (`GET /tenant/members`, Decision 5), so only
+  // `plan.read_own_tenant` is still inert; the other half now asserts the route exists.
+  it('T039: plan.read_own_tenant is registered, decidable, and claimed by no route; membership.read_tenant now has one', () => {
     const handlers = routeHandlers();
     const declaredIds = new Set(handlers.map((h) => h.capability));
 
-    for (const id of ['membership.read_tenant', 'plan.read_own_tenant'] as const) {
+    expect(declaredIds.has('membership.read_tenant')).toBe(true);
+    for (const id of ['plan.read_own_tenant'] as const) {
       expect(CAPABILITIES[id]).toBeDefined();
       expect(capabilityDef(id).scope).toBe('tenant');
       expect(declaredIds.has(id)).toBe(false);

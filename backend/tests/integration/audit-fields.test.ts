@@ -145,15 +145,16 @@ describe('audit entry fields and channel gating', () => {
     // here anyway is deliberate: this assertion's job is to notice vocabulary
     // growth, and excluding an action from the count because it is tested
     // elsewhere would defeat that.
-    expect(AUDIT_ACTIONS).toHaveLength(54);
+    // 014 adds `membership.list_read` (Decision 5), channel-gated like `case.read`.
+    expect(AUDIT_ACTIONS).toHaveLength(55);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
     // monitoring job from inflating the log it watches.
-    expect(GATED).toHaveLength(5);
+    expect(GATED).toHaveLength(6);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
     expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
-    expect(UNCONDITIONAL).toHaveLength(54 - 5 - 4 - 15);
+    expect(UNCONDITIONAL).toHaveLength(55 - 6 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

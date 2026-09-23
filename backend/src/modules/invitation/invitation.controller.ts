@@ -7,7 +7,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Req } from '@nestjs/commo
 import { Audited } from '../../common/audit/interceptor';
 import { Capability } from '../../common/authz/declare';
 import { assertUuid } from '../tenant/rfc';
-import { InvitationService, type InvitationRow } from './invitation.service';
+import { InvitationService, type InvitationRow, type PendingInvitationRow } from './invitation.service';
 
 interface AuditableRequest {
   auditTargetId?: string | null;
@@ -56,7 +56,7 @@ export class InvitationController {
 
   @Get()
   @Capability('invitation.read_pending')
-  async list(): Promise<{ items: readonly InvitationRow[] }> {
+  async list(): Promise<{ items: readonly PendingInvitationRow[] }> {
     return { items: await this.invitations.listPending() };
   }
 }

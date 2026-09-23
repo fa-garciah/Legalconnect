@@ -41,11 +41,30 @@ const ITEMS: readonly NavigationItem[] = [{ id: 'a', label: 'Módulo A', href: '
 
 const ALLOWED_BRAND_TOKENS = ['LegalConnect', 'MX', 'S.C.'];
 
-/** A crude but effective English-word detector: flags common English function words. */
-const ENGLISH_TELLS = /\b(the|and|is|are|to|for|of|please|loading|error|empty|retry)\b/i;
+/**
+ * A crude but effective English-word detector: flags common English function words.
+ *
+ * `close` added by 014: shadcn's dialog shipped a visually hidden "Close" on its dismiss button,
+ * which every dialog in the product read aloud to screen-reader users and no list here caught.
+ */
+const ENGLISH_TELLS = /\b(the|and|is|are|to|for|of|please|loading|error|empty|retry|close)\b/i;
+
+/**
+ * The rendered words, one text node at a time, joined by spaces.
+ *
+ * NOT `textContent`: that concatenates adjacent nodes with nothing between them, so a hidden
+ * "Close" after a title read as "invitaciónClose" and `\b` never matched it. Found in 014 when a
+ * deliberately-reintroduced English label passed every assertion in this file.
+ */
+function renderedWords(container: HTMLElement): string {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const words: string[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) words.push(node.nodeValue ?? '');
+  return words.join(' ');
+}
 
 function assertOnlySpanish(container: HTMLElement): void {
-  const text = container.textContent ?? '';
+  const text = renderedWords(container);
   const stripped = ALLOWED_BRAND_TOKENS.reduce((acc, token) => acc.split(token).join(''), text);
   expect(stripped, `unexpected English copy: "${text}"`).not.toMatch(ENGLISH_TELLS);
 }
@@ -100,7 +119,7 @@ describe('shell copy is Spanish-only (SC-010)', () => {
 const WIRE_VOCABULARY = /\b(organization|person|active|inactive|client|status|name|save|cancel|edit|search)\b/i;
 
 function assertNoWireVocabulary(container: HTMLElement): void {
-  const text = container.textContent ?? '';
+  const text = renderedWords(container);
   expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(WIRE_VOCABULARY);
 }
 
@@ -163,7 +182,7 @@ const CASE_WIRE_VOCABULARY =
   /\b(lead|support|active|retired|closed|open|case|venue|matter|status|file number)\b/i;
 
 function assertNoCaseWireVocabulary(container: HTMLElement): void {
-  const text = container.textContent ?? '';
+  const text = renderedWords(container);
   expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(
     CASE_WIRE_VOCABULARY,
   );
@@ -222,5 +241,142 @@ describe('case screen copy is Spanish-only (019/FR-020, SC-008)', () => {
     );
     assertOnlySpanish(container);
     assertNoCaseWireVocabulary(container);
+  });
+});
+
+/*
+ * 014/T028 — `/configuracion`.
+ *
+ * The wire vocabulary here is the matrix's: archetype CODES (`SA`, `MP`…) and the states
+ * `pending`, `revoked`, `retired`, `active`. A firm administrator reads "Administrador", "Socio",
+ * "Retirado". The codes are checked case-sensitively, so "S.A." in a firm name does not trip it.
+ */
+import { InviteUserDialog } from '@/app/configuracion/components/InviteUserDialog';
+import { InvitationLinkModal } from '@/app/configuracion/components/InvitationLinkModal';
+import { PendingInvitationsTable } from '@/app/configuracion/components/PendingInvitationsTable';
+import { UserListTable } from '@/app/configuracion/components/UserListTable';
+import { StepUpDialog } from '@/app/configuracion/components/StepUpDialog';
+import { PositionCatalogTable } from '@/app/configuracion/components/PositionCatalogTable';
+import { PermissionsMatrixView } from '@/app/configuracion/components/PermissionsMatrixView';
+import { RolesTab } from '@/app/configuracion/components/RolesTab';
+import { screen as adminScreen } from '@testing-library/react';
+
+const ARCHETYPE_CODES = /\b(SA|MP|AA|PL|CM|BM|PO)\b/;
+const ADMIN_WIRE_WORDS = /\b(pending|revoked|retired|active|invitation|membership|archetype|position)\b/i;
+
+function assertNoAdminWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `an archetype code reached the screen: "${text}"`).not.toMatch(ARCHETYPE_CODES);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(ADMIN_WIRE_WORDS);
+}
+
+function answer(table: Record<string, unknown>) {
+  vi.stubGlobal('fetch', (url: string) => {
+    const path = String(url).replace(/^\/api\/lc/, '').split('?')[0]!;
+    return Promise.resolve(
+      new Response(JSON.stringify(table[path] ?? { items: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+  });
+}
+
+describe('administration copy is Spanish-only (014/T028)', () => {
+  const MEMBERS = {
+    items: [
+      { membershipId: 'm1', email: 'ana@despachoalfa.mx', archetype: 'SA', positionName: null },
+      { membershipId: 'm2', email: 'lucia@despachoalfa.mx', archetype: 'AA', positionName: 'Asociado Senior' },
+    ],
+  };
+  const INVITATIONS = {
+    items: [
+      {
+        id: 'i1',
+        targetArchetype: 'PL',
+        status: 'pending',
+        issuedAt: '2026-09-23T18:00:00Z',
+        expiresAt: '2026-09-30T18:00:00Z',
+        invitedEmail: 'nuevo@despachoalfa.mx',
+      },
+    ],
+  };
+  const POSITIONS = {
+    items: [
+      { id: 'p1', name: 'Asociado Senior', status: 'active' },
+      { id: 'p2', name: 'Pasante de verano', status: 'retired' },
+    ],
+  };
+
+  it('InviteUserDialog', () => {
+    withQueryClient(<InviteUserDialog open issuerArchetype="SA" onClose={() => {}} onIssued={() => {}} />);
+    assertOnlySpanish(document.body);
+    assertNoAdminWireVocabulary(document.body);
+  });
+
+  it('InvitationLinkModal', () => {
+    render(
+      <InvitationLinkModal
+        invitation={{
+          id: 'i1',
+          targetArchetype: 'AA',
+          status: 'pending',
+          issuedAt: '2026-09-23T18:00:00Z',
+          expiresAt: '2026-09-30T18:00:00Z',
+          invitationLink: '/aceptar/abc',
+        }}
+        onClose={() => {}}
+      />,
+    );
+    assertOnlySpanish(document.body);
+    assertNoAdminWireVocabulary(document.body);
+  });
+
+  it('StepUpDialog', () => {
+    render(<StepUpDialog open capability="invitation.issue" onVerified={() => {}} onCancel={() => {}} />);
+    assertOnlySpanish(document.body);
+    assertNoAdminWireVocabulary(document.body);
+  });
+
+  it('UserListTable', async () => {
+    answer({ '/tenant/members': MEMBERS });
+    const { container } = withQueryClient(<UserListTable archetype="SA" />);
+    await adminScreen.findByText('lucia@despachoalfa.mx');
+    assertOnlySpanish(container);
+    assertNoAdminWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('PendingInvitationsTable', async () => {
+    answer({ '/tenant/invitations': INVITATIONS });
+    const { container } = withQueryClient(<PendingInvitationsTable archetype="SA" />);
+    await adminScreen.findByText('nuevo@despachoalfa.mx');
+    assertOnlySpanish(container);
+    assertNoAdminWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('PositionCatalogTable', async () => {
+    answer({ '/tenant/directory/positions': POSITIONS });
+    const { container } = withQueryClient(<PositionCatalogTable archetype="SA" />);
+    await adminScreen.findByText('Pasante de verano');
+    assertOnlySpanish(container);
+    assertNoAdminWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('RolesTab', async () => {
+    answer({ '/tenant/members': MEMBERS, '/tenant/directory/positions': POSITIONS });
+    const { container } = withQueryClient(<RolesTab archetype="SA" />);
+    await adminScreen.findByText('lucia@despachoalfa.mx');
+    assertOnlySpanish(container);
+    assertNoAdminWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('PermissionsMatrixView', () => {
+    const { container } = render(<PermissionsMatrixView />);
+    assertOnlySpanish(container);
+    assertNoAdminWireVocabulary(container);
   });
 });

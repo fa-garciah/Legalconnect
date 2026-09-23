@@ -76,7 +76,7 @@ test.skip(
 async function signIn(page: Page): Promise<void> {
   await page.goto('/ingresar');
   await page.getByLabel('Correo electrónico').fill(EMAIL);
-  await page.getByLabel('Contraseña').fill(PASSWORD);
+  await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Continuar' }).click();
 
   await expect(page).toHaveURL(/\/verificar/);
@@ -112,7 +112,7 @@ test.describe('sign-in, end to end', () => {
 
     await page.goto('/ingresar');
     await page.getByLabel('Correo electrónico').fill(EMAIL);
-    await page.getByLabel('Contraseña').fill(PASSWORD);
+    await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Continuar' }).click();
 
     // Challenged again. Not "sometimes", not "unless remembered".
@@ -123,7 +123,7 @@ test.describe('sign-in, end to end', () => {
   test('the challenge screen offers NO trusted-device control (FR-019)', async ({ page }) => {
     await page.goto('/ingresar');
     await page.getByLabel('Correo electrónico').fill(EMAIL);
-    await page.getByLabel('Contraseña').fill(PASSWORD);
+    await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Continuar' }).click();
     await expect(page).toHaveURL(/\/verificar/);
 
@@ -133,7 +133,7 @@ test.describe('sign-in, end to end', () => {
   test('a wrong credential shows the one uniform refusal and stays put', async ({ page }) => {
     await page.goto('/ingresar');
     await page.getByLabel('Correo electrónico').fill(EMAIL);
-    await page.getByLabel('Contraseña').fill('una-contrasena-que-no-es');
+    await page.getByLabel('Contraseña', { exact: true }).fill('una-contrasena-que-no-es');
     await page.getByRole('button', { name: 'Continuar' }).click();
 
     await expect(page.getByRole('alert')).toBeVisible();

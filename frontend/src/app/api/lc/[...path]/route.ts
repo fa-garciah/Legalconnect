@@ -46,8 +46,19 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3
  * `content-type` carries the multipart boundary 007's upload needs; `accept` and
  * `accept-language` are ordinary content negotiation. Nothing else is forwarded —
  * notably not `authorization`, not `x-identity-id`, and not `cookie`.
+ *
+ * `x-step-up-token` (014/FR-027) is 005's elevation for the five step-up capabilities. Without
+ * it every one of them was refused from the browser. It cannot stand in for the session: the
+ * API binds it to one identity and one capability, consumes it on first use, and accepts it only
+ * alongside the bearer attached below.
  */
-const FORWARDED_HEADERS = ['content-type', 'accept', 'accept-language', 'x-tenant-id'] as const;
+const FORWARDED_HEADERS = [
+  'content-type',
+  'accept',
+  'accept-language',
+  'x-tenant-id',
+  'x-step-up-token',
+] as const;
 
 /** The API's own refusal shape, so a proxy-level refusal classifies like any other. */
 function refuse(status: number, code: string, message: string): Response {

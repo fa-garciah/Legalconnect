@@ -73,6 +73,28 @@ describe('the API proxy', () => {
     expect((upstream.mock.calls[0]![1].headers as Record<string, string>)['x-tenant-id']).toBe('tenant-a');
   });
 
+  /*
+   * 014/FR-027. 005's step-up gates five mutations behind `x-step-up-token`, and the allow-list
+   * dropped it — so from the browser every one of them was refused, however good the code. The
+   * token is not a credential that could stand in for the session: the API binds it to one
+   * identity and one capability, consumes it on first use (`consume_step_up`), and accepts it only
+   * alongside the bearer this proxy attaches.
+   */
+  it('forwards x-step-up-token, a single-use elevation of one capability', async () => {
+    await POST(
+      new Request('http://localhost:3000/api/lc/tenant/invitations', {
+        method: 'POST',
+        headers: { 'x-step-up-token': 'elevation-123', authorization: 'Bearer forged' },
+        body: '{}',
+      }),
+      ctx(['tenant', 'invitations']),
+    );
+
+    const sent = upstream.mock.calls[0]![1].headers as Record<string, string>;
+    expect(sent['x-step-up-token']).toBe('elevation-123');
+    expect(sent.authorization).toBe('Bearer the-api-access-token');
+  });
+
   it('NEVER forwards a browser-supplied authorization header — that would make this a bypass', async () => {
     await GET(
       new Request('http://localhost:3000/api/lc/tenant/clients', {

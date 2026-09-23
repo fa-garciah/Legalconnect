@@ -120,6 +120,10 @@ export const AUDIT_ACTIONS = [
   'session.signed_out',
   'stepup.verified',
   'stepup.failed',
+  // Slice 014 (Decision 5, migration 0044). The administration screen's member list carries
+  // each member's email, so reading it is a read of personal data (Principle VI) and is
+  // recorded. Channel-gated below, for the reason `case.read` is.
+  'membership.list_read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -142,6 +146,9 @@ export const CHANNEL_GATED_ACTIONS: ReadonlySet<AuditAction> = new Set<AuditActi
   // is watching, the same reasoning `case.read` above already carries.
   'document.previewed',
   'document.downloaded',
+  // 014. A person listing the firm's members with their email is the access worth
+  // recording; a monitoring job doing it is not.
+  'membership.list_read',
 ]);
 
 export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
@@ -227,6 +234,8 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'session.signed_out': 'session',
   'stepup.verified': 'step_up_elevation',
   'stepup.failed': 'step_up_elevation',
+  // 014. The subject is the firm whose member list was read — there is no single member.
+  'membership.list_read': 'tenant',
 };
 
 export type Channel = 'interactive' | 'automated';

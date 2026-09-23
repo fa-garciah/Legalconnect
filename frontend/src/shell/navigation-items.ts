@@ -135,8 +135,9 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     label: 'Configuración',
     href: '/configuracion',
     icon: 'settings',
-    requiredArchetypes: INTERNAL,
-    available: false,
+    // 014 (FR-025). SA and MP only: every control on the page is theirs alone.
+    requiredArchetypes: ['SA', 'MP'],
+    available: true,
   },
 ];
 

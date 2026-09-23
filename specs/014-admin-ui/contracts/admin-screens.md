@@ -13,7 +13,7 @@ All capability sets below were checked against `backend/src/common/authz/matrix.
 
 ---
 
-## 1. Backend contract changes (two; everything else is consumed as-is)
+## 1. Backend contract changes (three; everything else is consumed as-is)
 
 ### 1.1 `POST /tenant/invitations` gains `invitationLink` — Decision 3
 
@@ -38,9 +38,9 @@ All capability sets below were checked against `backend/src/common/authz/matrix.
 | Never in logs, audit metadata or error bodies | FR-002. `invitation.issued` audit entries keep their current metadata; the token is not added. |
 | `email` is still not echoed | Unchanged from `002`. |
 
-### 1.2 `GET /tenant/members` — NEW, Decision 5 *(pending CC technical-lead approval)*
+### 1.2 `GET /tenant/members` — NEW, Decision 5 *(approved 2026-09-23)*
 
-**Capability**: `membership.read_tenant` (`SA`, `MP`) — exists, currently unused.
+**Capability**: `membership.read_tenant` (`SA`, `MP`) — registered by `004`, claimed by no route until this one.
 
 **`200 OK`**
 
@@ -61,8 +61,19 @@ All capability sets below were checked against `backend/src/common/authz/matrix.
 |---|---|
 | Live memberships of the ACTIVE tenant only | Principle II. |
 | `email` readable through one new RLS policy on `identity` for `lc_app` (migration `0044`), admitting a row only when `app.tenant_id` is set AND the identity holds a live membership in that tenant | The mirror of `0043`'s guard. `0043`'s first draft widened isolation because policies OR together; this one is written guard-first and ships only with `members-email-isolation.test.ts` green. |
-| Audited as a read of personal data | Principle VI. |
-| Until Decision 5 is signed, the screen falls back to `GET /tenant/directory` and shows position + archetype only, labelled "Correo no disponible" | The list must not ship as bare UUIDs. |
+| Audited as `membership.list_read` (target `tenant`, channel-gated like `case.read`); the entry never carries an email | Principle VI. |
+| Unpaginated | A firm's member count is bounded by its plan's user limit. |
+| If the route is unavailable (refused or failing), the screen falls back to `GET /tenant/directory` and shows position + archetype only, labelled "Correo no disponible" | The list must never render as bare UUIDs. |
+
+Implemented in `backend/src/modules/membership/members.controller.ts` and migration `0044`;
+asserted by `tests/contract/tenant-members.test.ts` and
+`tests/integration/isolation/members-email-isolation.test.ts`.
+
+### 1.3 `GET /tenant/invitations` gains `invitedEmail` — Decision 5, FR-028
+
+Each pending item carries the email the issuer typed. Still no token, hash or link. The `POST`
+and revoke responses are unchanged and still never echo the email. `002`'s contract is amended
+(§GET).
 
 ---
 

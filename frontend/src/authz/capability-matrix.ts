@@ -53,4 +53,21 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'case.change_status': new Set<Subject>(['MP', 'AA', 'CM', 'SA']),
   // Row 34 — the only case row `BM` holds. Reading the firm's own catalogs is not content.
   'case.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
+
+  /*
+   * Added by `014-admin-ui` for `/configuracion`, transcribed from `004/spec.md` rows 1-6 and
+   * `017`'s rows 22-24. Four of these are step-up gated on the server (005); the mirror says
+   * only who may ever, which is all a control needs to decide whether to draw itself.
+   * `membership.change_archetype` is SA-only, unlike the rest of the screen.
+   */
+  'invitation.issue': new Set<Subject>(['SA', 'MP']),
+  'invitation.revoke': new Set<Subject>(['SA', 'MP']),
+  'invitation.read_pending': new Set<Subject>(['SA', 'MP']),
+  'membership.read_tenant': new Set<Subject>(['SA', 'MP']),
+  'membership.revoke': new Set<Subject>(['SA', 'MP']),
+  'membership.change_archetype': new Set<Subject>(['SA']),
+  // 017 rows 22-24. Every internal archetype reads the directory; only SA and MP shape it.
+  'directory.manage_catalog': new Set<Subject>(['SA', 'MP']),
+  'directory.assign_position': new Set<Subject>(['SA', 'MP']),
+  'directory.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 };

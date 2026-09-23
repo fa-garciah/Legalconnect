@@ -115,6 +115,16 @@ own tenant.
 **`200 OK`**: paginated (001's cursor convention), each item shaped as the
 `POST` response above — no `email`, no token.
 
+> **Amended 2026-09-23 by `014-admin-ui` (FR-028, Decision 5, approved by Francisco Garcia, CC
+> technical lead): each item now also carries `invitedEmail`.** Without it the administration
+> screen could show a pending invitation only as a role and two dates, with no way to tell whom
+> it was for, and so no way to decide which one to revoke. The issuer typed that email and only
+> `SA`/`MP` hold this read, so it discloses nothing they did not supply; it reveals nothing about
+> membership either, since an invitation to an existing member is listed exactly like any other
+> (FR-029 holds). The `POST` and revoke responses are unchanged and still never echo the email.
+> Still no token, no hash and no `invitationLink`. Asserted in
+> `backend/tests/contract/list-invitations.test.ts`.
+
 **Audit**: none. Reading a list of one's own tenant's pending invitations is not
 in FR-031's vocabulary; nothing here reads across a boundary that needs tracing
 the way the platform registry read did in 001.

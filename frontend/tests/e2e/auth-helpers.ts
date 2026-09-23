@@ -55,7 +55,7 @@ export function totpCode(secret: string, epochSeconds = Math.floor(Date.now() / 
 export async function credentialStep(page: Page, email: string, password = E2E.password): Promise<void> {
   await page.goto('/ingresar');
   await page.getByLabel('Correo electrónico').fill(email);
-  await page.getByLabel('Contraseña').fill(password);
+  await page.getByLabel('Contraseña', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Continuar' }).click();
 }
 

@@ -47,6 +47,15 @@ const present = (row: RawRow): InvitationRow => ({
   revokedAt: row.revoked_at,
 });
 
+/**
+ * 014-admin-ui FR-028 — the pending list carries the invitee's email so an administrator can tell
+ * whom each invitation is for. A separate type on purpose: `InvitationRow` is also the issue
+ * and revoke response, and those still never echo the email (002's contract, unchanged there).
+ */
+export interface PendingInvitationRow extends InvitationRow {
+  readonly invitedEmail: string;
+}
+
 export interface IssuedInvitation {
   readonly row: InvitationRow;
   /** Never returned to the caller (contracts/tenant-invitations.md) — only used to compose the outgoing message. */
@@ -100,14 +109,15 @@ export class InvitationService {
     return present(row);
   }
 
-  async listPending(): Promise<readonly InvitationRow[]> {
-    const { rows } = await currentTx().execute<RawRow>(sql`
-      SELECT id, tenant_id, target_archetype, status, issued_at, expires_at, revoked_at
+  async listPending(): Promise<readonly PendingInvitationRow[]> {
+    const { rows } = await currentTx().execute<RawRow & { invited_email: string }>(sql`
+      SELECT id, tenant_id, target_archetype, status, issued_at, expires_at, revoked_at,
+             invited_email
         FROM invitation
        WHERE status = 'pending'
        ORDER BY issued_at DESC
     `);
-    return rows.map(present);
+    return rows.map((row) => ({ ...present(row), invitedEmail: row.invited_email }));
   }
 
   /** research.md D8 — coarse, tenant-level anti-abuse cap. */
