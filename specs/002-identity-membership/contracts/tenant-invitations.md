@@ -37,9 +37,20 @@ Issue an invitation into the active tenant. FR-019, FR-020, FR-021.
   "targetArchetype": "AA",
   "status": "pending",
   "issuedAt": "2026-08-21T18:04:11Z",
-  "expiresAt": "2026-08-28T18:04:11Z"
+  "expiresAt": "2026-08-28T18:04:11Z",
+  "invitationLink": "/aceptar/uz3bta2Q5Y5bQXv_xKzK1zrdAp8QtvBgwM9qtfeYsso"
 }
 ```
+
+> **AMENDED 2026-09-23 by `014-admin-ui` (Decision 3, approved by the CC technical lead) —
+> `invitationLink` added.** The paragraph below was written assuming an invitation email would
+> carry the raw token (D7). No transactional email provider exists (the AWS account is blocked),
+> so no invitation could reach its invitee. The issuer now receives the link ONCE, in this
+> response only, and delivers it themselves. It is returned for EVERY `201` — including an email
+> that already holds a live membership — so FR-029 still holds: the two cases remain
+> indistinguishable. It is never included by `GET`, never audited and never logged. Asserted in
+> `backend/tests/contract/invitation-issue-link.test.ts`. When an email provider lands, this field
+> can be removed again.
 
 Note what is absent: the response never echoes `email` back, and never includes
 the raw reference token or its hash — the token is delivered only through the

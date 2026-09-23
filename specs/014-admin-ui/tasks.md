@@ -40,15 +40,15 @@ written directly.
 
 ### A. The invitation link (Decision 3)
 
-- [ ] T002 Write `backend/tests/contract/invitation-issue-link.test.ts`: a `201` from
+- [x] T002 Write `backend/tests/contract/invitation-issue-link.test.ts`: a `201` from
       `POST /tenant/invitations` carries `invitationLink` of the form `/aceptar/{raw}`; the same shape
       is returned when the email ALREADY holds a live membership (`002/FR-029`); SHA-256 of `{raw}`
       equals the stored `reference_hash`; `GET /tenant/invitations` never contains the link; the
       `invitation.issued` audit row contains no token. **Run it; see it fail.**
-- [ ] T003 In `backend/src/modules/invitation/invitation.controller.ts`, stop discarding
+- [x] T003 In `backend/src/modules/invitation/invitation.controller.ts`, stop discarding
       `rawReferenceToken` returned by `InvitationService.issue()` and add `invitationLink` to the
       response only. Do not add it to `InvitationRow`, the audit metadata or any log line.
-- [ ] T004 Amend `specs/002-identity-membership/contracts/tenant-invitations.md` §POST to record the
+- [x] T004 Amend `specs/002-identity-membership/contracts/tenant-invitations.md` §POST to record the
       new field and the reason (email delivery unavailable), in the same PR.
 
 ### B. Members with their email (Decision 5 — only after sign-off)
@@ -67,6 +67,24 @@ written directly.
       `@Capability('membership.read_tenant')`, audited) and register it in the membership module.
 - [ ] T009 Run `npm run test:isolation && npm run test:rls && npm run verify:role`; all green before
       any frontend task consumes the route.
+
+### C. Invitee email on the pending list (Decision 5, second half — FR-028)
+
+- [ ] T009a Extend `backend/tests/contract/list-invitations.test.ts`: each item carries `invitedEmail`;
+      still no token or hash. **See it fail.**
+- [ ] T009b Return `invitedEmail` from `GET /tenant/invitations`; amend
+      `specs/002-identity-membership/contracts/tenant-invitations.md` §GET with the reason.
+
+### D. Step-up from the browser (FR-026, FR-027)
+
+- [ ] T009c Extend `frontend/tests/unit/api-proxy.test.ts`: `x-step-up-token` is forwarded;
+      `authorization` and `x-identity-id` still are not. **See it fail.**
+- [ ] T009d Add `x-step-up-token` to the proxy's allow-list in `frontend/src/app/api/lc/[...path]/route.ts`.
+- [ ] T009e Component test `frontend/tests/component/configuracion/StepUpDialog.test.tsx`: asks for a
+      six-digit code, posts `{ capability, code }` to `/auth/step-up` through `apiFetch`, resolves with
+      the token; a refused code shows the uniform refusal and resolves nothing. **See it fail.**
+- [ ] T009f Implement `frontend/src/app/configuracion/components/StepUpDialog.tsx` and a
+      `requestStepUp(capability)` helper; `apiFetch` callers pass the token as `x-step-up-token`.
 
 **Checkpoint**: the two API changes exist, are tested, and isolation is proven.
 
@@ -152,5 +170,5 @@ written directly.
 
 ## Summary
 
-- **Total**: 32 tasks · **Done**: 0 · **Open**: 32
+- **Total**: 38 tasks · **Done**: 0 · **Open**: 38
 - **Approval-gated**: T002–T004 (Decision 3), T005–T009 (Decision 5), T032.

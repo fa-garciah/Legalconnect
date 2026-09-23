@@ -151,6 +151,9 @@ An administrator (`SA` or `MP`) reviews the system-wide permissions matrix in a 
 - **FR-023**: All screens, modals, tables, and buttons MUST use design tokens from `020-design-language` (no hex color literals).
 - **FR-024**: All interface copy, labels, validation errors, and confirmation dialogs MUST be written in Spanish.
 - **FR-025**: The shell navigation registry (`frontend/src/shell/navigation-items.ts`) entry for `configuracion` MUST have `available: true` and restrict visibility to `requiredArchetypes: ['SA', 'MP']`.
+- **FR-026**: Four actions on these screens are `stepUp: true` in `capability.ts` — `invitation.issue`, `invitation.revoke`, `membership.revoke`, `membership.change_archetype` (`005` US2). Before each, the interface MUST ask for a fresh authenticator code, exchange it at `POST /auth/step-up` for a single-use token scoped to that capability (2-minute expiry), and send it as `x-step-up-token` with the action. A wrong code MUST show `005`'s uniform refusal. *Added on review: neither the draft spec nor the first task list accounted for step-up.*
+- **FR-027**: The frontend's credential proxy (`frontend/src/app/api/lc/[...path]/route.ts`) MUST forward `x-step-up-token`, and still never forward a browser-supplied `authorization` or `x-identity-id`. Without it, all four actions above fail from the browser even with a correct code.
+- **FR-028**: `GET /tenant/invitations` MUST include `invitedEmail` for `SA` and `MP` (Decision 5, approved in full on 2026-09-23), reversing `002`'s deliberate omission; `002`'s contract is amended in the same PR.
 
 ---
 
@@ -223,13 +226,13 @@ All operations consumed by this slice are already registered in the backend capa
 - **Catalog description**: `US03-EP10-CFG-ConfigurePermissions` reads *"Granular permissions per role"*.
 - **The Conflict**: 004 Decision 4 establishes that archetypes and the capability matrix are fixed in code as compile-time constants. Granting tenant administrators the ability to alter capability distributions violates Principle III (no tenant-specific logic in the core) and defeats exhaustive matrix verification.
 - **Resolution**: `US03` is fulfilled as an **Authoritative Read-Only Capability Matrix View**. Administrators can inspect exactly what each role is permitted to do across all modules, providing full transparency without compromising system security invariants.
-- **Approval status**: Recommended default, pending CC technical-lead sign-off.
+- **Approval status**: **approved by Francisco Garcia (CC technical lead), 2026-09-23**.
 
 ### Decision 2 — Deferral of US04-EP10-CFG-ConfigureBillingParameters
 - **Catalog description**: `US04-EP10-CFG-ConfigureBillingParameters` reads *"Rates, tax rates, invoice templates"*.
 - **The Dependency**: Requires billing rate models, tax configuration, and invoice schema owned by slice `010-billing-core` (which does not exist yet).
 - **Resolution**: Explicitly deferred. `US04` will be delivered jointly with `010-billing-core`.
-- **Approval status**: Recommended default, pending CC technical-lead sign-off.
+- **Approval status**: **approved by Francisco Garcia (CC technical lead), 2026-09-23**.
 
 ### Decision 3 — Out-of-Band Invitation Link Delivery *(Requires CC technical-lead approval)*
 - **The Problem**: Automated email dispatch is impossible because the AWS account is blocked and SES is unavailable in `mx-central-1`. Discarding the raw token prevents invitees from onboarding.
@@ -240,14 +243,14 @@ All operations consumed by this slice are already registered in the backend capa
   3. The database retains only the SHA-256 hash `reference_hash`.
   4. The link is never written to audit trails or application logs.
   5. The link alone does not grant access: acceptance succeeds only when the email entered matches the invitation's `invited_email` (`002/FR-024`), the reference is single-use and expires in 7 days, and second-factor enrollment is mandatory before any tenant data is reachable (`003`). *Corrected on review: the draft said the recipient must authenticate with existing credentials; an invitee has none yet.*
-- **Approval status**: Recommended default, pending CC technical-lead sign-off.
+- **Approval status**: **approved by Francisco Garcia (CC technical lead), 2026-09-23**.
 
 ### Decision 5 — Showing members' email to the firm's administrators *(Requires CC technical-lead approval — personal data, Principle VI)*
 - **The Gap** (found on review, not by the draft): no endpoint returns who a member IS. `GET /tenant/directory` returns `membershipId`, `archetype` and position only; `identity` has no name column, only `email`; and `lc_app` may read solely its OWN identity row (`identity_self_row`). A members list built on today's API is a list of UUIDs. `GET /tenant/invitations` likewise omits `invitedEmail` by deliberate choice in `002/contracts/tenant-invitations.md`.
 - **Recommended resolution**: a new read, `GET /tenant/members` (capability `membership.read_tenant`, which already exists and is currently unused), returning `membershipId`, `email`, `archetype`, `positionName` for LIVE memberships of the ACTIVE tenant only. It needs one new RLS policy on `identity` for `lc_app`, admitting a row only when `app.tenant_id` is set AND the identity holds a live membership in that tenant — the mirror of migration `0043`'s guard, and covered by the isolation suite before it ships.
 - **Why it is proportionate**: the firm's administrator issued the invitation to that email; the email is the firm's own staff data, not cross-tenant data; no other personal field exists to expose. It is still personal data under LFPDPPP, so reach is limited to `SA` and `MP` and every listing is audited.
 - **Pending invitations**: recommended to show `invitedEmail` to the same roles, for the same reason — a pending list reading "AA, issued Tuesday" cannot be acted on. This reverses a deliberate `002` choice, so it needs explicit sign-off separately from the members list.
-- **Approval status**: Recommended default, pending CC technical-lead sign-off. Until signed, the members list may ship showing position and archetype only, clearly labelled as incomplete.
+- **Approval status**: **approved by Francisco Garcia (CC technical lead), 2026-09-23**. Until signed, the members list may ship showing position and archetype only, clearly labelled as incomplete.
 
 ### Decision 4 — Administration Interface Layout & Navigation
 - **Architecture**: A unified tabbed administration interface under `/configuracion`:
@@ -286,9 +289,9 @@ All operations consumed by this slice are already registered in the backend capa
 ## Approval Checklist
 
 - [x] Zero `[NEEDS CLARIFICATION]` markers in specification
-- [ ] Decision 1 (US03 Read-Only Matrix resolution) approved by CC technical lead
-- [ ] Decision 2 (US04 deferral) approved by CC technical lead
-- [ ] Decision 3 (Out-of-band one-time invitation link delivery & security reasoning) approved by CC technical lead
-- [ ] Decision 5 (members' and invitees' email shown to SA/MP — new RLS policy on `identity`) approved by CC technical lead
+- [x] Decision 1 (US03 Read-Only Matrix resolution) — **approved by Francisco Garcia (CC technical lead), 2026-09-23**
+- [x] Decision 2 (US04 deferral) — **approved by Francisco Garcia (CC technical lead), 2026-09-23**
+- [x] Decision 3 (Out-of-band one-time invitation link delivery & security reasoning) — **approved by Francisco Garcia (CC technical lead), 2026-09-23**
+- [x] Decision 5 (members' and invitees' email shown to SA/MP — new RLS policy on `identity`) — **approved by Francisco Garcia (CC technical lead), 2026-09-23**
 - [x] Permission matrix declared and verified against `004` and `017`
 - [x] Strict TDD ordering established for implementation tasks (`tasks.md`)
