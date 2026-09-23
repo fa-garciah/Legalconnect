@@ -8,7 +8,11 @@
 
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Header } from './Header';
+import { FirmPicker } from './FirmPicker';
+import { resolveActiveTenant } from './resolve-active-tenant';
+import { signOutAction } from '../session/sign-out';
 import { Sidebar } from './Sidebar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { NavigationItem } from './navigation-items';
@@ -22,26 +26,12 @@ export interface ShellProps {
   readonly children: React.ReactNode;
 }
 
-/**
- * data-model.md's ActiveTenant state transition: 'none' -> 'active' happens once a
- * Principal resolves with at least one membership and either it holds exactly one
- * (auto-selected here) or the person picks one via TenantSwitcher. An identity with
- * more than one membership and no prior selection stays 'none' — FR-007's directive —
- * because auto-picking one of several would be exactly the wrong-tenant-that-looks-
- * correct failure Story 2's own priority rationale warns against.
- */
-function resolveActiveTenant(raw: ActiveTenant, principal: Principal): ActiveTenant {
-  if (raw.status === 'active') return raw;
-  if (principal.memberships.length === 1) {
-    return { status: 'active', tenantId: principal.memberships[0]!.tenantId };
-  }
-  return raw;
-}
 
 export function Shell({ principal, initialActiveTenant, items, children }: ShellProps): React.JSX.Element {
   const [rawActiveTenant, setRawActiveTenant] = useState<ActiveTenant>(initialActiveTenant);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const activeTenant = resolveActiveTenant(rawActiveTenant, principal);
 
@@ -50,7 +40,12 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
   // does not trigger the cascading-render pattern useEffect's own state-set warning
   // exists to catch.
   useEffect(() => {
-    if (activeTenant.status === 'active' && rawActiveTenant.status !== 'active') {
+    // Also when the resolved firm CORRECTS a stale cookie, not only when there was none —
+    // otherwise the stale id is re-read on every load and corrected on every render.
+    if (
+      activeTenant.status === 'active' &&
+      (rawActiveTenant.status !== 'active' || rawActiveTenant.tenantId !== activeTenant.tenantId)
+    ) {
       writeActiveTenantClient(activeTenant.tenantId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,13 +65,63 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
     writeActiveTenantClient(tenantId);
     setRawActiveTenant({ status: 'active', tenantId });
     void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] !== 'principal' });
+    /*
+     * The page under the shell is a SERVER component that resolved the firm — and with it
+     * the caller's role — when it rendered. Invalidating the client's queries refreshed the
+     * data but not that: after the firm picker the page stayed EMPTY, and after a switch it
+     * kept drawing the PREVIOUS firm's role (Socio controls for somebody who is an Asociado
+     * in the firm they had just switched to). Found in the browser, 2026-09-22. The cookie is
+     * already written above, so the re-render resolves the right firm.
+     */
+    router.refresh();
   }
 
+  /*
+   * TWO DIFFERENT STATES, AND THEY USED TO SHARE ONE SCREEN.
+   *
+   * This branch rendered a bare centred message for every case where no membership was
+   * active — including an EXPIRED SESSION, which is now redirected in the root layout and
+   * never reaches here. What remains are two genuine states, and they are not the same
+   * thing:
+   *
+   *   - the identity belongs to NO firm (002/FR-011 — a valid, lasting state), and
+   *   - it belongs to several and has not picked one yet (`016a`/FR-007's directive).
+   *
+   * Neither is an error, and neither should strand anybody: both now render a sign-out
+   * control, because a screen a person cannot act on and cannot leave is the worst state
+   * the shell can put them in.
+   */
   if (activeTenant.status === 'none' || !activeMembership) {
+    const belongsToNothing = principal.memberships.length === 0;
+
+    // Several firms, none chosen: a real decision, so it gets a real screen.
+    if (!belongsToNothing) {
+      return <FirmPicker memberships={principal.memberships} onChoose={handleSwitchTenant} />;
+    }
+
     return (
-      <div data-testid="no-active-tenant" className="flex flex-col items-center gap-2 p-8 text-center">
-        <p>No tienes un contexto de tenant activo.</p>
-        <p className="text-sm">Selecciona una firma para continuar.</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-secondary/40 p-8 text-center">
+        <div data-testid="no-active-tenant" className="max-w-md space-y-2">
+          <h1 className="font-display text-heading font-semibold">
+            Tu cuenta no pertenece a ninguna firma
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Pide a un administrador de tu despacho que te envíe una invitación. Al aceptarla,
+            la firma aparecerá aquí.
+          </p>
+        </div>
+
+        {/* FR-008's own reason, applied to the one screen that used to omit it: a person
+            must always be able to leave, especially on a screen they cannot otherwise act
+            on. */}
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            Cerrar sesión
+          </button>
+        </form>
       </div>
     );
   }

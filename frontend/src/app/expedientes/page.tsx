@@ -13,6 +13,7 @@
 import type { Metadata } from 'next';
 import { getPrincipal } from '@/session/principal';
 import { readActiveTenantServer } from '@/session/active-tenant.server';
+import { resolveActiveTenant } from '@/shell/resolve-active-tenant';
 import { CaseRegister } from './CaseRegister';
 
 export const metadata: Metadata = {
@@ -22,12 +23,17 @@ export const metadata: Metadata = {
 export default async function ExpedientesPage(): Promise<React.JSX.Element> {
   const [principal, activeTenant] = await Promise.all([getPrincipal(), readActiveTenantServer()]);
 
+  /*
+   * The SAME resolution the shell performs, not a second copy of it. This page used to
+   * re-derive the active firm on its own and had the stale-cookie defect the shell's copy
+   * had: a remembered tenant id from an old seed or a revoked membership found no match here
+   * and rendered nothing. One function, so the page and the shell cannot disagree.
+   */
+  const resolved = resolveActiveTenant(activeTenant, principal);
   const membership =
-    activeTenant.status === 'active'
-      ? principal.memberships.find((m) => m.tenantId === activeTenant.tenantId)
-      : principal.memberships.length === 1
-        ? principal.memberships[0]
-        : undefined;
+    resolved.status === 'active'
+      ? principal.memberships.find((m) => m.tenantId === resolved.tenantId)
+      : undefined;
 
   if (!membership) {
     /*
