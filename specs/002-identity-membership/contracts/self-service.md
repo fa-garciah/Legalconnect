@@ -81,12 +81,28 @@ this point in the flow the identity does exist).
 
 ```json
 {
+  "identityId": "233d...",
   "items": [
-    { "membershipId": "b910...", "tenantId": "9f1c...", "archetype": "AA" },
-    { "membershipId": "c021...", "tenantId": "a331...", "archetype": "CC" }
+    { "membershipId": "b910...", "tenantId": "9f1c...", "tenantName": "Despacho Alfa, S.C.", "archetype": "AA" },
+    { "membershipId": "c021...", "tenantId": "a331...", "tenantName": "Bufete Beta, S.C.", "archetype": "CC" }
   ]
 }
 ```
+
+> **AMENDED 2026-09-22 — `tenantName` and `identityId` added.** The original shape returned
+> identifiers only, and it could not have done otherwise: `tenant`'s single `lc_app` policy
+> was keyed on `app.tenant_id`, which this surface deliberately never sets. `016a/FR-008`
+> then required the shell to name the active firm at all times, and its tenant switcher to
+> offer a choice between firms — a choice between two UUIDs. The gap survived because `016a`
+> was built against a checked-in fixture that carried the name, and by the time `003`
+> replaced that fixture with this call, every request was failing for an unrelated reason
+> and degrading to anonymous. The first authenticated render crashed on the absent name.
+>
+> Migration `0043` adds `tenant_own_membership_select`: an identity may read a tenant row
+> when it holds a LIVE membership in it, and only then. This is strictly less than the
+> caller already reaches — any tenant-scoped route returns that firm's clients and matters
+> to them — so naming a firm they work at is not a cross-tenant disclosure. `tenant_own_row`
+> is untouched and the tenant-scoped path is unchanged.
 
 Every live membership, across every tenant, in one list — this is the one
 deliberate exception to "a tenant never sees another tenant's data," because

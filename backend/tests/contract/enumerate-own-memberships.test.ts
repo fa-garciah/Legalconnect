@@ -33,6 +33,53 @@ describe('GET /identity/memberships (US1 scenario 8)', () => {
     expect(tenantIds).toEqual([tenants.a, tenants.b].sort());
   });
 
+  /**
+   * ADDED BY THE FRONTEND FINDING OF 2026-09-21, not by a new feature.
+   *
+   * `016a/FR-008` requires the shell to name the active firm AT ALL TIMES, and its tenant
+   * switcher offers a choice between firms. This endpoint is the only source of that list,
+   * and it returned tenant UUIDs and nothing else — so the shell named nothing, the
+   * switcher offered a choice between two identifiers, and the first authenticated render
+   * crashed on the absent name.
+   *
+   * It went unnoticed because `016a` was built against a checked-in fixture that DID carry
+   * the name, and by the time `003` replaced that fixture with this call, every request was
+   * failing for an unrelated reason and degrading to anonymous. Two defects hid each other.
+   *
+   * A firm's own name is not a disclosure: the caller holds a live membership in it, which
+   * is strictly less than what `GET /tenant/clients` already tells them. The new RLS policy
+   * grants exactly that and no more — asserted below.
+   */
+  it('names each firm, so the shell can say which one you are in — 016a/FR-008', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/identity/memberships')
+      .set('x-identity-id', identities.dualId);
+
+    expect(response.status).toBe(200);
+    for (const item of response.body.items) {
+      expect(typeof item.tenantName, 'every membership carries its firm name').toBe('string');
+      expect(item.tenantName.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('identifies the caller, so the shell knows whose session it is rendering', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/identity/memberships')
+      .set('x-identity-id', identities.dualId);
+
+    expect(response.body.identityId).toBe(identities.dualId);
+  });
+
+  it('names ONLY firms the caller belongs to — the policy is not a window onto the table', async () => {
+    // The outsider holds no live membership anywhere. If the new policy were written as a
+    // blanket read, this would come back with rows; it must stay empty.
+    const response = await request(app.getHttpServer())
+      .get('/identity/memberships')
+      .set('x-identity-id', identities.outsiderId);
+
+    expect(response.body.items).toEqual([]);
+  });
+
   it('the outsider identity gets an empty list, not an error — FR-011', async () => {
     const response = await request(app.getHttpServer())
       .get('/identity/memberships')
