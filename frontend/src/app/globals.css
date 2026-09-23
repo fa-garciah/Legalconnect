@@ -77,11 +77,11 @@
   --secondary: #f3f0e9;
   --secondary-foreground: #1a1714;
   --muted: #f3f0e9;
-  /* 4.62:1 on --background. The lightest this may go and still pass FR-012. */
+  /* 5.45:1 on --background, 5.78:1 on a card (contrast.md). Well clear of FR-012's 4.5:1. */
   --muted-foreground: #6e6459;
   --accent: var(--brand-tint);
   --accent-foreground: var(--brand);
-  /* Warmer than the vendor's #dc2626, so a refusal belongs to this palette. 5.94:1. */
+  /* Warmer than the vendor's #dc2626, so a refusal belongs to this palette. 6.54:1 on a card. */
   --destructive: #b3261e;
   --destructive-foreground: #faf8f3;
 

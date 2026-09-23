@@ -109,7 +109,7 @@ Constitution exemption 4 covers purely visual adjustments without logic (styles,
 
 ### Verification & Documentation for User Story 2
 
-- [ ] T024 [US2] Produce and record the complete contrast measurement table for every text-on-surface and icon-on-surface token pair across the design system (SC-004, FR-012) (GENUINELY NOT DONE — no documented contrast table artifact exists in `specs/020-design-language/` or `frontend/`)
+- [X] T024 [US2] Produce and record the complete contrast measurement table for every text-on-surface and non-text token pair (SC-004, FR-012) (Proved by: `specs/020-design-language/contrast.md` — 19 pairs measured from the live tokens on 2026-09-23, 0 failing)
 - [ ] T025 [US2] Regression gate (SC-003): all existing tests pass under the new tokens with no assertion changed to accommodate the look. *Corrected on review — NOT met as written:* the unit and component tiers pass (466 tests), but the e2e tier has not been run under the new tokens (it needs the backend), and three assertions were changed deliberately, each documented in place: the dark-variant assertion inverted by D1 (`theme-tokens.test.tsx`), the keyboard order in `tests/component/auth/SignIn.test.tsx` extended for the password toggle, and the principal shape in `tests/unit/principal.test.ts`. Close by running `npm run test:e2e` and recording the three changes against SC-003.
 
 **Checkpoint**: Core contrast rules enforced in code and tests; formal contrast documentation table pending.
@@ -147,5 +147,5 @@ Constitution exemption 4 covers purely visual adjustments without logic (styles,
 ## Task Audit Summary
 
 - **Total Tasks**: 28
-- **Completed `[X]`**: 23 tasks (each citing the concrete implementation file and passing test assertion)
-- **Open `[ ]`**: 5 tasks (T019 deferred vendored pill controls D2, T024 unrecorded contrast table SC-004, T025 SC-003 not met as written — e2e not yet run, three assertions deliberately changed, T027 unrecorded repaint demonstration SC-005, T028 uncompleted spec sign-off)
+- **Completed `[X]`**: 24 tasks (each citing the concrete implementation file and passing test assertion)
+- **Open `[ ]`**: 4 tasks (T019 deferred vendored pill controls D2, T025 SC-003 not met as written — e2e not yet run, three assertions deliberately changed, T027 unrecorded repaint demonstration SC-005, T028 uncompleted spec sign-off)
