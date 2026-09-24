@@ -5,13 +5,27 @@
  * directly and has no async-lookup extension point (data-model.md, "Scope
  * resolution").
  */
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UploadedFile,
+  UseFilters,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
 import { Capability, ScopeTarget } from '../../common/authz/declare';
 import { ValidationFailed } from '../../common/http/errors';
 import { assertUuid } from '../tenant/rfc';
 import { DocumentsService } from './documents.service';
+import { decodeUploadFilename } from './upload-filename';
+import { UploadTooLargeFilter, uploadOptions } from './upload-limit';
 import type { DocumentRow } from './documents.repository';
 
 interface AuditableRequest {
@@ -36,6 +50,11 @@ function present(row: DocumentRow) {
     uploadedByMembershipId: row.uploadedByMembershipId,
     uploadedAt: row.uploadedAt,
     status: row.status,
+    // Contract §2 names `categoryStatus` (FR-012: a retired category stays resolvable, marked
+    // retired); 021 found it computed by the repository and dropped here. `withdrawnAt` is what
+    // the withdrawn list (§2a) is ordered and shown by.
+    categoryStatus: row.categoryStatus,
+    withdrawnAt: row.withdrawnAt,
   };
 }
 
@@ -48,7 +67,9 @@ export class DocumentsController {
   @Capability('document.upload')
   @ScopeTarget('caseId')
   @Audited({ action: 'document.uploaded', targetEntity: 'document' })
-  @UseInterceptors(FileInterceptor('file'))
+  // 021 Decision 4: a size cap, refused in the product's own shape.
+  @UseInterceptors(FileInterceptor('file', uploadOptions))
+  @UseFilters(UploadTooLargeFilter)
   async upload(
     @Param('caseId') caseId: string,
     @UploadedFile() file: UploadedFileShape | undefined,
@@ -65,7 +86,7 @@ export class DocumentsController {
 
     const row = await this.documents.upload(id, {
       buffer: file.buffer,
-      originalFilename: file.originalname,
+      originalFilename: decodeUploadFilename(file.originalname),
       mimeType: file.mimetype,
       categoryId,
     });
@@ -79,6 +100,20 @@ export class DocumentsController {
   async list(@Param('caseId') caseId: string): Promise<{ items: ReturnType<typeof present>[] }> {
     const id = assertUuid(caseId, 'case id');
     const rows = await this.documents.listForCase(id);
+    return { items: rows.map(present) };
+  }
+
+  /**
+   * 021 Decision 2 (contract §2a). Declared `document.restore`: whoever may put a document back
+   * is exactly whoever may see what there is to put back (MP, SA). Unaudited, like the active list.
+   * A static segment, so it never collides with the `:id/...` routes below.
+   */
+  @Get('withdrawn')
+  @Capability('document.restore')
+  @ScopeTarget('caseId')
+  async listWithdrawn(@Param('caseId') caseId: string): Promise<{ items: ReturnType<typeof present>[] }> {
+    const id = assertUuid(caseId, 'case id');
+    const rows = await this.documents.listWithdrawnForCase(id);
     return { items: rows.map(present) };
   }
 

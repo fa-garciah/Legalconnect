@@ -111,9 +111,17 @@ export class DocumentsRepository {
   /** FR-010's default — resolved by name, per tenant, under RLS. Always `active`
    * by construction (the query filters on it), included for type parity with
    * `findCategory`'s return shape. */
+  /**
+   * 007/FR-010's default. 021 Decision 5 renamed it "Sin clasificar" (migration 0045); the English
+   * name is still accepted for a firm that had created its own "Sin clasificar" and so kept both,
+   * and the Spanish one wins when both exist.
+   */
   async findDefaultCategory(): Promise<{ id: string; name: string; status: string } | null> {
     const { rows } = await currentTx().execute<{ id: string; name: string; status: string }>(sql`
-      SELECT id, name, status FROM document_category WHERE lower(trim(name)) = 'unclassified' AND status = 'active'
+      SELECT id, name, status FROM document_category
+       WHERE lower(trim(name)) IN ('sin clasificar', 'unclassified') AND status = 'active'
+       ORDER BY (lower(trim(name)) = 'sin clasificar') DESC
+       LIMIT 1
     `);
     return rows[0] ?? null;
   }
@@ -208,6 +216,19 @@ export class DocumentsRepository {
       ${SELECT_WITH_CATEGORY}
       WHERE d.case_id = ${caseId}::uuid AND d.status = 'active'
       ORDER BY d.uploaded_at DESC
+    `);
+    return rows.map(present);
+  }
+
+  /**
+   * 021 Decision 2 — the case's withdrawn documents, most recently withdrawn first. The only
+   * read that can find one again, so the only way `restore` is reachable from a screen.
+   */
+  async listWithdrawnByCase(caseId: string): Promise<readonly DocumentRow[]> {
+    const { rows } = await currentTx().execute<RawDocumentRow>(sql`
+      ${SELECT_WITH_CATEGORY}
+      WHERE d.case_id = ${caseId}::uuid AND d.status = 'withdrawn'
+      ORDER BY d.withdrawn_at DESC
     `);
     return rows.map(present);
   }

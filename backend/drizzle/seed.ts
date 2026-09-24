@@ -426,7 +426,7 @@ async function seedDocuments(tenantA: string, tenantB: string): Promise<void> {
         [tenantId],
       );
       const { rows: categoryRows } = await client.query<{ id: string }>(
-        `SELECT id FROM document_category WHERE tenant_id = $1 AND name = 'Unclassified'`,
+        `SELECT id FROM document_category WHERE tenant_id = $1 AND lower(trim(name)) IN ('sin clasificar', 'unclassified') ORDER BY (lower(trim(name)) = 'sin clasificar') DESC LIMIT 1`,
         [tenantId],
       );
       const { rows: membershipRows } = await client.query<{ id: string }>(

@@ -173,7 +173,7 @@ describe('the document-category catalog', () => {
     expect(newDoc.status).toBe(422);
   });
 
-  it('scenario 4 — a freshly provisioned tenant already has the default catalog, including Unclassified', async () => {
+  it('scenario 4 — a freshly provisioned tenant already has the default catalog, including Sin clasificar (021, was Unclassified)', async () => {
     const provisioned = await request(app.getHttpServer())
       .post('/internal/platform/tenants')
       .send({ name: uniqueName('Fresh Firm'), rfc: uniqueRfc(), planCode: 'esencial' });
@@ -193,7 +193,7 @@ describe('the document-category catalog', () => {
       .set('x-identity-id', identity.rows[0]!.id)
       .set('x-tenant-id', provisioned.body.id);
     expect(list.status).toBe(200);
-    expect(list.body.items.map((i: { name: string }) => i.name)).toContain('Unclassified');
+    expect(list.body.items.map((i: { name: string }) => i.name)).toContain('Sin clasificar');
   });
 
   it('scenario 5 — AA/PL cannot change a document\'s category', async () => {

@@ -89,6 +89,13 @@ orphaned reservation survives (`spec.md` Edge Cases).
 - `422 catalog_entry_not_available` — a named `categoryId` is retired, foreign, or
   absent (`006`'s `CatalogEntryNotAvailable` shape, reused verbatim — this is the same
   refusal 006 already defined for its own three catalogs, not a new class).
+- `413 file_too_large` — *Amended 2026-09-23 by `021-frontend-documents` (Decision 4).* The file exceeds
+  `DOCUMENT_MAX_UPLOAD_BYTES` (default 25 MB). Before this, multer ran with no limit. The body
+  carries `limit: { key: 'upload_bytes', value }`. Nothing is reserved or stored.
+
+> *Amended 2026-09-23 by `021-frontend-documents`.* The multipart `filename` is decoded as UTF-8: multer hands it over as latin1, so
+> "Señor.pdf" had been stored as "SeÃ±or.pdf" since this slice shipped. Names stored before the
+> fix are not rewritten.
 
 ## 2. `GET /tenant/cases/:caseId/documents` — list a case's documents
 
@@ -113,6 +120,11 @@ the caller named one case directly rather than asking for everything they are
 entitled to (`spec.md` Story 2 scenario 2's own contrast with `006`'s
 `case.read_list`). Section 0 applies in full.
 
+> *Amended 2026-09-23 by `021-frontend-documents`.* A case the caller cannot see answers `404` to MP and SA too; it had answered
+> them `200 {"items":[]}`, because MP/SA satisfy the `assigned` resolver without it reading
+> the case. `categoryStatus` and `withdrawnAt` are now on every item (the first was
+> documented here but dropped by the controller).
+
 `categoryStatus` on each item is how FR-012's "a retired category stays resolvable,
 marked retired" reaches the wire — `006`'s `catalogStatus` field on case reads does
 the same thing for retired statuses/matter-types.
@@ -120,6 +132,17 @@ the same thing for retired statuses/matter-types.
 Not paginated at case level: a case's own document count is bounded by what one matter
 accumulates, not by tenant-wide volume — the same call `006`'s catalog reads already
 made for a firm's vocabulary size.
+
+## 2a. `GET /tenant/cases/:caseId/documents/withdrawn` — a case's withdrawn documents
+
+*Added 2026-09-23 by `021-frontend-documents` (Decision 2).*
+
+**Capability**: `document.restore` (row 41, **`assigned` scope**) · **Audit**: none
+
+Held by `MP`, `SA` only: whoever may put a document back is exactly whoever may see what there
+is to put back. Same item shape as §2, `status: "withdrawn"`, ordered by `withdrawnAt`
+descending. Without this route §2 is the only list and it returns active documents only, so §7
+was unreachable from any screen. Section 0 applies.
 
 ## 3. `GET /tenant/cases/:caseId/documents/:id/preview` — preview a document inline
 
@@ -134,9 +157,16 @@ Held by `MP`, `AA`, `PL`, `CM`, `SA`. Not `BM`.
 ```
 
 ```json
-// 200 — for Office formats after server-side conversion (research.md D5)
+// 200 — for Office formats (research.md D5)
 { "previewUrl": "https://…", "expiresAt": "…", "renderAs": "converted-pdf" }
 ```
+
+> *Amended 2026-09-23 by `021-frontend-documents` (Decision 3).* **No conversion is implemented.** For Office formats `previewUrl`
+> signs the ORIGINAL file; a browser cannot render it inline. Clients treat `converted-pdf`
+> exactly as `unsupported` and offer download. A converter is infrastructure, deferred with
+> the AWS account.
+
+> *Amended 2026-09-23 by `021-frontend-documents` (Decision 4).* The preview URL is signed with `Content-Disposition: inline`.
 
 ```json
 // 200 — no supported inline preview (spec.md Story 2 scenario 4)
@@ -167,6 +197,11 @@ Held by `MP`, `AA`, `PL`, `CM`, `SA` — identical to row 37 (Decision 2). Not `
 // 200
 { "downloadUrl": "https://…", "expiresAt": "…", "filename": "contrato-arrendamiento.pdf" }
 ```
+
+> *Amended 2026-09-23 by `021-frontend-documents` (Decision 4).* The URL is signed with
+> `Content-Disposition: attachment; filename="<ascii>"; filename*=UTF-8''<original>`, so the
+> object store serves the file under its original name. Before, it was saved under the storage
+> key — a UUID with no extension — and `filename` here could not fix that across origins.
 
 Same pre-signed-URL discipline as §3. Audited as its **own** distinct interactive
 access (`spec.md` FR-020, Story 2 scenario 5) — a download and a preview of the same

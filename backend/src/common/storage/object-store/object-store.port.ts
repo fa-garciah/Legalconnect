@@ -18,8 +18,12 @@ export interface PresignedUrl {
 
 export interface ObjectStorePort {
   put(input: PutObjectInput): Promise<void>;
-  /** Single-object, time-limited (research.md D6) — never a bucket-wide credential. */
-  presignGet(key: string): Promise<PresignedUrl>;
+  /**
+   * Single-object, time-limited (research.md D6) — never a bucket-wide credential.
+   * `contentDisposition` (021 Decision 4) is signed into the URL, so the store answers with it
+   * and nobody holding the URL can change it.
+   */
+  presignGet(key: string, options?: { readonly contentDisposition?: string }): Promise<PresignedUrl>;
   /** Used only for upload-failure rollback (research.md D4) — never a user-facing delete. */
   delete(key: string): Promise<void>;
 }

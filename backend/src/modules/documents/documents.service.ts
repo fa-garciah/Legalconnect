@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { LimitReached, ResourceNotFound, CatalogEntryNotAvailable, AlreadyWithdrawn, NotWithdrawn } from '../../common/http/errors';
 import { currentPrincipal } from '../../common/tenant/middleware';
 import { assertUploadAllowed } from './upload-validation';
+import { contentDisposition } from './content-disposition';
 import { DocumentsRepository, type DocumentRow } from './documents.repository';
 import {
   OBJECT_STORE_PORT,
@@ -121,8 +122,20 @@ export class DocumentsService {
     return row;
   }
 
+  /*
+   * 021. Both lists first confirm the case is visible, for the reason `upload` above does: MP and
+   * SA satisfy the `assigned` resolver without it looking the case up (006 Decision 2), so a
+   * nonexistent or other-firm case answered `200 {"items":[]}` to them and `404` to everyone
+   * else. Contract §0/§2 says `404`, and an empty list read as "this matter has no documents".
+   */
   async listForCase(caseId: string): Promise<readonly DocumentRow[]> {
+    if (!(await this.repo.findCase(caseId))) throw new ResourceNotFound();
     return this.repo.listByCase(caseId);
+  }
+
+  async listWithdrawnForCase(caseId: string): Promise<readonly DocumentRow[]> {
+    if (!(await this.repo.findCase(caseId))) throw new ResourceNotFound();
+    return this.repo.listWithdrawnByCase(caseId);
   }
 
   async preview(caseId: string, id: string): Promise<PreviewResult> {
@@ -134,7 +147,9 @@ export class DocumentsService {
       return { previewUrl: null, expiresAt: null, renderAs: 'unsupported', downloadAvailable: true };
     }
 
-    const signed = await this.objectStore.presignGet(document.storageKey);
+    const signed = await this.objectStore.presignGet(document.storageKey, {
+      contentDisposition: contentDisposition('inline', document.originalFilename),
+    });
     return {
       previewUrl: signed.url,
       expiresAt: signed.expiresAt.toISOString(),
@@ -147,7 +162,10 @@ export class DocumentsService {
     const document = await this.repo.findInCase(id, caseId);
     if (!document) throw new ResourceNotFound();
 
-    const signed = await this.objectStore.presignGet(document.storageKey);
+    // 021 Decision 4: saved under its own name, not the storage key.
+    const signed = await this.objectStore.presignGet(document.storageKey, {
+      contentDisposition: contentDisposition('attachment', document.originalFilename),
+    });
     return { downloadUrl: signed.url, expiresAt: signed.expiresAt.toISOString(), filename: document.originalFilename };
   }
 

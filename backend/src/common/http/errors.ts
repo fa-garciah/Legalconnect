@@ -405,6 +405,19 @@ export class AlreadyWithdrawn extends HttpException {
   }
 }
 
+/**
+ * 021 Decision 4. An upload larger than `DOCUMENT_MAX_UPLOAD_BYTES`. Names the cap so the screen
+ * can say it; it is a deployment setting, not a secret.
+ */
+export class FileTooLarge extends HttpException {
+  constructor(maxBytes: number) {
+    super(
+      { ...errorBody('file_too_large', 'The file is larger than the upload limit.'), limit: { key: 'upload_bytes', value: maxBytes } },
+      HttpStatus.PAYLOAD_TOO_LARGE,
+    );
+  }
+}
+
 /** 007-document-management. Restoring a document that was never withdrawn. */
 export class NotWithdrawn extends HttpException {
   constructor() {

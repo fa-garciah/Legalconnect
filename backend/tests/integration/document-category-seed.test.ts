@@ -1,6 +1,6 @@
 /**
  * T015 — 007/FR-009, SC-010: a freshly seeded tenant's document-category catalog
- * already contains the default seed (research.md D1), including "Unclassified", all
+ * already contains the default seed (research.md D1), including "Sin clasificar" (021; was "Unclassified"), all
  * `active`.
  *
  * Checked as a SUBSET, not exact equality — 017's own directory-seed.test.ts learned

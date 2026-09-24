@@ -19,47 +19,47 @@ Stories: US1 upload · US2 find & read · US3 organize (category, withdraw/resto
 
 ### A. Withdrawn list (Decision 2)
 
-- [ ] T001 Contract test `backend/tests/contract/documents-withdrawn-list.test.ts`: MP and SA get
+- [x] T001 Contract test `backend/tests/contract/documents-withdrawn-list.test.ts`: MP and SA get
       `200` with only withdrawn documents of the named case; AA, PL, CM `403`; BM `403`; a case
       the caller cannot reach `404`; an active document never appears. **See it fail.**
-- [ ] T002 `DocumentsRepository.listWithdrawnByCase` and the route
+- [x] T002 `DocumentsRepository.listWithdrawnByCase` and the route
       `GET /tenant/cases/:caseId/documents/withdrawn` (`document.restore`, `@ScopeTarget('caseId')`).
       Note the route order: `withdrawn` must not be captured by `:id`.
-- [ ] T003 Amend `specs/007-document-management/contracts/document-api.md` with §2a.
+- [x] T003 Amend `specs/007-document-management/contracts/document-api.md` with §2a.
 
 ### B. Signed URL disposition and upload cap (Decision 4)
 
-- [ ] T004 Unit test `backend/tests/unit/content-disposition.test.ts`: ASCII fallback and RFC 5987
+- [x] T004 Unit test `backend/tests/unit/content-disposition.test.ts`: ASCII fallback and RFC 5987
       `filename*` for "Contrato Señor Pérez.pdf"; quotes and CR/LF stripped. **See it fail.**
-- [ ] T005 Contract test `backend/tests/contract/documents-download-disposition.test.ts`: the
+- [x] T005 Contract test `backend/tests/contract/documents-download-disposition.test.ts`: the
       download URL carries `response-content-disposition=attachment…` with the original name;
       preview carries `inline`; fetching the download URL from MinIO returns that header.
       **See it fail.**
-- [ ] T006 `ObjectStore.presignGet(key, { disposition })`, `contentDisposition()` helper, and the
+- [x] T006 `ObjectStore.presignGet(key, { disposition })`, `contentDisposition()` helper, and the
       service using them. Keep `object-store-chokepoint.test.ts` green.
-- [ ] T007 Contract test `backend/tests/contract/documents-upload-cap.test.ts`: with
+- [x] T007 Contract test `backend/tests/contract/documents-upload-cap.test.ts`: with
       `DOCUMENT_MAX_UPLOAD_BYTES` set small, an oversized upload answers `413
       { error: { code: 'file_too_large' } }`, writes no row, leaves `storage_bytes_used` unchanged
       and no object in the bucket. **See it fail.**
-- [ ] T008 `FileTooLarge` in `common/http/errors.ts`, the multer limit, and the route-scoped filter.
-- [ ] T009 Amend contract §1 (cap) and §4 (disposition).
+- [x] T008 `FileTooLarge` in `common/http/errors.ts`, the multer limit, and the route-scoped filter.
+- [x] T009 Amend contract §1 (cap) and §4 (disposition).
 
 ### C. "Sin clasificar" (Decision 5)
 
-- [ ] T010 Integration test `backend/tests/integration/document-category-rename.test.ts`: after
+- [x] T010 Integration test `backend/tests/integration/document-category-rename.test.ts`: after
       migration `0045`, a tenant with only `Unclassified` has `Sin clasificar`; a tenant that
       already had an active `Sin clasificar` keeps both and the default resolves to the Spanish
       one; a newly provisioned tenant is seeded with `Sin clasificar`; an upload with no category
       lands in it. **See it fail.**
-- [ ] T011 Migration `backend/drizzle/0045_document_category_sin_clasificar.sql`, the seed, and
+- [x] T011 Migration `backend/drizzle/0045_document_category_sin_clasificar.sql`, the seed, and
       `findDefaultCategory`. Update any test that asserted the English literal.
 
 ### D. Office preview (Decision 3)
 
-- [ ] T012 Amend contract §3 and `007/research.md` D5: `converted-pdf` is the original file; no
+- [x] T012 Amend contract §3 and `007/research.md` D5: `converted-pdf` is the original file; no
       conversion exists.
 
-- [ ] T013 Run `npm run test:isolation && npm run test:rls && npm run verify:role` and the full
+- [x] T013 Run `npm run test:isolation && npm run test:rls && npm run verify:role` and the full
       backend suite with coverage.
 
 ---

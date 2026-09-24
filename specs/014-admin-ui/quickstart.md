@@ -24,6 +24,12 @@ to an hour. For a local e2e run straight after the backend suite, start the back
 fails every page with "Jest worker encountered 2 child process exceptions". Stop it, delete
 `.next/`, and start it again.
 
+**The e2e writes into the seeded firm.** The demo identity belongs to seeded tenant A, so
+`configuracion.spec.ts` leaves a retired "Cargo e2e-…" position there, and `017`'s
+`position-catalog.test.ts` (which expects exactly the five default positions) then fails locally.
+Remove it with `DELETE FROM position WHERE name LIKE 'Cargo e2e-%' AND status = 'retired'` as
+`lc_migration`, or re-create the database. CI starts from a fresh one and is unaffected.
+
 ## Scenario 1 — Invite, copy, accept (US1, Decision 3)
 
 1. Sign in as an SA or MP of the firm and open **Configuración** in the navigation.

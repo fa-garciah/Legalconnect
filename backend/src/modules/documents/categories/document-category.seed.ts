@@ -17,7 +17,7 @@ import { sql } from 'drizzle-orm';
 import type { PlatformTx } from '../../../common/db/platform-context';
 
 /**
- * Firm-agnostic (FR-009, Principle III), including "Unclassified" — the entry an
+ * Firm-agnostic (FR-009, Principle III), including "Sin clasificar" — the entry an
  * upload naming no category resolves to (FR-010). Every entry is editable the moment
  * it exists.
  */
@@ -25,7 +25,8 @@ export const DEFAULT_DOCUMENT_CATEGORIES = [
   'Contrato',
   'Correspondencia',
   'Evidencia',
-  'Unclassified',
+  // 021 Decision 5 (migration 0045). Was the English "Unclassified" until 2026-09-23.
+  'Sin clasificar',
 ] as const;
 
 /**

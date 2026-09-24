@@ -100,8 +100,15 @@ export class S3ObjectStore implements ObjectStorePort {
     );
   }
 
-  async presignGet(key: string): Promise<PresignedUrl> {
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+  async presignGet(
+    key: string,
+    options: { readonly contentDisposition?: string } = {},
+  ): Promise<PresignedUrl> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ResponseContentDisposition: options.contentDisposition,
+    });
     const url = await getSignedUrl(this.client, command, { expiresIn: PRESIGNED_URL_TTL_SECONDS });
     return { url, expiresAt: new Date(Date.now() + PRESIGNED_URL_TTL_SECONDS * 1000) };
   }

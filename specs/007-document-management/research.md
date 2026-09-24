@@ -129,6 +129,10 @@ constraint over an application-level lock where one is available.
 
 ## D5 — Preview strategy by file family
 
+> **Amended 2026-09-23 by `021-frontend-documents` (Decision 3).** The conversion branch below was
+> never built: `converted-pdf` signs the original Office file. Clients treat it as `unsupported`
+> (download only) until a converter exists. The decision stands; the implementation is deferred.
+
 **Decision.** Inline preview renders natively for PDF and common image formats
 (client-side, in `frontend/src/app/documents/PreviewPane/`, following `016a`'s
 existing `frontend/src/feedback/` state-machine conventions for the
