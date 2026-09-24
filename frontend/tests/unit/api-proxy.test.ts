@@ -84,14 +84,14 @@ describe('the API proxy', () => {
     await POST(
       new Request('http://localhost:3000/api/lc/tenant/invitations', {
         method: 'POST',
-        headers: { 'x-step-up-token': 'elevation-123', authorization: 'Bearer forged' },
+        headers: { 'x-step-up-token': 'elev-5', authorization: 'Bearer forged' },
         body: '{}',
       }),
       ctx(['tenant', 'invitations']),
     );
 
     const sent = upstream.mock.calls[0]![1].headers as Record<string, string>;
-    expect(sent['x-step-up-token']).toBe('elevation-123');
+    expect(sent['x-step-up-token']).toBe('elev-5');
     expect(sent.authorization).toBe('Bearer the-api-access-token');
   });
 
