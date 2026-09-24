@@ -15,6 +15,7 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { DirectoryModule } from './modules/directory/directory.module';
 import { CaseCoreModule } from './modules/case-core/case-core.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 import { AuthModule } from './modules/auth/auth.module';
 
 /**
@@ -64,6 +65,8 @@ import { AuthModule } from './modules/auth/auth.module';
     // 007-document-management. Registers no resolver of its own — every route reuses
     // CaseCoreModule's AssignedScopeResolver via its own @ScopeTarget('caseId').
     DocumentsModule,
+    // 013-calendar-core. No resolver of its own: rows 44-45 are `tenant` scope.
+    CalendarModule,
     AuthModule,
   ],
   providers: [

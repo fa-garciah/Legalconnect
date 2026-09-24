@@ -112,6 +112,7 @@ async function main(): Promise<void> {
     await seedCaseCore(tenantIds[0]!, tenantIds[1]!);
     await seedDocumentCategories(tenantIds[0]!, tenantIds[1]!);
     await seedDocuments(tenantIds[0]!, tenantIds[1]!);
+    await seedCalendarEvents(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -450,6 +451,42 @@ async function seedDocuments(tenantA: string, tenantB: string): Promise<void> {
       );
     }
     console.log('seeded 1 fixture document per tenant');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 013-calendar-core. One firm-wide fixture event per tenant, for the reason `seedDocuments` gives:
+ * `no-context.test.ts` needs every registered tenant table non-empty while a tenant is active.
+ * Idempotent by title, so re-seeding adds nothing.
+ */
+async function seedCalendarEvents(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      const { rows: membershipRows } = await client.query<{ id: string }>(
+        `SELECT id FROM membership WHERE tenant_id = $1 ORDER BY created_at LIMIT 1`,
+        [tenantId],
+      );
+      const membershipId = membershipRows[0]?.id;
+      if (!membershipId) throw new Error(`seedCalendarEvents: no membership for tenant ${tenantId}`);
+
+      await client.query(
+        `INSERT INTO calendar_event (tenant_id, type, title, all_day, starts_on, created_by_membership_id)
+         SELECT $1, 'meeting', 'Junta semanal del despacho', true, current_date, $2
+          WHERE NOT EXISTS (
+            SELECT 1 FROM calendar_event WHERE tenant_id = $1 AND title = 'Junta semanal del despacho'
+          )`,
+        [tenantId, membershipId],
+      );
+    }
+    console.log('seeded 1 fixture calendar event per tenant');
   } finally {
     await client.end();
   }

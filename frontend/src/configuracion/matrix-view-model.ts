@@ -20,6 +20,7 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   { prefix: ['client'], title: 'Clientes' },
   { prefix: ['case'], title: 'Expedientes' },
   { prefix: ['document'], title: 'Documentos' },
+  { prefix: ['calendar'], title: 'Calendario' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -49,6 +50,8 @@ const LABELS: Readonly<Record<string, string>> = {
   'document.restore': 'Restaurar documentos retirados',
   'document.read_catalog': 'Consultar categorías de documentos',
   'document.manage_catalog': 'Crear y retirar categorías de documentos',
+  'calendar.read': 'Ver el calendario y sus recordatorios',
+  'calendar.manage': 'Crear, cambiar y cancelar eventos',
 };
 
 export interface MatrixRow {

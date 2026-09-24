@@ -445,3 +445,46 @@ describe('document copy is Spanish-only (021/T028)', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/*
+ * 013/T016 — the calendar. Its wire vocabulary is the event types and statuses: `hearing`,
+ * `deadline`, `meeting`, `other`, `scheduled`, `cancelled`. A firm reads "Audiencia",
+ * "Vencimiento", "Reunión", "Cancelado".
+ */
+import { CalendarView } from '@/app/calendario/CalendarView';
+import { EventDialog } from '@/app/calendario/EventDialog';
+
+const CALENDAR_WIRE_WORDS = /\b(hearing|deadline|meeting|scheduled|cancelled|all.?day|reminder)\b/i;
+
+function assertNoCalendarWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(CALENDAR_WIRE_WORDS);
+}
+
+describe('calendar copy is Spanish-only (013/T016)', () => {
+  const EVENT = {
+    id: 'ev1', type: 'hearing', title: 'Audiencia de pruebas', description: null, location: 'Juzgado 4',
+    allDay: false, startsAt: '2026-09-23T16:00:00.000Z', endsAt: null, startsOn: null, endsOn: null,
+    case: { id: 'k1', fileNumber: 'EXP-1' }, remindMinutesBefore: 60, status: 'cancelled',
+    cancelledAt: '2026-09-22T00:00:00Z', createdByMembershipId: 'm', createdAt: 'x',
+  };
+  const DEADLINE = { ...EVENT, id: 'ev2', type: 'deadline', title: 'Vence plazo', allDay: true, startsAt: null, startsOn: '2026-09-23', status: 'scheduled', cancelledAt: null };
+
+  it('CalendarView — grid, day list and reminders', async () => {
+    answer({ '/tenant/calendar/events': { items: [EVENT, DEADLINE] }, '/tenant/calendar/reminders': { items: [DEADLINE] } });
+    const { container } = withQueryClient(<CalendarView archetype="MP" today="2026-09-23" />);
+    await adminScreen.findAllByText('Vence plazo');
+    assertOnlySpanish(container);
+    assertNoCalendarWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('EventDialog', async () => {
+    answer({ '/tenant/cases': { items: [], nextCursor: null } });
+    withQueryClient(<EventDialog open mode="create" date="2026-09-23" onClose={() => {}} onSaved={() => {}} />);
+    await adminScreen.findByLabelText(/^título/i);
+    assertOnlySpanish(document.body);
+    assertNoCalendarWireVocabulary(document.body);
+    vi.unstubAllGlobals();
+  });
+});

@@ -111,7 +111,8 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredArchetypes: INTERNAL,
     available: false,
   },
-  { id: 'calendario', label: 'Calendario', href: '/calendario', icon: 'calendar', requiredArchetypes: INTERNAL, available: false },
+  // 013 (FR-013). BM holds no calendar capability: case-linked events are matter content.
+  { id: 'calendario', label: 'Calendario', href: '/calendario', icon: 'calendar', requiredArchetypes: ['MP', 'AA', 'PL', 'CM', 'SA'], available: true },
   { id: 'kpis', label: 'KPIs', href: '/kpis', icon: 'bar-chart', requiredArchetypes: INTERNAL, available: false },
   {
     id: 'conectores',

@@ -106,6 +106,12 @@ export const CAPABILITIES = {
   'document.restore': { scope: 'assigned' },
   'document.read_catalog': { scope: 'tenant' },
   'document.manage_catalog': { scope: 'tenant' },
+  // 013-calendar-core, rows 44-45. Both `tenant`, for the reason row 29 (`case.read_list`) is:
+  // a resolver returns a boolean, and a member with no assignments must get a calendar without
+  // case events, not a refusal. Case-linked events are narrowed by live assignment inside the
+  // query (013/FR-006); a single case-linked event answers 404 when its case is unreachable.
+  'calendar.read': { scope: 'tenant' },
+  'calendar.manage': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

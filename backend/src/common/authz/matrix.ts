@@ -108,4 +108,7 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   // structurally identical catalog.
   'document.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'document.manage_catalog': new Set(['MP', 'SA']),
+  // 013-calendar-core, rows 44-45. BM holds neither: a case-linked event carries matter content.
+  'calendar.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'calendar.manage': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
 };

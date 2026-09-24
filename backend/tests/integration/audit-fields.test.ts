@@ -146,7 +146,8 @@ describe('audit entry fields and channel gating', () => {
     // growth, and excluding an action from the count because it is tested
     // elsewhere would defeat that.
     // 014 adds `membership.list_read` (Decision 5), channel-gated like `case.read`.
-    expect(AUDIT_ACTIONS).toHaveLength(55);
+    // 013 adds three calendar actions, none gated.
+    expect(AUDIT_ACTIONS).toHaveLength(58);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
@@ -154,7 +155,7 @@ describe('audit entry fields and channel gating', () => {
     expect(GATED).toHaveLength(6);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
     expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
-    expect(UNCONDITIONAL).toHaveLength(55 - 6 - 4 - 15);
+    expect(UNCONDITIONAL).toHaveLength(58 - 6 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

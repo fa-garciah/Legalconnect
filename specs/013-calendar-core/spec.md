@@ -137,7 +137,8 @@ list of the day they pick.
   time has passed and whose start has not (Decision 2). Nothing is sent anywhere.
 - **FR-012**: Title ≤ 200 characters, location ≤ 200, description ≤ 2000; trimmed; title required.
 - **FR-013**: The `calendario` navigation item becomes available for MP, AA, PL, CM, SA, and shows
-  the reminders count.
+  the reminders count. *(Built without the count — see quickstart-results.md, Deviations: the count
+  is shown at the top of `/calendario` instead.)*
 - **FR-014**: All copy is Spanish; no colour literals; the new components join
   `spanish-copy.test.tsx`; the capability rows join both mirrors and their sync tests.
 
@@ -224,4 +225,4 @@ attendees, and any message delivery.
 - [x] Zero `[NEEDS CLARIFICATION]` markers — every open point is a delegated decision above
 - [x] Permission matrix declared (rows 44–45) with scope reasoning
 - [x] Decisions 1–5 taken under the CC technical lead's delegation of 2026-09-23 — **for his review**
-- [ ] `master-user-story-catalog.md` amended: US02 and US03 of EP05 moved to MVP by this slice
+- [x] `master-user-story-catalog.md` amended: US02 and US03 of EP05 moved to MVP by this slice

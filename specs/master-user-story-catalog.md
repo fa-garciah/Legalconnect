@@ -297,8 +297,8 @@ Every other epic depends on this one.
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
 | US01-EP05-CAL-ViewUpcomingEvents | AA | Unified calendar of hearings, deadlines, meetings | MVP |
-| US02-EP05-CAL-ScheduleNewEvent | PL | Create event from calendar | IT2 |
-| US03-EP05-CAL-EditAndRescheduleEvent | CM | Edit and reschedule | IT2 |
+| US02-EP05-CAL-ScheduleNewEvent | PL | Create event from calendar | **MVP** (013 Decision 1; was IT2) |
+| US03-EP05-CAL-EditAndRescheduleEvent | CM | Edit and reschedule | **MVP** (013 Decision 1; was IT2) |
 | US04-EP05-CAL-ReceiveEventNotifications | AA | Automated reminders | MVP |
 | US05-EP05-CAL-FilterCalendarByCase | CM | Filter by case or client | IT2 |
 | US06-EP05-CAL-SyncJudicialDeadlines | CM | Auto-sync deadlines from court portals | IT3 |

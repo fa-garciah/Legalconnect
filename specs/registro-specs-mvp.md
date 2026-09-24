@@ -59,7 +59,7 @@ Cerrada la fundación, `plan.md` de 001 queda sin ítems abiertos.
 | **010-billing-core** | EP09 US01/05/09/12 | **POR ESCRIBIR** | — |
 | **011-cfdi-stamping** | *ninguna* | **NO EXISTE** | Doble: PAC sigue `[PENDING]` **y** el catálogo no tiene una sola historia de timbrado, cancelación, complemento de pago o multi-emisor de CSD. Ver §4 |
 | **012-quotes-and-payments** | EP15 US01–US04 | **BLOQUEADO** | Registro de pago vive en EP09 US12 **y** EP15 US04. Si vive en dos sitios, el ledger diverge |
-| **013-calendar-core** | EP05 US01/04 | **POR ESCRIBIR** | Sin sync judicial ni export a Google (conflictos de alcance 3) |
+| **013-calendar-core** | EP05 US01/02/03/04 | **IMPLEMENTADO 2026-09-23** | Sin sync judicial ni export a Google (conflictos de alcance 3). US02/03 subidas a MVP por la Decisión 1; recordatorios solo en la app (Decisión 2) |
 | **014-admin-ui** | EP10 US01–US04 | **POR ESCRIBIR** | Debe **consumir** el mecanismo de 002/004, no reimplementarlo |
 | **015-dashboards** | EP01 US01–US03 · EP06 US01/09 | **POR ESCRIBIR** | Al final por definición: lee de todo lo anterior. Requiere `## Exposed Read Contracts` de EP00/02/04/06/09/12/14. Resolver solape EP01 US01 vs. EP06 US01 |
 

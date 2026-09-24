@@ -63,6 +63,12 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
     table: 'case_status',
     scopeColumn: 'tenant_id',
   },
+  // 013-calendar-core (migration 0046).
+  {
+    table: 'calendar_event',
+    scopeColumn: 'tenant_id',
+    note: 'A case-linked event is further narrowed by live assignment in calendar.repository.ts (013/FR-006); RLS scopes it to the firm.',
+  },
   {
     table: 'matter_type',
     scopeColumn: 'tenant_id',

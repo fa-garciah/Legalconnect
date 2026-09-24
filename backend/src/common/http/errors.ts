@@ -460,3 +460,10 @@ export class LimitsExceeded extends HttpException {
     );
   }
 }
+
+/** 013-calendar-core. Editing or cancelling an event that is already cancelled. */
+export class EventCancelled extends HttpException {
+  constructor() {
+    super(errorBody('event_cancelled', 'The event is cancelled.'), HttpStatus.CONFLICT);
+  }
+}

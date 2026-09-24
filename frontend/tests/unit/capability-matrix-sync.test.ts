@@ -117,6 +117,15 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'document.restore': new Set(['MP', 'SA']),
   'document.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'document.manage_catalog': new Set(['MP', 'SA']),
+
+  /*
+   * Rows 44-45, from 013/spec.md's Capability Matrix. Columns there are MP AA PL CM BM SA PO.
+   *
+   *   | 44 | calendar.read   | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 45 | calendar.manage | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   */
+  'calendar.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'calendar.manage': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

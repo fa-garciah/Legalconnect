@@ -124,6 +124,11 @@ export const AUDIT_ACTIONS = [
   // each member's email, so reading it is a read of personal data (Principle VI) and is
   // recorded. Channel-gated below, for the reason `case.read` is.
   'membership.list_read',
+  // Slice 013 (FR-009, migration 0046). Three changes; none channel-gated, and reading the
+  // calendar is not audited at all, as 006's case list is not.
+  'calendar_event.created',
+  'calendar_event.updated',
+  'calendar_event.cancelled',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -236,6 +241,9 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'stepup.failed': 'step_up_elevation',
   // 014. The subject is the firm whose member list was read — there is no single member.
   'membership.list_read': 'tenant',
+  'calendar_event.created': 'calendar_event',
+  'calendar_event.updated': 'calendar_event',
+  'calendar_event.cancelled': 'calendar_event',
 };
 
 export type Channel = 'interactive' | 'automated';

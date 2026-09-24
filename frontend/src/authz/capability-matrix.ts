@@ -81,4 +81,8 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'document.restore': new Set<Subject>(['MP', 'SA']),
   'document.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
   'document.manage_catalog': new Set<Subject>(['MP', 'SA']),
+
+  // 013 rows 44-45. BM holds neither: a case-linked event carries matter content.
+  'calendar.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'calendar.manage': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
 };
