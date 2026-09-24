@@ -27,7 +27,9 @@ function objectStoreConfig(): S3ObjectStoreConfig {
     throw new Error('OBJECT_STORE_BUCKET, OBJECT_STORE_ACCESS_KEY_ID and OBJECT_STORE_SECRET_ACCESS_KEY are required');
   }
   return {
-    endpoint: process.env.OBJECT_STORE_ENDPOINT,
+    // Empty means real AWS S3: the SDK derives the endpoint from the region. An empty string
+    // passed through would be taken as an endpoint and fail, so it becomes `undefined`.
+    endpoint: process.env.OBJECT_STORE_ENDPOINT || undefined,
     region: process.env.OBJECT_STORE_REGION ?? 'mx-central-1',
     bucket,
     accessKeyId,
