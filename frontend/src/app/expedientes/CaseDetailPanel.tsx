@@ -19,6 +19,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -171,6 +173,17 @@ function CaseDetailContent({
         </h3>
         <CaseTeam team={detail.team} />
       </section>
+
+      {/* 021 (FR-001, Decision 1). Documents have their own page: a preview needs the width. */}
+      {can('document.read', archetype) ? (
+        <Link
+          href={`/expedientes/${caseId}/documentos`}
+          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          <FileText aria-hidden className="h-4 w-4" />
+          Documentos del expediente
+        </Link>
+      ) : null}
 
       {can('case.change_status', archetype) ? (
         <StatusControl caseId={caseId} currentStatusId={detail.status.id} />

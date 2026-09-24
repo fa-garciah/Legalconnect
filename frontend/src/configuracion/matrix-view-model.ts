@@ -19,6 +19,7 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   { prefix: ['directory'], title: 'Directorio y cargos' },
   { prefix: ['client'], title: 'Clientes' },
   { prefix: ['case'], title: 'Expedientes' },
+  { prefix: ['document'], title: 'Documentos' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -40,6 +41,14 @@ const LABELS: Readonly<Record<string, string>> = {
   'case.create': 'Abrir expedientes nuevos',
   'case.change_status': 'Cambiar el estado de un expediente',
   'case.read_catalog': 'Consultar catálogos de expedientes',
+  'document.upload': 'Subir documentos a un expediente',
+  'document.read': 'Ver y previsualizar documentos',
+  'document.download': 'Descargar documentos',
+  'document.change_category': 'Cambiar la categoría de un documento',
+  'document.withdraw': 'Retirar documentos',
+  'document.restore': 'Restaurar documentos retirados',
+  'document.read_catalog': 'Consultar categorías de documentos',
+  'document.manage_catalog': 'Crear y retirar categorías de documentos',
 };
 
 export interface MatrixRow {

@@ -66,67 +66,67 @@ Stories: US1 upload · US2 find & read · US3 organize (category, withdraw/resto
 
 ## Phase 2: Frontend foundations
 
-- [ ] T014 [P] Unit tests `frontend/tests/unit/documents/format.test.ts` (sizes in KB/MB, es-MX;
+- [x] T014 [P] Unit tests `frontend/tests/unit/documents/format.test.ts` (sizes in KB/MB, es-MX;
       "Unclassified" and "Sin clasificar" both display as "Sin clasificar") and
       `upload-rules.test.ts` (allowed MIME list equals `007`'s; `.zip`/`.exe` refused; over 25 MB
       refused). **See them fail.**
-- [ ] T015 Implement `frontend/src/documents/format.ts`, `upload-rules.ts`, `refusal-copy.ts`.
-- [ ] T016 Add rows 36–43 to `frontend/src/authz/capability-matrix.ts` and, transcribed from
+- [x] T015 Implement `frontend/src/documents/format.ts`, `upload-rules.ts`, `refusal-copy.ts`.
+- [x] T016 Add rows 36–43 to `frontend/src/authz/capability-matrix.ts` and, transcribed from
       `007/spec.md`, to `capability-matrix-sync.test.ts`'s fixture.
-- [ ] T017 `listWithdrawnDocuments` in `frontend/src/app/documents/api.ts`.
+- [x] T017 `listWithdrawnDocuments` in `frontend/src/app/documents/api.ts`.
 
 ---
 
 ## Phase 3: US1 — Upload (P1) 🎯 MVP
 
-- [ ] T018 [US1] Component test `frontend/tests/component/documentos/UploadDialog.test.tsx`: sends
+- [x] T018 [US1] Component test `frontend/tests/component/documentos/UploadDialog.test.tsx`: sends
       `FormData` with `file` and optional `categoryId`; offers active categories only; refuses a
       `.zip` and a 26 MB file before sending; `403 limit_reached` shows the plan-limit copy;
       `413 file_too_large` and `400` show Spanish copy, never the server message; not drawn for BM.
       **See it fail.**
-- [ ] T019 [US1] Implement `UploadDialog.tsx`.
+- [x] T019 [US1] Implement `UploadDialog.tsx`.
 
 ## Phase 4: US2 — Find and read (P2)
 
-- [ ] T020 [P] [US2] Component test `DocumentList.test.tsx`: name, category (retired marked
+- [x] T020 [P] [US2] Component test `DocumentList.test.tsx`: name, category (retired marked
       "Retirada"), size, date; newest first; empty state copy; `404` renders the opaque state.
       **See it fail.**
-- [ ] T021 [P] [US2] Component test `PreviewPane.test.tsx`: preview is requested only on "Ver";
+- [x] T021 [P] [US2] Component test `PreviewPane.test.tsx`: preview is requested only on "Ver";
       `pdf` → iframe titled with the file name; `image` → img with alt; `converted-pdf` and
       `unsupported` → "no disponible" + "Descargar"; an expired URL is requested again; nothing is
       written to browser storage. **See it fail.**
-- [ ] T022 [US2] Implement `DocumentList.tsx`, `PreviewPane.tsx`, the download action,
+- [x] T022 [US2] Implement `DocumentList.tsx`, `PreviewPane.tsx`, the download action,
       `DocumentsView.tsx` and `page.tsx`; add the "Documentos" link to `CaseDetailPanel.tsx`.
 
 ## Phase 5: US3 — Organize (P3)
 
-- [ ] T023 [P] [US3] Component test `ChangeCategoryDialog.test.tsx`: drawn for MP/CM/SA only;
+- [x] T023 [P] [US3] Component test `ChangeCategoryDialog.test.tsx`: drawn for MP/CM/SA only;
       active categories only; `422` re-reads the catalog. **See it fail.**
-- [ ] T024 [P] [US3] Component test `WithdrawRestore.test.tsx`: "Retirar" for MP/SA only, confirms
+- [x] T024 [P] [US3] Component test `WithdrawRestore.test.tsx`: "Retirar" for MP/SA only, confirms
       first, says it is not deleted; "Retirados" lists withdrawn documents; "Restaurar" without
       confirmation; `409` re-reads. **See it fail.**
-- [ ] T025 [US3] Implement `ChangeCategoryDialog.tsx`, withdraw, and `WithdrawnList.tsx`.
+- [x] T025 [US3] Implement `ChangeCategoryDialog.tsx`, withdraw, and `WithdrawnList.tsx`.
 
 ## Phase 6: US4 — Categories tab (P4)
 
-- [ ] T026 [US4] Component test `DocumentCategoriesTab.test.tsx`: lists active and retired; create
+- [x] T026 [US4] Component test `DocumentCategoriesTab.test.tsx`: lists active and retired; create
       and retire for MP/SA only; duplicate refused before sending; `409` Spanish copy; the tab is
       absent for an archetype without `document.manage_catalog`. **See it fail.**
-- [ ] T027 [US4] Implement `DocumentCategoriesTab.tsx` and add the tab to `ConfiguracionView.tsx`.
+- [x] T027 [US4] Implement `DocumentCategoriesTab.tsx` and add the tab to `ConfiguracionView.tsx`.
 
 ---
 
 ## Phase 7: Polish
 
-- [ ] T028 Add every new component to `frontend/tests/component/spanish-copy.test.tsx`, with a
+- [x] T028 Add every new component to `frontend/tests/component/spanish-copy.test.tsx`, with a
       wire-vocabulary check for `withdrawn`, `active`, `retired`, `Unclassified`, `pending`.
-- [ ] T029 e2e `frontend/tests/e2e/documentos.spec.ts`: upload a PDF → preview renders inline
+- [x] T029 e2e `frontend/tests/e2e/documentos.spec.ts`: upload a PDF → preview renders inline
       (MinIO framing) → download keeps its name → change category → withdraw → restore; no signed
       URL in browser storage.
-- [ ] T030 Full gates: backend `npm test -- --coverage`; frontend `npm test`, `typecheck`, `lint`,
+- [x] T030 Full gates: backend `npm test -- --coverage`; frontend `npm test`, `typecheck`, `lint`,
       `build`; zero colour literals.
-- [ ] T031 `quickstart.md` and `quickstart-results.md`: what was verified by hand, what was not.
-- [ ] T032 Mark `007`'s T044–T047 as delivered by `021`, and T050 as done (catalog rows added here).
+- [x] T031 `quickstart.md` and `quickstart-results.md`: what was verified by hand, what was not.
+- [x] T032 Mark `007`'s T044–T047 as delivered by `021`, and T050 as done (catalog rows added here).
 
 ## Dependencies
 
@@ -136,5 +136,7 @@ Stories: US1 upload · US2 find & read · US3 organize (category, withdraw/resto
 
 ## Summary
 
-- **Total**: 32 tasks · **Done**: 0
+- **Total**: 32 tasks · **Done**: 32
+- **Deviation**: T021's "expired URL is requested again" is implemented as a 4-minute refresh while
+  the pane is open (the URL lives 5); it is not asserted by a test (timers), only by reading.
 - Backend touches `007` only; no capability, audit action or dependency is added.

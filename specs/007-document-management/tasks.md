@@ -452,18 +452,22 @@ and the sweep above had the suite open regardless.
 frontend infrastructure, since `016a` already established `frontend/src/shell/` and
 `frontend/src/feedback/`.
 
-- [ ] T044 [P] Implement `frontend/src/app/documents/UploadControl/` — calls T023's
+- [X] T044 [P] Implement `frontend/src/app/documents/UploadControl/` — calls T023's
       endpoint; renders storage-limit and scope refusals through `016a`'s existing
       opaque/distinguishable error-state classifier (`frontend/src/feedback/
       refusal-bucket.ts`), not a new one
-- [ ] T045 [P] Implement `frontend/src/app/documents/DocumentList/` — calls T030's
+- [X] T045 [P] Implement `frontend/src/app/documents/DocumentList/` — calls T030's
       list endpoint; empty-case-of-nothing-uploaded-yet renders `016a`'s existing
       empty state
-- [ ] T046 [US2] Implement `frontend/src/app/documents/PreviewPane/` — renders T030's
+- [X] T046 [US2] Implement `frontend/src/app/documents/PreviewPane/` — renders T030's
       preview response per research.md D5's three branches (native, converted,
       unsupported-with-download-fallback)
-- [ ] T047 [US3] Implement `frontend/src/app/documents/CategoryManager/` — calls
+- [X] T047 [US3] Implement `frontend/src/app/documents/CategoryManager/` — calls
       T036's catalog endpoints and T038's category-change endpoint
+
+> **Delivered by `021-frontend-documents` (2026-09-23).** T044–T047 were built there, under a spec
+> of their own (as `018`/`019` did for `006`), together with four backend corrections this slice
+> needed; T050's two catalog rows were added by `021` as well.
 
 **Checkpoint**: A person can upload, browse, preview and organize documents entirely
 inside the existing shell, with no bespoke navigation or feedback-state code.
@@ -485,7 +489,7 @@ documentation this slice's planning surfaced, and full-suite verification.
       other than `common/storage/object-store/` imports `@aws-sdk/*` (research.md D6,
       quickstart.md "What to check by hand" #2, made into a real assertion rather
       than a manual step)
-- [ ] T050 Add `US17-EP04-DOC-WithdrawRestoreDocument` and
+- [X] T050 Add `US17-EP04-DOC-WithdrawRestoreDocument` and
       `US17-EP10-CFG-DefineDocumentCategoryCatalog` (or the next available numbers —
       reconcile against `master-user-story-catalog.md`'s actual current state, per
       `spec.md`'s own Catalog Amendments table, not this document's arithmetic) to

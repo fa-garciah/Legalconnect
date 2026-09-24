@@ -95,6 +95,28 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'directory.assign_position': new Set(['MP', 'SA']),
   'directory.manage_catalog': new Set(['MP', 'SA']),
   'directory.read': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
+
+  /*
+   * Rows 36-43, from 007/spec.md's Capability Matrix, added by `021-frontend-documents`.
+   * Columns there are MP AA PL CM BM SA PO.
+   *
+   *   | 36 | Upload a document               | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 37 | Read a case's documents         | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 38 | Download a document             | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 39 | Change a document's category    | MP ✅ AA ❌ PL ❌ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 40 | Withdraw a document             | MP ✅ AA ❌ PL ❌ CM ❌ BM ❌ SA ✅ PO ❌ |
+   *   | 41 | Restore a withdrawn document    | MP ✅ AA ❌ PL ❌ CM ❌ BM ❌ SA ✅ PO ❌ |
+   *   | 42 | Read the category catalog       | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   *   | 43 | Manage the category catalog     | MP ✅ AA ❌ PL ❌ CM ❌ BM ❌ SA ✅ PO ❌ |
+   */
+  'document.upload': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.download': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.change_category': new Set(['MP', 'CM', 'SA']),
+  'document.withdraw': new Set(['MP', 'SA']),
+  'document.restore': new Set(['MP', 'SA']),
+  'document.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.manage_catalog': new Set(['MP', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

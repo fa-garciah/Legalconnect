@@ -11,6 +11,7 @@ import type { Archetype } from '@/session/types';
 import { UsersTab } from './components/UsersTab';
 import { RolesTab } from './components/RolesTab';
 import { PermissionsMatrixView } from './components/PermissionsMatrixView';
+import { DocumentCategoriesTab } from './components/DocumentCategoriesTab';
 
 export interface ConfiguracionViewProps {
   readonly archetype: Archetype;
@@ -29,9 +30,10 @@ export function ConfiguracionView({ archetype }: ConfiguracionViewProps): React.
       </div>
 
       <Tabs defaultValue="usuarios">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="usuarios">Usuarios e invitaciones</TabsTrigger>
           <TabsTrigger value="cargos">Cargos y roles</TabsTrigger>
+          <TabsTrigger value="documentos">Categorías de documentos</TabsTrigger>
           <TabsTrigger value="matriz">Matriz de permisos</TabsTrigger>
         </TabsList>
         <TabsContent value="usuarios" className="mt-6">
@@ -39,6 +41,10 @@ export function ConfiguracionView({ archetype }: ConfiguracionViewProps): React.
         </TabsContent>
         <TabsContent value="cargos" className="mt-6">
           <RolesTab archetype={archetype} />
+        </TabsContent>
+        {/* 021 Decision 6. */}
+        <TabsContent value="documentos" className="mt-6">
+          <DocumentCategoriesTab archetype={archetype} />
         </TabsContent>
         <TabsContent value="matriz" className="mt-6">
           <PermissionsMatrixView />

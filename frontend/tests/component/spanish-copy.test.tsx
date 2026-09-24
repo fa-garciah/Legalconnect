@@ -380,3 +380,68 @@ describe('administration copy is Spanish-only (014/T028)', () => {
     assertNoAdminWireVocabulary(container);
   });
 });
+
+/*
+ * 021/T028 — the documents screens.
+ *
+ * The wire's vocabulary here: `withdrawn`, `active`, `retired`, the `renderAs` values
+ * (`unsupported`, `converted-pdf`), and — the one that had shipped — the default category's
+ * English name, `Unclassified`, which every firm saw before 021's Decision 5.
+ */
+import { UploadDialog } from '@/app/expedientes/[caseId]/documentos/UploadDialog';
+import { DocumentsView } from '@/app/expedientes/[caseId]/documentos/DocumentsView';
+import { WithdrawnList } from '@/app/expedientes/[caseId]/documentos/WithdrawnList';
+import { DocumentCategoriesTab } from '@/app/configuracion/components/DocumentCategoriesTab';
+
+const DOCUMENT_WIRE_WORDS = /\b(withdrawn|active|retired|unclassified|unsupported|converted|pending|document|category)\b/i;
+
+function assertNoDocumentWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(DOCUMENT_WIRE_WORDS);
+}
+
+describe('document copy is Spanish-only (021/T028)', () => {
+  const DOC = {
+    id: 'd1', caseId: 'k1', categoryId: 'c2', categoryName: 'Unclassified', categoryStatus: 'retired',
+    originalFilename: 'contrato.pdf', mimeType: 'application/pdf', sizeBytes: 482913,
+    uploadedByMembershipId: 'm1', uploadedAt: '2026-09-20T17:00:00Z', status: 'active', withdrawnAt: null,
+  };
+  const CATEGORIES = { items: [{ id: 'c1', name: 'Contrato', status: 'active' }, { id: 'c2', name: 'Unclassified', status: 'retired' }] };
+  const CASE = { id: 'k1', fileNumber: 'EXP-1', client: { id: 'cl', legalName: 'Grupo Torres', status: 'active' }, status: { id: 's', name: 'En proceso', isClosing: false, catalogStatus: 'active' }, matterType: null, venue: null, openedOn: '2026-09-01', closedOn: null, team: [] };
+
+  it('UploadDialog', async () => {
+    answer({ '/tenant/document-categories': CATEGORIES });
+    withQueryClient(<UploadDialog open caseId="k1" onClose={() => {}} onUploaded={() => {}} />);
+    await adminScreen.findByRole('option', { name: 'Contrato' });
+    assertOnlySpanish(document.body);
+    assertNoDocumentWireVocabulary(document.body);
+    vi.unstubAllGlobals();
+  });
+
+  it('DocumentsView — list, tabs and empty preview', async () => {
+    answer({ '/tenant/cases/k1': CASE, '/tenant/cases/k1/documents': { items: [DOC] } });
+    const { container } = withQueryClient(<DocumentsView caseId="k1" archetype="MP" />);
+    await adminScreen.findByText('contrato.pdf');
+    assertOnlySpanish(container);
+    assertNoDocumentWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('WithdrawnList', async () => {
+    answer({ '/tenant/cases/k1/documents/withdrawn': { items: [{ ...DOC, status: 'withdrawn', withdrawnAt: '2026-09-21T00:00:00Z' }] } });
+    const { container } = withQueryClient(<WithdrawnList caseId="k1" />);
+    await adminScreen.findByText('contrato.pdf');
+    assertOnlySpanish(container);
+    assertNoDocumentWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('DocumentCategoriesTab', async () => {
+    answer({ '/tenant/document-categories': CATEGORIES });
+    const { container } = withQueryClient(<DocumentCategoriesTab archetype="MP" />);
+    await adminScreen.findByText('Contrato');
+    assertOnlySpanish(container);
+    assertNoDocumentWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+});

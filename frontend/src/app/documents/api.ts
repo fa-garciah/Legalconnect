@@ -69,6 +69,11 @@ export function listDocuments(caseId: string): Promise<{ items: readonly Documen
   return apiFetch<{ items: readonly DocumentSummary[] }>(`/tenant/cases/${caseId}/documents`).then(unwrap);
 }
 
+/** 021 Decision 2 (contract §2a). MP and SA only; everyone else is refused 403. */
+export function listWithdrawnDocuments(caseId: string): Promise<{ items: readonly DocumentSummary[] }> {
+  return apiFetch<{ items: readonly DocumentSummary[] }>(`/tenant/cases/${caseId}/documents/withdrawn`).then(unwrap);
+}
+
 export function uploadDocument(caseId: string, file: File, categoryId?: string): Promise<DocumentSummary> {
   const form = new FormData();
   form.append('file', file);

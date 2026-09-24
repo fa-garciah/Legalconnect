@@ -70,4 +70,15 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'directory.manage_catalog': new Set<Subject>(['SA', 'MP']),
   'directory.assign_position': new Set<Subject>(['SA', 'MP']),
   'directory.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
+
+  // 007 rows 36-43, added by `021-frontend-documents`. `BM` holds none: documents are matter
+  // content (Principle VI). All eight are `assigned` or `tenant` scope; none is step-up gated.
+  'document.upload': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.download': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.change_category': new Set<Subject>(['MP', 'CM', 'SA']),
+  'document.withdraw': new Set<Subject>(['MP', 'SA']),
+  'document.restore': new Set<Subject>(['MP', 'SA']),
+  'document.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  'document.manage_catalog': new Set<Subject>(['MP', 'SA']),
 };
