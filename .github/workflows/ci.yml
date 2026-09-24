@@ -64,6 +64,7 @@ jobs:
       # that against one seeded tenant, and the cap is 002's own rate limit doing its job
       # — not something a CI run should trip over.
       INVITATION_ISSUANCE_RATE_PER_HOUR: '2000'
+      DOCUMENT_MAX_UPLOAD_BYTES: '26214400'
       # 003's parameters. Every one is a PARAMETER, NOT A SWITCH: none can disable
       # enrollment or the challenge, and mfa-no-disable-path.test.ts asserts that
       # exhaustively over this whole set rather than by sampling (FR-007, SC-004).
