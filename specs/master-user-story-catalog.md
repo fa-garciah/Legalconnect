@@ -285,6 +285,7 @@ Every other epic depends on this one.
 | US14-EP04-DOC-ExportDocumentsByCase | SA | Export all case documents as folder | IT3 |
 | US15-EP04-DOC-LinkDocumentsToCaseFile | CM | Auto-link to related case | MVP |
 | US16-EP04-DOC-AccessDocumentsOnMobile | AA | View/download from phone | IT3 |
+| **US17-EP04-DOC-WithdrawRestoreDocument** | MP | Take a wrong upload out of a matter, and put it back | 007 + 021 |
 
 > **US06 promoted to MVP.** Constitution Principle IV (deny-by-default) makes
 > document permissions non-deferrable — documents cannot ship without them.
@@ -414,6 +415,7 @@ Every other epic depends on this one.
 | **US14-EP10-CFG-DefineCaseStatusCatalog** | MP | Maintain the firm's own case statuses, and declare which of them end a matter | 006 |
 | **US15-EP10-CFG-DefineMatterTypeCatalog** | MP | Maintain the firm's own matter types | 006 |
 | **US16-EP10-CFG-DefineVenueCatalog** | MP | Maintain the firm's own courts and venues | 006 |
+| **US17-EP10-CFG-DefineDocumentCategoryCatalog** | MP | Maintain the firm's own document categories | 007 + 021 |
 
 > **US14–US16 added 2026-08-26 by slice `006-client-case-core`** (Principle I). The
 > conceptual model assumed case status, matter type and venue lived in the firm directory;
