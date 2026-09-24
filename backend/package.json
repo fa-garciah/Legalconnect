@@ -26,7 +26,8 @@
     "test:isolation": "vitest run tests/integration/isolation",
     "test:rls": "vitest run tests/integration/rls-coverage.test.ts",
     "verify:role": "vitest run tests/integration/verify-role.test.ts",
-    "test:auth-coverage": "vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts tests/integration/backup-codes.test.ts tests/integration/totp-secret-custody.test.ts"
+    "test:auth-coverage": "vitest run tests/integration/mfa-enforcement.test.ts tests/integration/mfa-no-disable-path.test.ts tests/integration/backup-codes.test.ts tests/integration/totp-secret-custody.test.ts",
+    "check:storage": "node scripts/check-storage.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "3.1129.0",

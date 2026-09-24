@@ -9,6 +9,7 @@ import { Injectable } from '@nestjs/common';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -37,6 +38,7 @@ export type S3ObjectStoreConfigSource = S3ObjectStoreConfig | (() => S3ObjectSto
 export class S3ObjectStore implements ObjectStorePort {
   private readonly configure: () => S3ObjectStoreConfig;
   private resolved?: { readonly client: S3Client; readonly bucket: string };
+  private ready?: Promise<{ readonly client: S3Client; readonly bucket: string }>;
 
   /**
    * Accepts a thunk so configuration errors surface **lazily**.
@@ -61,38 +63,58 @@ export class S3ObjectStore implements ObjectStorePort {
     this.configure = typeof config === 'function' ? config : () => config;
   }
 
-  /** Memoised: the client is built once, on the first call that needs it. */
-  private get store(): { readonly client: S3Client; readonly bucket: string } {
-    if (!this.resolved) {
-      const config = this.configure();
-      this.resolved = {
-        bucket: config.bucket,
-        client: new S3Client({
-          endpoint: config.endpoint,
-          region: config.region,
-          forcePathStyle: config.forcePathStyle,
-          credentials: {
-            accessKeyId: config.accessKeyId,
-            secretAccessKey: config.secretAccessKey,
-          },
-        }),
-      };
+  /**
+   * Memoised: the client is built once, on the first call that needs it.
+   *
+   * **The bucket's own region wins over `OBJECT_STORE_REGION`** on real AWS (no custom
+   * endpoint). Found pointing the app at a real bucket: the configured region was `us-east-1`,
+   * the bucket lived in `eu-central-1`, and every request failed with `PermanentRedirect`. The
+   * SDK's `followRegionRedirects` would rescue ordinary requests but not a PRESIGNED URL, which
+   * is signed locally with whatever region the client has — so the preview and download links
+   * would still be wrong. Instead, the first use asks AWS where the bucket is (`HeadBucket`,
+   * whose answer or 301 carries `x-amz-bucket-region`) and builds the client for that region.
+   * Switching buckets is then only a matter of credentials and name.
+   */
+  private store(): Promise<{ readonly client: S3Client; readonly bucket: string }> {
+    // A failed resolution is not memoised: the next request tries again.
+    this.ready ??= this.resolve().catch((error: unknown) => {
+      this.ready = undefined;
+      throw error;
+    });
+    return this.ready;
+  }
+
+  private build(config: S3ObjectStoreConfig, region: string): S3Client {
+    return new S3Client({
+      endpoint: config.endpoint,
+      region,
+      forcePathStyle: config.forcePathStyle,
+      credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+    });
+  }
+
+  private async resolve(): Promise<{ readonly client: S3Client; readonly bucket: string }> {
+    const config = this.configure();
+    const client = this.build(config, config.region);
+    if (config.endpoint) {
+      // MinIO or another S3-compatible service: regions are nominal, nothing to discover.
+      this.resolved = { client, bucket: config.bucket };
+      return this.resolved;
     }
+    const actual = await bucketRegion(client, config.bucket);
+    const region = actual && actual !== config.region ? actual : config.region;
+    if (region !== config.region) {
+      console.warn(`[object-store] OBJECT_STORE_REGION is ${config.region} but the bucket is in ${region}; using ${region}.`);
+    }
+    this.resolved = { client: region === config.region ? client : this.build(config, region), bucket: config.bucket };
     return this.resolved;
   }
 
-  private get client(): S3Client {
-    return this.store.client;
-  }
-
-  private get bucket(): string {
-    return this.store.bucket;
-  }
-
   async put(input: PutObjectInput): Promise<void> {
-    await this.client.send(
+    const { client, bucket } = await this.store();
+    await client.send(
       new PutObjectCommand({
-        Bucket: this.bucket,
+        Bucket: bucket,
         Key: input.key,
         Body: input.body,
         ContentType: input.contentType,
@@ -104,17 +126,34 @@ export class S3ObjectStore implements ObjectStorePort {
     key: string,
     options: { readonly contentDisposition?: string } = {},
   ): Promise<PresignedUrl> {
+    const { client, bucket } = await this.store();
     const command = new GetObjectCommand({
-      Bucket: this.bucket,
+      Bucket: bucket,
       Key: key,
       ResponseContentDisposition: options.contentDisposition,
     });
-    const url = await getSignedUrl(this.client, command, { expiresIn: PRESIGNED_URL_TTL_SECONDS });
+    const url = await getSignedUrl(client, command, { expiresIn: PRESIGNED_URL_TTL_SECONDS });
     return { url, expiresAt: new Date(Date.now() + PRESIGNED_URL_TTL_SECONDS * 1000) };
   }
 
   /** research.md D4 — used only for upload-failure rollback, never a user-facing delete. */
   async delete(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    const { client, bucket } = await this.store();
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  }
+}
+
+/**
+ * Where AWS says the bucket is: `BucketRegion` on success, the `x-amz-bucket-region` header on a
+ * 301/400/403. `null` when neither is available — the configured region is then kept and any
+ * real problem surfaces on the operation itself, with AWS's own message.
+ */
+async function bucketRegion(client: S3Client, bucket: string): Promise<string | null> {
+  try {
+    const head = await client.send(new HeadBucketCommand({ Bucket: bucket }));
+    return head.BucketRegion ?? null;
+  } catch (error) {
+    const headers = (error as { $response?: { headers?: Record<string, string> } }).$response?.headers;
+    return headers?.['x-amz-bucket-region'] ?? null;
   }
 }
