@@ -295,3 +295,4 @@ All operations consumed by this slice are already registered in the backend capa
 - [x] Decision 5 (members' and invitees' email shown to SA/MP — new RLS policy on `identity`) — **approved by Francisco Garcia (CC technical lead), 2026-09-23**
 - [x] Permission matrix declared and verified against `004` and `017`
 - [x] Strict TDD ordering established for implementation tasks (`tasks.md`)
+- [x] Implementation accepted for `main` — **Francisco Garcia (CC technical lead), 2026-09-23**, in chat, conditional on the implementer's review; gates and limits recorded in [quickstart-results.md](./quickstart-results.md)

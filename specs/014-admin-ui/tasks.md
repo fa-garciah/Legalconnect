@@ -157,7 +157,7 @@ written directly.
       `npm run typecheck`, `npm run lint`, `npm run build`; zero colour literals.
 - [x] T031 Write `specs/014-admin-ui/quickstart.md` and `quickstart-results.md`, recording what was
       verified by hand and what was not.
-- [ ] T032 CC technical-lead sign-off on the spec's Approval Checklist (Decisions 1, 2, 3, 5).
+- [x] T032 CC technical-lead sign-off on the spec's Approval Checklist (Decisions 1, 2, 3, 5).
 
 ---
 
@@ -170,7 +170,7 @@ written directly.
 
 ## Summary
 
-- **Total**: 38 tasks · **Done**: 37 · **Open**: 1 (T032, the sign-off)
+- **Total**: 38 tasks · **Done**: 38 · **Open**: 0
 - **Implementation notes** (2026-09-23): the capability-mirror rows of T018 landed with US1, because
   the US1 controls are keyed to them; the audit action `membership.list_read` (migration 0044) was
   added under T007/T008 for Principle VI. See [quickstart-results.md](./quickstart-results.md) for
