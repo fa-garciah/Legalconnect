@@ -9,23 +9,10 @@
  *    matching one. Provisioning is a platform operation anyway.
  */
 import { readFile, readdir } from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from 'pg';
-
-/** Minimal .env reader — avoids a dependency for something this small. */
-function loadEnvFile(path: string): void {
-  if (!existsSync(path)) return;
-  for (const raw of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq === -1) continue;
-    const key = line.slice(0, eq).trim();
-    const value = line.slice(eq + 1).trim();
-    if (!(key in process.env)) process.env[key] = value;
-  }
-}
+// 022/FR-015 — was a fourth copy of the same eleven lines; see `load-env.ts`.
+import { loadEnvFile } from './load-env';
 
 const quoteLiteral = (s: string): string => `'${s.replace(/'/g, "''")}'`;
 

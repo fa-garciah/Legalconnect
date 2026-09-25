@@ -17,27 +17,15 @@
  *
  * Two tenants, deliberately: cross-tenant checks need somewhere to reach.
  */
-import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from 'pg';
+import { loadEnvFile } from './load-env';
 import { DEFAULT_POSITION_CATALOG } from '../src/modules/directory/position-catalog.seed';
 import {
   DEFAULT_CASE_STATUSES,
   DEFAULT_MATTER_TYPES,
 } from '../src/modules/case-core/catalogs/case-catalog.seed';
 import { DEFAULT_DOCUMENT_CATEGORIES } from '../src/modules/documents/categories/document-category.seed';
-
-function loadEnvFile(path: string): void {
-  if (!existsSync(path)) return;
-  for (const raw of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const eq = line.indexOf('=');
-    if (eq === -1) continue;
-    const key = line.slice(0, eq).trim();
-    if (!(key in process.env)) process.env[key] = line.slice(eq + 1).trim();
-  }
-}
 
 const PLANS = [
   { code: 'esencial', name: 'Esencial', limits: { users: 10, storageBytes: 10 * 2 ** 30, monthlyCfdi: 50 } },

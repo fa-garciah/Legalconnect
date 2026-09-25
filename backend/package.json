@@ -19,6 +19,7 @@
     "db:down": "docker compose down",
     "db:migrate": "tsx drizzle/migrate.ts",
     "db:seed": "tsx drizzle/seed.ts",
+    "db:seed:demo": "tsx drizzle/seed-demo.ts",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:contract": "vitest run tests/contract",

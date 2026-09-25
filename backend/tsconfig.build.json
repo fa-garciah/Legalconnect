@@ -6,6 +6,11 @@
     "coverage",
     "tests",
     "drizzle/seed.ts",
+    // 022 — the demo firm's fixture credentials must not be compiled into `dist/` and
+    // shipped in a deployed image. `drizzle/demo/guard.ts` decides where the command may
+    // WRITE at runtime; it has nothing to say about material already inside an artifact.
+    "drizzle/seed-demo.ts",
+    "drizzle/demo/**",
     "**/*.test.ts",
     "vitest.config.ts"
   ]

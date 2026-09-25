@@ -5,7 +5,8 @@
  */
 import { Module } from '@nestjs/common';
 import { OBJECT_STORE_PORT } from '../../common/storage/object-store/object-store.port';
-import { S3ObjectStore, type S3ObjectStoreConfig } from '../../common/storage/object-store/s3-object-store';
+import { objectStoreConfigFromEnv } from '../../common/storage/object-store/object-store.config';
+import { S3ObjectStore } from '../../common/storage/object-store/s3-object-store';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { DocumentsRepository } from './documents.repository';
@@ -14,30 +15,12 @@ import { DocumentCategoryService } from './categories/document-category.service'
 import { DocumentCategoryRepository } from './categories/document-category.repository';
 
 /**
- * T011 — reads the four `OBJECT_STORE_*` values (research.md D6). Local dev points
- * these at MinIO (docker-compose.yml); production points the same client at real S3
- * in `mx-central-1` (plan.md Constraints, Data Residency) — no code change, only these
- * values.
+ * T011 read the four `OBJECT_STORE_*` values here (research.md D6). `022`/T008 moved that
+ * function to `common/storage/object-store/object-store.config.ts` so the demo seed reads
+ * the same configuration the application does, rather than a second copy that could drift.
+ * Local dev points these at MinIO (docker-compose.yml); production points the same client
+ * at real S3 in `mx-central-1` — no code change, only these values.
  */
-function objectStoreConfig(): S3ObjectStoreConfig {
-  const bucket = process.env.OBJECT_STORE_BUCKET;
-  const accessKeyId = process.env.OBJECT_STORE_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.OBJECT_STORE_SECRET_ACCESS_KEY;
-  if (!bucket || !accessKeyId || !secretAccessKey) {
-    throw new Error('OBJECT_STORE_BUCKET, OBJECT_STORE_ACCESS_KEY_ID and OBJECT_STORE_SECRET_ACCESS_KEY are required');
-  }
-  return {
-    // Empty means real AWS S3: the SDK derives the endpoint from the region. An empty string
-    // passed through would be taken as an endpoint and fail, so it becomes `undefined`.
-    endpoint: process.env.OBJECT_STORE_ENDPOINT || undefined,
-    region: process.env.OBJECT_STORE_REGION ?? 'mx-central-1',
-    bucket,
-    accessKeyId,
-    secretAccessKey,
-    forcePathStyle: process.env.OBJECT_STORE_FORCE_PATH_STYLE === 'true',
-  };
-}
-
 @Module({
   controllers: [DocumentsController, DocumentCategoryController],
   providers: [
@@ -52,7 +35,7 @@ function objectStoreConfig(): S3ObjectStoreConfig {
       // storage rather than aborting application startup — which, called eagerly here,
       // took down every test in the repo that boots `AppModule` with an unreadable
       // `Worker exited unexpectedly`. See the note on `S3ObjectStore`'s constructor.
-      useFactory: () => new S3ObjectStore(objectStoreConfig),
+      useFactory: () => new S3ObjectStore(() => objectStoreConfigFromEnv()),
     },
   ],
 })
