@@ -291,7 +291,7 @@ Every other epic depends on this one.
 | US02-EP04-DOC-PreviewDocumentInline | AA | Preview without downloading | MVP |
 | US03-EP04-DOC-OrganizeDocumentsByMatter | CM | Categorize by case and subfolder | MVP |
 | US04-EP04-DOC-ShareDocumentWithClient | MP | Secure share link | IT2 |
-| US05-EP04-DOC-SearchDocumentsByKeyword | PL | Keyword and filename search | IT2 |
+| US05-EP04-DOC-SearchDocumentsByKeyword | PL | Keyword and filename search | **MVP** (023; was IT2) |
 | US06-EP04-DOC-AssignAccessPermissions | SA | View/edit/download rights per role | MVP |
 | US07-EP04-DOC-ViewDocumentHistory | CM | Upload date and user per file | IT3 |
 | US08-EP04-DOC-ReplaceDocumentVersion | AA | Replace with updated version | IT2 |
@@ -301,12 +301,25 @@ Every other epic depends on this one.
 | US12-EP04-DOC-NotifyTeamOnUpload | PL | Team alert on upload | IT3 |
 | US13-EP04-DOC-ConfirmDocumentView | MP | Who viewed a shared document | IT3 |
 | US14-EP04-DOC-ExportDocumentsByCase | SA | Export all case documents as folder | IT3 |
-| US15-EP04-DOC-LinkDocumentsToCaseFile | CM | Auto-link to related case | MVP |
+| US15-EP04-DOC-LinkDocumentsToCaseFile | CM | Auto-link to related case — and the link made legible and usable firm-wide | MVP (023) |
 | US16-EP04-DOC-AccessDocumentsOnMobile | AA | View/download from phone | IT3 |
 | **US17-EP04-DOC-WithdrawRestoreDocument** | MP | Take a wrong upload out of a matter, and put it back | 007 + 021 |
 
 > **US06 promoted to MVP.** Constitution Principle IV (deny-by-default) makes
 > document permissions non-deferrable — documents cannot ship without them.
+>
+> **US05 promoted IT2 → MVP on 2026-09-25** by slice `023-firm-documents`. `007` and `021`
+> shipped documents nested under one case, so a firm that does not remember which matter a
+> document was filed under cannot find it at all — and it holds 130 of them across 40 matters in
+> the demo firm alone. Search stopped being an enhancement and became the only way the
+> firm-wide view is usable. It is `ILIKE` over file name and case file number, not full-text
+> search; `023`'s Decision 2 records why, and what content search would additionally require.
+>
+> **US15's phrasing clarified in the same PR.** The catalog said "auto-link to related case",
+> and that link has existed since `007` — `document.case_id` is set at upload and immutable.
+> What `023` delivers is the link being *visible and usable*: every card names its matter, and
+> the list filters by matter. The row is annotated rather than rewritten, so the original
+> requirement stays readable.
 
 ---
 
