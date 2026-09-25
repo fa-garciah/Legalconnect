@@ -41,3 +41,4 @@ Thumbs.db
 
 # Local tooling state (per-machine, not shared)
 .claude/.headroom_wrap_*
+backend/docker-compose.override.yml
