@@ -11,7 +11,9 @@ export const ARCHETYPE_LABEL: Readonly<Record<Archetype, string>> = {
   AA: 'Abogado asociado',
   PL: 'Pasante',
   CM: 'Gestor de casos',
-  BM: 'Administración',
+  // Was "Administración", two letters from SA's "Administrador"; a real invitation went out
+  // with the wrong one (2026-09-25). Named for what the role does.
+  BM: 'Facturación y cobranza',
   SA: 'Administrador',
   CC: 'Contacto de cliente',
   IC: 'Contacto de aseguradora',
