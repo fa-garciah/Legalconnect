@@ -136,7 +136,7 @@ describe('capability declared everywhere', () => {
     }
   });
 
-  it('the declared routes plus the registry rows with no endpoint account for all 45 capabilities', () => {
+  it('the declared routes plus the registry rows with no endpoint account for all 46 capabilities', () => {
     const handlers = routeHandlers();
     // Filtered, because the authentication surface contributes `undefined` —
     // counting it would inflate the census by one for a route that declares no
@@ -150,7 +150,9 @@ describe('capability declared everywhere', () => {
     // 21 (004) + 3 (017) + 11 (006) + 8 (007). This number is a census, not an assertion
     // about any one slice, so every slice that extends the registry moves it — 017 took
     // it from 21 to 24, 006 took it to 35, 007 took it to 43, and 013 takes it to 45.
-    expect(declaredIds.size + undeclaredInRegistry.length).toBe(45);
+    // 023 takes it to 46 with `document.read_list`, which DOES have a route — so the
+    // `NO_ROUTE_YET` list asserted below is unchanged.
+    expect(declaredIds.size + undeclaredInRegistry.length).toBe(46);
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 

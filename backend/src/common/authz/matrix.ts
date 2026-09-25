@@ -108,6 +108,12 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   // structurally identical catalog.
   'document.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'document.manage_catalog': new Set(['MP', 'SA']),
+  // 023-firm-documents. Identical to `document.read`: the firm-wide list shows a person the
+  // documents they may already open, and nothing more. `BM` holds none of the eight document
+  // capabilities, so it holds this one neither — and 023 removes `BM` from the `/documentos`
+  // navigation entry in the same PR, which until now would have drawn them a link to a page
+  // refusing every request it made.
+  'document.read_list': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   // 013-calendar-core, rows 44-45. BM holds neither: a case-linked event carries matter content.
   'calendar.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'calendar.manage': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),

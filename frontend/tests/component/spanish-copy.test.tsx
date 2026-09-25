@@ -392,6 +392,8 @@ import { UploadDialog } from '@/app/expedientes/[caseId]/documentos/UploadDialog
 import { DocumentsView } from '@/app/expedientes/[caseId]/documentos/DocumentsView';
 import { WithdrawnList } from '@/app/expedientes/[caseId]/documentos/WithdrawnList';
 import { DocumentCategoriesTab } from '@/app/configuracion/components/DocumentCategoriesTab';
+import { FirmDocuments } from '@/app/documentos/FirmDocuments';
+import { UploadFromFirmDialog } from '@/app/documentos/UploadFromFirmDialog';
 
 const DOCUMENT_WIRE_WORDS = /\b(withdrawn|active|retired|unclassified|unsupported|converted|pending|document|category)\b/i;
 
@@ -442,6 +444,50 @@ describe('document copy is Spanish-only (021/T028)', () => {
     await adminScreen.findByText('Contrato');
     assertOnlySpanish(container);
     assertNoDocumentWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  /*
+   * 023/T025 — the firm-wide screen. This suite imports each component explicitly rather than
+   * scanning the filesystem, so a new screen is covered only by being added here. The
+   * firm-wide list also introduces one string the per-case list never had — the count
+   * ("N documentos") — and one field, the matter's file number, which must not arrive as
+   * "file number".
+   */
+  const FIRM_DOC = {
+    ...DOC,
+    caseId: 'k1',
+    caseFileNumber: 'EXP-2026-2001',
+    categoryName: 'Contrato',
+    categoryStatus: 'active',
+  };
+
+  it('FirmDocuments — the firm-wide list, its count and its filters', async () => {
+    answer({
+      '/tenant/documents': { items: [FIRM_DOC], nextCursor: null, total: 1 },
+      '/tenant/document-categories': CATEGORIES,
+      '/tenant/cases': { items: [{ id: 'k1', fileNumber: 'EXP-2026-2001', client: { id: 'cl', legalName: 'Grupo Torres', status: 'active' } }], nextCursor: null },
+    });
+    const { container } = withQueryClient(<FirmDocuments archetype="MP" />);
+    await adminScreen.findByText('contrato.pdf');
+    assertOnlySpanish(container);
+    assertNoDocumentWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('UploadFromFirmDialog — the matter step', async () => {
+    answer({ '/tenant/document-categories': CATEGORIES });
+    withQueryClient(
+      <UploadFromFirmDialog
+        open
+        cases={[{ id: 'k1', fileNumber: 'EXP-2026-2001' }]}
+        onClose={() => {}}
+        onUploaded={() => {}}
+      />,
+    );
+    await adminScreen.findByLabelText('Expediente');
+    assertOnlySpanish(document.body);
+    assertNoDocumentWireVocabulary(document.body);
     vi.unstubAllGlobals();
   });
 });

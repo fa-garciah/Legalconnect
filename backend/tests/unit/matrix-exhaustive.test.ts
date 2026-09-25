@@ -67,6 +67,12 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   // (Principle VI) — this slice's FR-016 draws the identical line for documents.
   'document.read_catalog': ['MP', 'AA', 'PL', 'CM', 'SA'],
   'document.manage_catalog': ['MP', 'SA'],
+  // 023-firm-documents. `tenant` scope for the reason row 29 (`case.read_list`) is, and
+  // `case-list-scoping.test.ts` states it outright: a resolver returns a boolean, so an
+  // `assigned`-scoped list could only refuse a member with no assignments, where the spec
+  // requires an empty list. The rows are narrowed by live assignment inside the query.
+  // Mirrors `document.read` exactly, including BM's absence.
+  'document.read_list': ['MP', 'AA', 'PL', 'CM', 'SA'],
   // 013-calendar-core, rows 44-45. Both `tenant`; `BM` excluded because a case-linked event
   // carries matter content (013 Decision 4).
   'calendar.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
@@ -162,9 +168,10 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
       ...PO_ROWS,
       ...EMPTY_ROWS,
     ]);
-    // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013). A census, moved by every slice that
-    // extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45.
-    expect(asserted.size).toBe(45);
+    // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013) + 1 (023). A census, moved by every
+    // slice that extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45, and
+    // 023 to 46 with `document.read_list`.
+    expect(asserted.size).toBe(46);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

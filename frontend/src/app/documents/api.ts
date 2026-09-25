@@ -131,3 +131,52 @@ export function retireDocumentCategory(categoryId: string): Promise<DocumentCate
     method: 'PATCH',
   }).then(unwrap);
 }
+
+/* --------------------------------------------------------------------------
+ * 023-firm-documents — the firm-wide list.
+ *
+ * Every function above takes a `caseId`, because every `007` route is nested under one
+ * case. This one is not: it reads across the firm, and each item carries the `caseId` a
+ * caller needs to feed back into the functions above for preview and download.
+ * ----------------------------------------------------------------------- */
+
+/** A firm-wide list item: `DocumentSummary` plus the matter that identifies it. */
+export interface FirmDocumentSummary extends DocumentSummary {
+  readonly caseId: string;
+  readonly caseFileNumber: string;
+}
+
+export interface FirmDocumentListQuery {
+  readonly q?: string;
+  readonly categoryId?: string;
+  readonly caseId?: string;
+  readonly limit?: number;
+  readonly cursor?: string;
+}
+
+export interface FirmDocumentListResponse {
+  readonly items: readonly FirmDocumentSummary[];
+  readonly nextCursor: string | null;
+  /** 023 Decision 3 — the whole filtered set, under the caller's own scope. */
+  readonly total: number;
+}
+
+/**
+ * `GET /tenant/documents`. Every filter is omitted when absent, never sent empty — the
+ * reason `cases/api.ts` has `meaningful()`: sending `q=` after somebody clears the search box
+ * asks a different question than asking nothing.
+ */
+export function listFirmDocuments(query: FirmDocumentListQuery): Promise<FirmDocumentListResponse> {
+  const params = new URLSearchParams();
+  const q = query.q?.trim();
+  if (q) params.set('q', q);
+  if (query.categoryId) params.set('categoryId', query.categoryId);
+  if (query.caseId) params.set('caseId', query.caseId);
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  // Verbatim: the cursor is opaque, and rebuilding it would couple this screen to an
+  // encoding no slice promised to keep.
+  if (query.cursor) params.set('cursor', query.cursor);
+
+  const suffix = params.toString();
+  return apiFetch<FirmDocumentListResponse>(`/tenant/documents${suffix ? `?${suffix}` : ''}`).then(unwrap);
+}

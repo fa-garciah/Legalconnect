@@ -6,6 +6,8 @@
 import { Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { currentTx } from '../../common/tenant/middleware';
+import { toPage, type Cursor, type Page } from '../../common/http/pagination';
+import { LIKE_ESCAPE_CHAR, escapeLike } from './like-escape';
 
 export interface DocumentRow {
   readonly id: string;
@@ -40,6 +42,79 @@ interface RawDocumentRow {
   uploaded_at: string;
   withdrawn_at: string | null;
   [key: string]: unknown;
+}
+
+/**
+ * 023 — a firm-wide list item. `DocumentRow` plus the matter's file number, which is what a
+ * card outside a case needs in order to say which matter it belongs to.
+ *
+ * `storageKey` is deliberately ABSENT: it is an internal pointer, the per-case presenter does
+ * not expose it either, and a firm-wide list is the last place to start.
+ */
+export interface FirmDocumentRow {
+  readonly id: string;
+  readonly caseId: string;
+  readonly caseFileNumber: string;
+  readonly uploadedByMembershipId: string;
+  readonly categoryId: string;
+  readonly categoryName: string;
+  readonly categoryStatus: 'active' | 'retired';
+  readonly originalFilename: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly status: 'active' | 'withdrawn';
+  readonly uploadedAt: string;
+  readonly withdrawnAt: string | null;
+}
+
+interface RawFirmDocumentRow {
+  id: string;
+  tenant_id: string;
+  case_id: string;
+  case_file_number: string;
+  uploaded_by_membership_id: string;
+  category_id: string;
+  category_name: string;
+  category_status: 'active' | 'retired';
+  original_filename: string;
+  mime_type: string;
+  size_bytes: string;
+  status: 'active' | 'withdrawn';
+  uploaded_at: string;
+  withdrawn_at: string | null;
+  [key: string]: unknown;
+}
+
+const presentFirm = (row: RawFirmDocumentRow): FirmDocumentRow => ({
+  id: row.id,
+  caseId: row.case_id,
+  caseFileNumber: row.case_file_number,
+  uploadedByMembershipId: row.uploaded_by_membership_id,
+  categoryId: row.category_id,
+  categoryName: row.category_name,
+  categoryStatus: row.category_status,
+  originalFilename: row.original_filename,
+  mimeType: row.mime_type,
+  sizeBytes: Number(row.size_bytes),
+  status: row.status,
+  uploadedAt: row.uploaded_at,
+  withdrawnAt: row.withdrawn_at,
+});
+
+export interface ListFirmDocumentsInput {
+  readonly limit: number;
+  readonly cursor?: Cursor;
+  /** True for MP and SA — the archetypes the `assigned` resolver satisfies unconditionally. */
+  readonly unrestricted: boolean;
+  readonly membershipId: string;
+  readonly q?: string;
+  readonly categoryId?: string;
+  readonly caseId?: string;
+}
+
+/** The envelope, extended with `total` — 023 Decision 3. */
+export interface FirmDocumentsPage extends Page<FirmDocumentRow> {
+  readonly total: number;
 }
 
 const SELECT_WITH_CATEGORY = sql`
@@ -218,6 +293,94 @@ export class DocumentsRepository {
       ORDER BY d.uploaded_at DESC
     `);
     return rows.map(present);
+  }
+
+  /**
+   * 023 — the firm's documents, across every case the caller can reach. FR-001 … FR-008.
+   *
+   * WHY THE PREDICATES ARE BUILT ONCE AND USED TWICE, which is the whole design of this
+   * method: the page and the `total` MUST describe the same set. A count computed under a
+   * different `WHERE` would tell an `AA` how many documents exist on matters they cannot
+   * reach — a quantitative leak under Principle II, and the single most likely way this
+   * endpoint could ship broken, because two queries in two places drift. There is one
+   * `conditions` array; both queries consume it.
+   *
+   * WHY THE ASSIGNMENT PREDICATE IS HERE rather than in the interceptor: a scope resolver
+   * returns a boolean, so an `assigned`-scoped capability could only REFUSE a member with no
+   * assignments, where the spec requires an empty list. `case.read_list` reached the same
+   * conclusion and `tests/contract/case-list-scoping.test.ts` exists to stop it being
+   * "tidied" back. The predicate below is `case.repository.ts:156-162`'s, moved one join over.
+   *
+   * No `tenant_id` predicate: RLS does that, as everywhere else in this file.
+   */
+  async listForTenant(input: ListFirmDocumentsInput): Promise<FirmDocumentsPage> {
+    const conditions = [sql`d.status = 'active'`];
+
+    if (!input.unrestricted) {
+      conditions.push(sql`EXISTS (
+        SELECT 1 FROM case_assignment a
+         WHERE a.case_id = d.case_id
+           AND a.membership_id = ${input.membershipId}::uuid
+           AND a.unassigned_at IS NULL
+      )`);
+    }
+
+    if (input.q !== undefined) {
+      // One parenthesised group, so a later condition ANDed on cannot be swallowed by the OR
+      // — the same reason `case.repository.ts:140-152` spells it out. The term is escaped
+      // (FR-008) and the escape character is named rather than assumed.
+      const term = `%${escapeLike(input.q)}%`;
+      conditions.push(sql`(
+        d.original_filename ILIKE ${term} ESCAPE ${LIKE_ESCAPE_CHAR}
+        OR cf.file_number ILIKE ${term} ESCAPE ${LIKE_ESCAPE_CHAR}
+      )`);
+    }
+
+    if (input.categoryId !== undefined) {
+      conditions.push(sql`d.category_id = ${input.categoryId}::uuid`);
+    }
+    if (input.caseId !== undefined) {
+      conditions.push(sql`d.case_id = ${input.caseId}::uuid`);
+    }
+
+    const where = sql.join(conditions, sql` AND `);
+
+    // The count runs BEFORE the cursor is applied, deliberately: `total` describes the whole
+    // filtered set, which is what "128 documentos" means on screen, not the current page.
+    const counted = await currentTx().execute<{ total: string }>(sql`
+      SELECT count(*)::text AS total
+        FROM document d
+        JOIN case_file cf ON cf.id = d.case_id
+       WHERE ${where}
+    `);
+
+    const paged = [...conditions];
+    if (input.cursor) {
+      paged.push(
+        sql`(d.uploaded_at, d.id) < (${input.cursor.occurredAt}::timestamptz, ${input.cursor.id}::uuid)`,
+      );
+    }
+
+    const { rows } = await currentTx().execute<RawFirmDocumentRow>(sql`
+      SELECT d.id, d.tenant_id, d.case_id, d.uploaded_by_membership_id, d.category_id,
+             c.name AS category_name, c.status AS category_status,
+             d.original_filename, d.mime_type, d.size_bytes,
+             d.status, d.uploaded_at, d.withdrawn_at,
+             cf.file_number AS case_file_number
+        FROM document d
+        JOIN document_category c ON c.id = d.category_id
+        JOIN case_file cf ON cf.id = d.case_id
+       WHERE ${sql.join(paged, sql` AND `)}
+       ORDER BY d.uploaded_at DESC, d.id DESC
+       LIMIT ${input.limit + 1}
+    `);
+
+    const page = toPage(rows.map(presentFirm), input.limit, (row) => ({
+      occurredAt: row.uploadedAt,
+      id: row.id,
+    }));
+
+    return { ...page, total: Number(counted.rows[0]?.total ?? '0') };
   }
 
   /**

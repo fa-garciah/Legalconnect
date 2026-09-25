@@ -81,6 +81,10 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'document.restore': new Set<Subject>(['MP', 'SA']),
   'document.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
   'document.manage_catalog': new Set<Subject>(['MP', 'SA']),
+  // 023 row 46 — the firm-wide document list. Mirrors `document.read` exactly, BM included in
+  // the exclusion: 023 also removes BM from the `documentos` navigation entry, which until now
+  // would have drawn them a link to a page refusing every request it made.
+  'document.read_list': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
 
   // 013 rows 44-45. BM holds neither: a case-linked event carries matter content.
   'calendar.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),

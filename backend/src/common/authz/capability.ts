@@ -106,6 +106,23 @@ export const CAPABILITIES = {
   'document.restore': { scope: 'assigned' },
   'document.read_catalog': { scope: 'tenant' },
   'document.manage_catalog': { scope: 'tenant' },
+  /**
+   * 023-firm-documents — the firm-wide document list, `GET /tenant/documents`.
+   *
+   * `tenant`, NOT `assigned`, and **do not tidy this row** for consistency with rows 36-41
+   * above. It is row 29 (`case.read_list`) all over again, and
+   * `tests/contract/case-list-scoping.test.ts` exists to stop precisely that edit: a scope
+   * resolver returns a boolean, so an `assigned`-scoped list could only REFUSE a member who
+   * holds no assignments — where the spec requires an empty list, and where `016a` would
+   * render its error state instead of its empty state.
+   *
+   * The rows are narrowed inside the query by live `case_assignment` (023/FR-004), and the
+   * `total` is computed under the same predicate (023/FR-005), so a caller never learns how
+   * many documents exist on matters they cannot reach.
+   *
+   * Grants mirror `document.read` exactly, including `BM`'s absence.
+   */
+  'document.read_list': { scope: 'tenant' },
   // 013-calendar-core, rows 44-45. Both `tenant`, for the reason row 29 (`case.read_list`) is:
   // a resolver returns a boolean, and a member with no assignments must get a calendar without
   // case events, not a refusal. Case-linked events are narrowed by live assignment inside the

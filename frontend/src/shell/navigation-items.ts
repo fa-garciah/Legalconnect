@@ -107,9 +107,21 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     label: 'Documentos',
     href: '/documentos',
     icon: 'file-text',
-    // `007` shipped the API and four of its frontend tasks remain.
-    requiredArchetypes: INTERNAL,
-    available: false,
+    /*
+     * 023 (FR-014). Two edits, and they must land together.
+     *
+     * It said `INTERNAL`, which includes `BM` — while `MATRIX` grants `BM` **none** of the
+     * nine `document.*` capabilities. That was harmless only because `available: false`
+     * rendered this as inert text; switching it on with the old list would hand a billing
+     * manager a link to a page refusing every request it makes, which this file's own header
+     * calls worse than an honestly unavailable item.
+     *
+     * The list now matches `document.read_list` exactly, and
+     * `tests/unit/documents/navigation.test.ts` derives its expectation from `can()` rather
+     * than restating it, so a future matrix change cannot leave a dead link behind.
+     */
+    requiredArchetypes: ['MP', 'AA', 'PL', 'CM', 'SA'],
+    available: true,
   },
   // 013 (FR-013). BM holds no calendar capability: case-linked events are matter content.
   { id: 'calendario', label: 'Calendario', href: '/calendario', icon: 'calendar', requiredArchetypes: ['MP', 'AA', 'PL', 'CM', 'SA'], available: true },

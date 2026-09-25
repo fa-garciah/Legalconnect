@@ -8,6 +8,7 @@ import { OBJECT_STORE_PORT } from '../../common/storage/object-store/object-stor
 import { objectStoreConfigFromEnv } from '../../common/storage/object-store/object-store.config';
 import { S3ObjectStore } from '../../common/storage/object-store/s3-object-store';
 import { DocumentsController } from './documents.controller';
+import { FirmDocumentsController } from './firm-documents.controller';
 import { DocumentsService } from './documents.service';
 import { DocumentsRepository } from './documents.repository';
 import { DocumentCategoryController } from './categories/document-category.controller';
@@ -22,7 +23,9 @@ import { DocumentCategoryRepository } from './categories/document-category.repos
  * at real S3 in `mx-central-1` — no code change, only these values.
  */
 @Module({
-  controllers: [DocumentsController, DocumentCategoryController],
+  // 023 — `FirmDocumentsController` is separate rather than a second path on
+  // `DocumentsController`, whose base path inherits `:caseId` on every route.
+  controllers: [DocumentsController, FirmDocumentsController, DocumentCategoryController],
   providers: [
     DocumentsService,
     DocumentsRepository,

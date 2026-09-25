@@ -50,6 +50,10 @@ const LABELS: Readonly<Record<string, string>> = {
   'document.restore': 'Restaurar documentos retirados',
   'document.read_catalog': 'Consultar categorías de documentos',
   'document.manage_catalog': 'Crear y retirar categorías de documentos',
+  // 023. Labelled here because `/configuracion` shows this matrix to an SA: an unlabelled row
+  // renders its capability id, and `matrix-view-model.test.ts` fails rather than letting
+  // `document.read_list` appear on a Spanish screen.
+  'document.read_list': 'Ver los documentos de todo el despacho',
   'calendar.read': 'Ver el calendario y sus recordatorios',
   'calendar.manage': 'Crear, cambiar y cancelar eventos',
 };
