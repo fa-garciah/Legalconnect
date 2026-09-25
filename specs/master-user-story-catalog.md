@@ -21,7 +21,7 @@ vendor role.
 
 | Ref | Code | Epic | US | Status |
 |---|---|---|---|---|
-| EP00 | FND | Platform Foundation | 16 | **NEW** — was missing entirely; +US16 on 2026-08-21 |
+| EP00 | FND | Platform Foundation | 22 | **NEW** — was missing entirely; +US16 2026-08-21, +US17–US20 (016a), +US21 (020), +US22 (022) |
 | EP01 | DSH | Dashboard | 11 | Existing |
 | EP02 | CSM | Case Management | 14 | Existing + 3 new; +US14 and US08 retitled (006) |
 | EP03 | CLM | Client Management | 7 | Existing + US07 (006) |
@@ -39,9 +39,17 @@ vendor role.
 | EP15 | QTE | Quote Management | 6 | **NEW** — fills numbering gap, referenced by EP16 |
 | EP16 | CCT | Cost Center | 4 | Existing — **DRAFT** |
 
-**Total: 173 user stories** — 168 as counted on 2026-08-26, plus the 5 slice
-`006-client-case-core` adds (`US14-EP02`, `US07-EP03`, `US14`–`US16-EP10`). `US08-EP02` was
+**Total: 175 user stories** — 168 as counted on 2026-08-26, plus the 5 slice
+`006-client-case-core` adds (`US14-EP02`, `US07-EP03`, `US14`–`US16-EP10`), plus `US21-EP00`
+(`020-design-language`) and `US22-EP00` (`022-demo-firm-seed`). `US08-EP02` was
 retitled, not added, so it does not move the total.
+
+> **Reconciliation note (2026-09-25, slice 022).** The header read 173 and was already stale by
+> one: `020-design-language` added `US21-EP00-FND` on 2026-09-21, raised its own `EP00` row, and
+> did not move the catalogue-wide total. This slice adds `US22-EP00-FND` and sets the total to 175,
+> accounting for both. Following the scope 006 and 017 set, it corrected the total and its own
+> `EP00` row **only**, and did not re-derive the four per-epic figures those notes already record
+> as stale (`EP02`, `EP06`, `EP12`, and `EP00`'s own pre-016a arithmetic).
 
 > **Reconciliation note (2026-08-26, slice 006).** Slice 006 corrected the total and its
 > own three epic rows (`EP02` 13→14, `EP03` 6→7, `EP10` 13→16), following exactly the scope
@@ -88,10 +96,20 @@ Every other epic depends on this one.
 | **US19-EP00-FND-SeeErrorState** | System User | A failed request shows a state offering retry, opaque or remedy-specific per cause | FND |
 | **US20-EP00-FND-SeeEmptyState** | System User | A successful response with zero records shows a clear empty state | FND |
 | **US21-EP00-FND-ApplyProductVisualIdentity** | System User | One visual identity — type scale, palette, density and shape — that every module renders in, defined once and changed in one place | FND |
+| **US22-EP00-FND-SeedDemoFirm** | PO | One command that makes a fresh stack demonstrable: a fictional firm whose people can actually sign in, with enough history to read | FND |
 
 > **Delivered:** US01–US08 and US10 by slice 001-tenant-foundation; US13 and US15 by
 > slice 002-identity-membership; US11 and US14 by slice 004-authorization-entitlements;
 > US17–US20 by slice 016a-frontend-shell. **Pending:** US09 → IT2.
+>
+> **US22 added 2026-09-25** by slice `022-demo-firm-seed`, on the precedent US17–US21 set.
+> `drizzle/seed.ts` writes identities with no `identity_credential` and no `identity_factor`, so
+> **no seeded person can authenticate** — `scripts/demo-invitation.ts` says so in its own header
+> ("on a fresh local stack there is NO path by which a human becomes a signed-in user"). Being
+> able to sign in and see the product is a precondition for reviewing every frontend slice, not a
+> business capability any existing story covers, so it enters the catalog rather than arriving as
+> unbacked commits. Archetype `PO`: the operator of the platform runs it, and Decision 3 of that
+> spec makes it refuse to run anywhere but a local database. Raises EP00 from 21 to 22 stories.
 >
 > **US21 added 2026-09-21**, on the same reasoning and the same precedent. `016a` gave
 > the product a shell and `018` gave it a component library and a token contract; neither
