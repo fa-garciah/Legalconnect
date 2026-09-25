@@ -347,10 +347,10 @@ Every other epic depends on this one.
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
-| US01-EP06-KPI-ViewOverallKPIs | MP | Active matters, resolution time, success rate, revenue | MVP |
-| US02-EP06-KPI-MonitorWorkloadDistribution | CM | Active matters per attorney | IT2 |
-| US03-EP06-KPI-TrackSuccessRateByType | MP | Success rate by case type | IT3 |
-| US04-EP06-KPI-AnalyzeResolutionTimeTrends | CM | Resolution time over quarters | IT3 |
+| US01-EP06-KPI-ViewOverallKPIs | MP | Active matters, resolution time, success rate — **revenue excluded, see note** | MVP (015) |
+| US02-EP06-KPI-MonitorWorkloadDistribution | CM | Active matters per attorney | **MVP** (015; was IT2) |
+| US03-EP06-KPI-TrackSuccessRateByType | MP | Success rate by case type | **MVP** (015; was IT3) |
+| US04-EP06-KPI-AnalyzeResolutionTimeTrends | CM | Resolution time over quarters | **MVP** (015; was IT3) |
 | US05-EP06-KPI-MonitorRevenueGrowth | BM | Monthly revenue growth % | IT2 |
 | US06-EP06-KPI-ReceiveKPIAlerts | AA | Alert on KPI threshold deviation | IT3 |
 | US07-EP06-KPI-FilterKPIsByDateRange | PL | Custom date ranges | IT2 |
@@ -359,6 +359,24 @@ Every other epic depends on this one.
 
 > **US09 is new**, derived from "Dashboard Administrativo" in the 23 Apr 2026
 > session, which had no epic assigned.
+>
+> **US02, US03 and US04 promoted to MVP on 2026-09-25** by slice `015-kpi-dashboard`. They were
+> IT2/IT3 on the assumption that `US01` would ship a dashboard on its own, but `US01`'s four
+> figures are exactly workload distribution, success rate by type and the quarterly trend — the
+> three stories — plus revenue. Splitting them across iterations would have shipped a dashboard
+> with one tile.
+>
+> **US01's scope corrected in the same PR: revenue is excluded.** The row said "Active matters,
+> resolution time, success rate, revenue". There is no invoice, payment, quote or time-entry
+> table in any of the 46 migrations, and `010-billing-core` is unwritten — revenue is not
+> deferred, it is unbacked. `015` Decision 2 removes the tile and the Financiero tab rather than
+> stubbing them, on `016a`'s precedent that an honestly absent thing beats a misleading one.
+> `US05-EP06` (revenue growth) and `US09-EP06` (administrative dashboard) stay behind `010`.
+>
+> **Success rate needed a schema change to be real at all.** Nothing in the product recorded how
+> a matter ended; `015` adds a four-value `outcome` to `case_file` (`favorable`, `desfavorable`,
+> `convenio`, `sin_resolucion`) as a `006` data-model change, declared by the firm when a matter
+> closes. Before it, `US01`'s success rate could only have been invented.
 
 ---
 
