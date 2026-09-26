@@ -89,4 +89,7 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   // 013 rows 44-45. BM holds neither: a case-linked event carries matter content.
   'calendar.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
   'calendar.manage': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // 015 row 47 — narrower than every other tenant read: firm-wide aggregates summarise matters,
+  // so only the archetypes that already see every matter may read them. BM sees none at all.
+  'kpi.read': new Set<Subject>(['MP', 'CM', 'SA']),
 };

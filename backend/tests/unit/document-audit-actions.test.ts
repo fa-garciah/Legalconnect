@@ -49,7 +49,7 @@ describe('007 document audit actions', () => {
   // rather than deleted, for the reason 007's own dependency-baseline comment
   // gives: the check still has to fail loudly for the next slice.
   // 014 adds one more (`membership.list_read`, Decision 5).
-  it('AUDIT_ACTIONS holds exactly 58 actions (43 inherited + 8 from 007 + 3 from 005 + 1 from 014 + 3 from 013)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(58);
+  it('AUDIT_ACTIONS holds exactly 59 actions (43 inherited + 8 from 007 + 3 from 005 + 1 from 014 + 3 from 013 + 1 from 015)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(59);
   });
 });

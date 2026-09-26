@@ -101,7 +101,7 @@ because it is a judgement, and it is one line to change.
 
 ```text
 frontend/src/
-├── app/globals.css               # + --chart-1…5, --chart-positive, --chart-negative
+├── app/globals.css               # + --chart-1, --chart-2, --chart-positive (Decision 5, amended)
 ├── kpi/
 │   ├── api.ts                    # listKpis(period)
 │   └── format.ts                 # months, percentages, signed deltas, "Sin datos"

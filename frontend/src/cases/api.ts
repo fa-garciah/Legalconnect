@@ -18,6 +18,7 @@
 import { apiFetch, type ApiResult, type FailedResponse } from '../lib/api-client';
 import type {
   CaseDetail,
+  CaseOutcome,
   CaseListItem,
   CaseListQuery,
   CaseListResponse,
@@ -147,5 +148,24 @@ export function changeCaseStatus(id: string, caseStatusId: string): Promise<Case
   return apiFetch<CaseStatusChangeResponse>(`/tenant/cases/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ caseStatusId }),
+  }).then(unwrap);
+}
+
+/**
+ * `PATCH /tenant/cases/:caseId/outcome` — 015/FR-002.
+ *
+ * **A separate request from the status change, and deliberately so.** `PATCH …/status` has a
+ * shipped contract that refuses any field but `caseStatusId`, and a matter closed last year
+ * cannot be reached through it at all — its status is already right. The outcome therefore
+ * needs its own route, which is also what lets a firm correct a declaration without moving the
+ * matter (015/FR-002a).
+ *
+ * The same closed argument list as `changeCaseStatus`, for the same reason: `closedOn` is the
+ * server's, and a payload built by spreading the loaded record would name it and earn a `400`.
+ */
+export function declareOutcome(id: string, outcome: CaseOutcome): Promise<CaseDetail> {
+  return apiFetch<CaseDetail>(`/tenant/cases/${id}/outcome`, {
+    method: 'PATCH',
+    body: JSON.stringify({ outcome }),
   }).then(unwrap);
 }

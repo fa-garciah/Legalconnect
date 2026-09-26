@@ -62,7 +62,26 @@ export interface CaseListItem {
   readonly openedOn: string;
   /** Derived by the server from the status. Never supplied by a caller. */
   readonly closedOn: string | null;
+  /**
+   * 015/FR-002b — how the firm says the matter ended.
+   *
+   * **`null` is "nobody has said", and that is not `'sin_resolucion'`.** The fourth value is a
+   * firm declaring that the matter ended without a resolution — a fact about the matter. `null`
+   * is a fact about the record. `015`'s success rate counts the first and excludes the second,
+   * and collapsing them would silently rewrite every undeclared matter as a loss.
+   */
+  readonly outcome: CaseOutcome | null;
 }
+
+/**
+ * 015/FR-001. The four ways a matter can end, as `006`'s `case_outcome` enum spells them.
+ *
+ * Wire values, not labels: the screen's Spanish is in `OUTCOME_LABEL`, because a label is a
+ * copy decision and this is a column.
+ */
+export const CASE_OUTCOMES = ['favorable', 'desfavorable', 'convenio', 'sin_resolucion'] as const;
+
+export type CaseOutcome = (typeof CASE_OUTCOMES)[number];
 
 /** A member on a case, and their role on it. */
 export interface CaseTeamMember {

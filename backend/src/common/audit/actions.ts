@@ -53,6 +53,9 @@ export const AUDIT_ACTIONS = [
   // below, for the reason the two 001 gates exist.
   'case.read',
   'case.status_changed',
+  // 015 — how a matter ended, declared by the firm. A mutation of the matter's record, so it is
+  // audited; the KPI read that consumes it is not (015/Decision 6).
+  'case.outcome_declared',
   'case.team_member_assigned',
   // Also written by the revocation cascade (FR-012a), deliberately reusing this action
   // rather than adding a distinct one: the event is the same — a person came off a
@@ -186,6 +189,7 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'case.created': 'case_file',
   'case.read': 'case_file',
   'case.status_changed': 'case_file',
+  'case.outcome_declared': 'case_file',
   // The subject of a team change is the MEMBERSHIP whose place on the matter changed, not
   // the case — the same choice `directory.position_assigned` above makes for the analogous
   // change. The case is carried in the entry's metadata.

@@ -198,6 +198,8 @@ const CASE_ITEM = {
   venueCaseReference: '1234/2026',
   openedOn: '2026-03-04',
   closedOn: null,
+  // 015/FR-002b — undeclared, which is not `sin_resolucion`.
+  outcome: null,
 };
 
 describe('case screen copy is Spanish-only (019/FR-020, SC-008)', () => {
@@ -531,6 +533,73 @@ describe('calendar copy is Spanish-only (013/T016)', () => {
     await adminScreen.findByLabelText(/^título/i);
     assertOnlySpanish(document.body);
     assertNoCalendarWireVocabulary(document.body);
+    vi.unstubAllGlobals();
+  });
+});
+
+/*
+ * 015/T023 — the indicators screen and the outcome control.
+ *
+ * TWO DISTINCT LEAKS ARE POSSIBLE HERE, and only one of them is the usual kind.
+ *
+ * The usual kind is the wire's vocabulary: the outcome enum's own values are Spanish-ish
+ * (`favorable`, `convenio`) but `sin_resolucion` is not a phrase anyone writes, and a
+ * component that rendered the raw value would produce a screen reading "sin_resolucion" that
+ * every other check in this file would wave through.
+ *
+ * The second is what a dashboard leaks by habit: chart libraries, metric names and copied
+ * mockups are English almost by default — "Performance", "Revenue", "Q3", "avg". `recharts`
+ * renders axis ticks from the data, so an English label in a config object becomes English on
+ * the screen with nothing in between.
+ */
+import { KpiDashboard } from '@/app/kpis/KpiDashboard';
+import { CaseDetailPanel } from '@/app/expedientes/CaseDetailPanel';
+
+const KPI_WIRE_WORDS =
+  /\b(favorable_|sin_resolucion|desfavorable_|outcome|revenue|performance|quarter|avg|rate|month|year)\b/i;
+
+function assertNoKpiWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(KPI_WIRE_WORDS);
+}
+
+describe('indicator copy is Spanish-only (015/T023)', () => {
+  const KPIS = {
+    period: { kind: 'quarter', from: '2026-07-01', to: '2026-09-30', previousFrom: '2026-04-01', previousTo: '2026-06-30' },
+    activeCases: { value: 21, previous: 0, delta: null },
+    averageResolutionMonths: { value: 4.78, previous: 3.79, delta: 0.99, sampleSize: 8 },
+    successRate: { value: 0.89, previous: 0.75, delta: 0.14, sampleSize: 9, undeclared: 3 },
+    casesPerAttorney: [{ membershipId: 'm-1', position: 'Socio', activeCases: 16 }, { membershipId: null, position: null, activeCases: 1 }],
+    successRateByMatterType: [{ matterTypeId: 't-1', name: 'Mercantil', rate: 0.8, sampleSize: 10 }, { matterTypeId: null, name: null, rate: null, sampleSize: 0 }],
+    resolutionTrend: [{ quarterStart: '2026-04-01', averageMonths: null, sampleSize: 0 }, { quarterStart: '2026-07-01', averageMonths: 4.8, sampleSize: 8 }],
+  };
+
+  it('KpiDashboard — tiles, tabs and the tables behind the charts', async () => {
+    answer({ '/tenant/kpis': KPIS });
+    const { container } = withQueryClient(<KpiDashboard />);
+    await adminScreen.findByTestId('tile-activos-value');
+    assertOnlySpanish(container);
+    assertNoKpiWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('the outcome control — the four values as a firm says them', async () => {
+    // `sin_resolucion` is the one that matters: it is the only enum value that is not already
+    // a Spanish word, so it is the only one whose leak would be unmistakable.
+    const CLOSED = {
+      id: 'c1', fileNumber: 'EXP-2026-0042',
+      client: { id: 'cl1', legalName: 'Grupo Torres, S.A. de C.V.', status: 'active' },
+      status: { id: 'st9', name: 'Concluido', catalogStatus: 'active' },
+      matterType: { id: 'mt1', name: 'Mercantil', catalogStatus: 'active' },
+      venue: { id: 'v1', name: 'Juzgado 4° Civil CDMX' }, venueCaseReference: '1234/2026',
+      openedOn: '2026-03-04', closedOn: '2026-08-19', outcome: 'sin_resolucion', team: [],
+    };
+    answer({ '/tenant/cases/c1': CLOSED, '/tenant/case-catalogs/case-statuses': { items: [{ id: 'st9', name: 'Concluido', isClosing: true, status: 'active' }] } });
+    withQueryClient(<CaseDetailPanel open caseId="c1" archetype="MP" onClose={() => {}} />);
+    await adminScreen.findByLabelText('Declarar resultado');
+    assertOnlySpanish(document.body);
+    assertNoKpiWireVocabulary(document.body);
+    assertNoCaseWireVocabulary(document.body);
     vi.unstubAllGlobals();
   });
 });

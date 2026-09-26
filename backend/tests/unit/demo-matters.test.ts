@@ -123,6 +123,73 @@ describe('statuses and closing dates (FR-006)', () => {
     const open = matters.filter((m) => m.closedOn === null);
     expect(open.length).toBeGreaterThan(matters.length / 2);
   });
+
+  /**
+   * 015/T026 — asserted here, in a suite that needs no database, because the integration
+   * suite caught it and could not say whether the generator or the ROW was at fault.
+   *
+   * `015`'s average resolution time is `closed_on - opened_on`, so a matter that closes on or
+   * before the day it opened contributes zero or a negative number to an average the dashboard
+   * presents as a duration. And the same clock is not used twice: the generator takes `asOf`
+   * as an argument, so the invariant has to hold for every day it might be run on, not merely
+   * for the day someone happened to run it.
+   */
+  it('never closes a matter on or before the day it opened, whatever the clock says', () => {
+    const days = ['2026-01-01', '2026-03-31', '2026-06-30', '2026-09-25', '2026-12-31'];
+    for (const day of days) {
+      const asOf = new Date(`${day}T00:00:00Z`);
+      for (const firm of DEMO_FIRMS) {
+        for (const matter of demoMatters(firm, asOf)) {
+          if (matter.closedOn === null) continue;
+          expect(
+            matter.closedOn > matter.openedOn,
+            `${day} ${firm.rfc} ${matter.fileNumber}: opened ${matter.openedOn}, closed ${matter.closedOn}`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+});
+
+describe('outcomes (015/Decision 9, closing 022/Decision 7)', () => {
+  it('gives every closed matter an outcome and no open one', () => {
+    for (const matter of matters) {
+      if (matter.closedOn === null) {
+        expect(matter.outcome, matter.fileNumber).toBeNull();
+      } else {
+        expect(matter.outcome, matter.fileNumber).not.toBeNull();
+      }
+    }
+  });
+
+  it('uses all four values, so every legend entry has data', () => {
+    const used = new Set(matters.filter((m) => m.outcome !== null).map((m) => m.outcome));
+    expect([...used].sort()).toEqual(['convenio', 'desfavorable', 'favorable', 'sin_resolucion']);
+  });
+
+  it('clears FR-009 floor of five declarations, or the demo shows "Datos insuficientes"', () => {
+    expect(matters.filter((m) => m.outcome !== null).length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('does not make the firm win everything — a demo nobody believes', () => {
+    const declared = matters.filter((m) => m.outcome !== null);
+    const successes = declared.filter((m) => m.outcome === 'favorable' || m.outcome === 'convenio');
+    const rate = successes.length / declared.length;
+    expect(rate).toBeGreaterThan(0.3);
+    expect(rate).toBeLessThan(0.95);
+  });
+
+  it('varies by matter type, so the by-type chart is not five identical bars', () => {
+    const byType = new Map();
+    for (const matter of matters.filter((m) => m.outcome !== null)) {
+      const bucket = byType.get(matter.matterTypeName) ?? { wins: 0, total: 0 };
+      bucket.total += 1;
+      if (matter.outcome === 'favorable' || matter.outcome === 'convenio') bucket.wins += 1;
+      byType.set(matter.matterTypeName, bucket);
+    }
+    const rates = [...byType.values()].filter((b) => b.total >= 2).map((b) => b.wins / b.total);
+    expect(new Set(rates).size).toBeGreaterThan(1);
+  });
 });
 
 describe('matter types', () => {

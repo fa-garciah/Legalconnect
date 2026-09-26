@@ -363,10 +363,35 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
   for (const matter of demoMatters(firm, AS_OF)) {
     const caseId = deterministicUuid('case', firm.rfc, matter.fileNumber);
     await migration.query(
+      /*
+       * 015/Decision 9 — `outcome` on every closed matter and on no open one, which is also what
+       * `case_file_outcome_requires_closed` enforces. Without it the KPI screen reads "Datos
+       * insuficientes" on its most prominent tile against the very firm built to demonstrate it.
+       *
+       * EVERY GENERATED COLUMN IS REFRESHED ON CONFLICT, `opened_on` INCLUDED — and that one was
+       * missing, which produced a matter closed nine days BEFORE it opened.
+       *
+       * The generator clamps a matter's opening day to the seed date, so re-seeding on a later
+       * day legitimately moves `opened_on` for matters in the current quarter. Leaving it out of
+       * the update list meant a re-seed kept the first run's opening date and took the second
+       * run's closing date — two generations spliced into one row. `015`'s average resolution
+       * time is `closed_on - opened_on`, so the splice fed a negative duration into a figure the
+       * dashboard presents as a number of months.
+       *
+       * A partial `DO UPDATE` is only safe where the omitted columns cannot move. Here they can,
+       * so the rule is simply: write the whole generated tuple.
+       */
       `INSERT INTO case_file
-         (id, tenant_id, client_id, file_number, case_status_id, matter_type_id, opened_on, closed_on)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8::date)
-       ON CONFLICT (tenant_id, (lower(trim(file_number)))) DO NOTHING`,
+         (id, tenant_id, client_id, file_number, case_status_id, matter_type_id, opened_on,
+          closed_on, outcome)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8::date, $9::case_outcome)
+       ON CONFLICT (tenant_id, (lower(trim(file_number))))
+         DO UPDATE SET client_id      = excluded.client_id,
+                       case_status_id = excluded.case_status_id,
+                       matter_type_id = excluded.matter_type_id,
+                       opened_on      = excluded.opened_on,
+                       closed_on      = excluded.closed_on,
+                       outcome        = excluded.outcome`,
       [
         caseId,
         tenantId,
@@ -376,6 +401,7 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
         typeIds.get(matter.matterTypeName),
         matter.openedOn,
         matter.closedOn,
+        matter.outcome,
       ],
     );
     const { rows } = await migration.query<{ id: string }>(
@@ -389,13 +415,44 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
     if (matter.leadSlug) assignments.push({ slug: matter.leadSlug, role: 'lead' });
     for (const slug of matter.collaboratorSlugs) assignments.push({ slug, role: 'collaborator' });
 
+    const wanted = assignments
+      .map((a) => target.memberships.get(a.slug))
+      .filter((id): id is string => id !== undefined);
+
+    /*
+     * CLOSE WHAT THIS GENERATION NO LONGER WANTS, BEFORE ADDING WHAT IT DOES.
+     *
+     * The insert below is `DO NOTHING`, so on its own the seed only ever ACCUMULATES: change
+     * anything that moves the RNG stream and a matter keeps the previous run's lead alongside
+     * the new one. The unique index is `(case_id, membership_id) WHERE unassigned_at IS NULL`,
+     * so two different people being live `lead` on one matter is perfectly legal — nothing in
+     * `006` forbids it — and the database has no reason to complain.
+     *
+     * `015` is where that surfaced: `loadPerAttorney` counts one row per (matter, lead) pair,
+     * so a matter with two leads is counted for both and the bars sum to MORE than the firm's
+     * active-matter count. The chart is not wrong; the data was. Found while writing this
+     * slice's results by noticing 33 bars' worth of matters in a firm with 21 active ones.
+     *
+     * Closing rather than deleting, because that is what the product itself does when somebody
+     * is taken off a matter — the row is history, not a mistake.
+     */
+    await migration.query(
+      `UPDATE case_assignment
+          SET unassigned_at = now()
+        WHERE case_id = $1
+          AND unassigned_at IS NULL
+          AND NOT (membership_id = ANY($2::uuid[]))`,
+      [realCaseId, wanted],
+    );
+
     for (const assignment of assignments) {
       const membershipId = target.memberships.get(assignment.slug);
       if (!membershipId) continue;
       await migration.query(
         `INSERT INTO case_assignment (case_id, membership_id, tenant_id, role_on_case)
          VALUES ($1, $2, $3, $4::case_role)
-         ON CONFLICT (case_id, membership_id) WHERE unassigned_at IS NULL DO NOTHING`,
+         ON CONFLICT (case_id, membership_id) WHERE unassigned_at IS NULL
+           DO UPDATE SET role_on_case = excluded.role_on_case`,
         [realCaseId, membershipId, tenantId, assignment.role],
       );
     }

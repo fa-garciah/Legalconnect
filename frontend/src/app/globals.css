@@ -61,6 +61,35 @@
   --accent-warm-tint: #f6ecdd;
   --accent-warm-foreground: #8a6124;
 
+  /*
+   * 015 — data visualisation. `globals.css` carried no chart colour of any kind, and
+   * `components/ui/chart.tsx` takes its colours from a `ChartConfig` — so without these a chart
+   * could only be drawn with the hex literals 020/FR-009 forbids and a test greps for.
+   *
+   * Derived from the brand indigo 020 already decided rather than invented, stepped in
+   * lightness. Contrast for every pair is measured in `specs/015-kpi-dashboard/contrast.md`.
+   *
+   * THREE TOKENS, ONE PER SERIES THAT EXISTS. An earlier version of this block defined a
+   * five-step categorical scale plus a red/green semantic pair, and four of the seven had no
+   * user — a palette written for charts nobody had asked for. None of `015`'s three charts is
+   * multi-series: each draws ONE measure, and its categories are separated by their own axis
+   * labels and by the table underneath (FR-012), not by hue. A slice that adds a real
+   * multi-series chart adds the steps it needs, and measures them.
+   */
+  --chart-1: #3730a3;
+  --chart-2: #5b53c4;
+
+  /*
+   * Semantic, and separate from the two above on purpose: a success rate has a natural good/bad
+   * axis, and reusing the brand indigo for "favorable" would make the palette say something it
+   * does not mean.
+   *
+   * There is no matching negative. Nothing on this screen colours a figure as bad — a low
+   * success rate is a number beside its sample size, not a red bar, because the sample size is
+   * usually the more important of the two and red would drown it.
+   */
+  --chart-positive: #2f6f4f;
+
   /* Surfaces. Warm neutrals — the ground, the rail and the borders share one family. */
   --background: #faf8f3;
   --foreground: #1a1714;
@@ -177,6 +206,10 @@
   --color-accent-warm: var(--accent-warm);
   --color-accent-warm-tint: var(--accent-warm-tint);
   --color-accent-warm-foreground: var(--accent-warm-foreground);
+  /* 015 — data visualisation, as utilities and as `var(--color-chart-N)` for ChartConfig. */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-positive: var(--chart-positive);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 3px);

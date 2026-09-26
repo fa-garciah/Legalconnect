@@ -16,6 +16,17 @@ export interface CatalogRef {
   readonly catalogStatus: 'active' | 'retired';
 }
 
+/**
+ * 015/FR-001 — how a matter ended, as the firm declares it.
+ *
+ * FIXED, not a per-tenant catalog, unlike status/matter type/venue above. These four are the
+ * categories a success RATE is defined over: a firm that renamed or removed one would not have
+ * customised the metric, it would have made it incomparable (015/Decision 1). `convenio` counts
+ * as a success in that rate — a negotiated settlement resolves a matter in the client's interest.
+ */
+export const CASE_OUTCOMES = ['favorable', 'desfavorable', 'convenio', 'sin_resolucion'] as const;
+export type CaseOutcome = (typeof CASE_OUTCOMES)[number];
+
 export interface CaseRow {
   readonly id: string;
   readonly fileNumber: string;
@@ -26,6 +37,8 @@ export interface CaseRow {
   readonly venue: CatalogRef | null;
   readonly openedOn: string;
   readonly closedOn: string | null;
+  /** 015 — how the matter ended. `null` means the firm has not declared it. */
+  readonly outcome: CaseOutcome | null;
   readonly createdAt: string;
 }
 
@@ -47,6 +60,7 @@ interface Raw {
   venue_state: 'active' | 'retired' | null;
   opened_on: string;
   closed_on: string | null;
+  outcome: CaseOutcome | null;
   created_at: string;
   [key: string]: unknown;
 }
@@ -68,6 +82,9 @@ const present = (row: Raw): CaseRow => ({
   venue: ref(row.venue_id, row.venue_name, row.venue_state),
   openedOn: row.opened_on,
   closedOn: row.closed_on,
+  // 015/FR-002b. NULL means UNDECLARED, which is not the same as `sin_resolucion` — a screen
+  // that conflated them would report a firm as having resolved nothing.
+  outcome: row.outcome,
   createdAt: row.created_at,
 });
 
@@ -95,6 +112,7 @@ const SELECT_CASE = sql`
          v.status::text AS venue_state,
          c.opened_on::text AS opened_on,
          c.closed_on::text AS closed_on,
+         c.outcome,
          c.created_at::text AS created_at
     FROM case_file c
     JOIN client      cl ON cl.id = c.client_id
@@ -263,6 +281,25 @@ export class CaseRepository {
          SET case_status_id = ${caseStatusId}::uuid,
              closed_on      = ${closedOn}::date,
              updated_at     = now()
+       WHERE id = ${id}::uuid
+      RETURNING id
+    `);
+    return rows[0] ? this.findById(id) : null;
+  }
+
+  /**
+   * 015/FR-002 — the firm's declaration of how a matter ended.
+   *
+   * The `case_file_outcome_requires_closed` constraint is the real guarantee here: the service
+   * refuses an open matter with a readable 400, and the database refuses it regardless of who
+   * asks (`case-outcome-constraint.test.ts`). Two layers, because a KPI computed over a
+   * "favorable" matter that is still open would be quietly wrong rather than loudly broken.
+   */
+  async updateOutcome(id: string, outcome: CaseOutcome): Promise<CaseRow | null> {
+    const { rows } = await currentTx().execute<{ id: string }>(sql`
+      UPDATE case_file
+         SET outcome    = ${outcome}::case_outcome,
+             updated_at = now()
        WHERE id = ${id}::uuid
       RETURNING id
     `);

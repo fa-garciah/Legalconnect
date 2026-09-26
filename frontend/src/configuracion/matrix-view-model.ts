@@ -21,6 +21,10 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   { prefix: ['case'], title: 'Expedientes' },
   { prefix: ['document'], title: 'Documentos' },
   { prefix: ['calendar'], title: 'Calendario' },
+  // 015. Its own group rather than folded into "Expedientes": the capability is about reading
+  // the firm's aggregate figures, and it is granted more narrowly than any case row — an SA
+  // reading this screen should see that difference rather than infer it.
+  { prefix: ['kpi'], title: 'Indicadores' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -56,6 +60,8 @@ const LABELS: Readonly<Record<string, string>> = {
   'document.read_list': 'Ver los documentos de todo el despacho',
   'calendar.read': 'Ver el calendario y sus recordatorios',
   'calendar.manage': 'Crear, cambiar y cancelar eventos',
+  // 015. Unlabelled rows render their capability id on a Spanish screen — 023 hit exactly this.
+  'kpi.read': 'Ver los indicadores del despacho',
 };
 
 export interface MatrixRow {

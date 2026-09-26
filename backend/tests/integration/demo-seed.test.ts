@@ -252,6 +252,55 @@ describe('the demo firm seed', () => {
       );
       expect(Number(rows[0]!.unstaffed)).toBeGreaterThanOrEqual(1);
     });
+
+    /**
+     * 015 — the seed must CONVERGE on what the generator says, not accumulate across runs.
+     *
+     * Found while writing `015`'s results: this database held 33 bars' worth of matters in a
+     * firm with 21 active ones. The insert was `ON CONFLICT … DO NOTHING`, so it only ever
+     * added — and anything that moves the RNG stream changes a matter's lead, leaving the
+     * previous run's lead live beside the new one. The unique index is
+     * `(case_id, membership_id) WHERE unassigned_at IS NULL`, so two people being live `lead`
+     * on one matter is perfectly legal and the database never complained.
+     *
+     * `015`'s `loadPerAttorney` counts one row per (matter, lead) pair, so such a matter is
+     * counted for both. The idempotency fingerprint above cannot see this — it compares two
+     * runs of the SAME generation, and the defect only appears when the generation changes.
+     */
+    it('gives every matter at most ONE live lead, however often the seed has been re-run', async () => {
+      const { rows } = await migration.query<{ multi: string }>(
+        `SELECT count(*)::text AS multi FROM (
+            SELECT a.case_id
+              FROM case_assignment a
+              JOIN case_file cf ON cf.id = a.case_id
+             WHERE a.role_on_case = 'lead' AND a.unassigned_at IS NULL
+               AND cf.tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))
+             GROUP BY a.case_id HAVING count(*) > 1) x`,
+        [DEMO_RFCS],
+      );
+      expect(Number(rows[0]!.multi)).toBe(0);
+    });
+
+    it("015's workload bars sum to exactly the firm's active-matter count", async () => {
+      // The property that makes the chart trustworthy, asserted end to end rather than
+      // inferred from the one above: each active matter is counted once, for one responsible
+      // or for the explicit "nobody" group.
+      const row = await one<{ active: string; attributed: string }>(
+        `SELECT
+            (SELECT count(*)::text FROM case_file cf
+               JOIN case_status cs ON cs.id = cf.case_status_id
+              WHERE NOT cs.is_closing
+                AND cf.tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))) AS active,
+            (SELECT count(*)::text FROM case_file cf
+               JOIN case_status cs ON cs.id = cf.case_status_id
+               LEFT JOIN case_assignment a
+                      ON a.case_id = cf.id AND a.role_on_case = 'lead' AND a.unassigned_at IS NULL
+              WHERE NOT cs.is_closing
+                AND cf.tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))) AS attributed`,
+        [DEMO_RFCS],
+      );
+      expect(Number(row.attributed)).toBe(Number(row.active));
+    });
   });
 
   describe('documents and the storage counter (FR-008, FR-010)', () => {

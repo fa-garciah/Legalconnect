@@ -44,15 +44,30 @@ import { QueryBoundary } from '@/feedback/QueryBoundary';
 import { can } from '@/authz/can';
 import { useDialogAnchor } from '@/lib/use-dialog-anchor';
 import type { FailedResponse } from '@/lib/api-client';
-import { changeCaseStatus, listCaseCatalog, readCase } from '@/cases/api';
+import { changeCaseStatus, declareOutcome, listCaseCatalog, readCase } from '@/cases/api';
 import { formatCalendarDate } from '@/cases/format';
-import type { CaseDetail, CaseTeamMember, CatalogEntry } from '@/cases/types';
+import { CASE_OUTCOMES } from '@/cases/types';
+import type { CaseDetail, CaseOutcome, CaseTeamMember, CatalogEntry } from '@/cases/types';
 import type { Archetype } from '@/session/types';
 
 /** The wire's words for a role; the firm's words are what reach the screen. */
 const ROLE_LABEL: Readonly<Record<string, string>> = {
   lead: 'Responsable',
   support: 'Apoyo',
+};
+
+/**
+ * 015/FR-002. The enum's four values in the firm's own language.
+ *
+ * `sin_resolucion` is *"Sin resolución"* — a matter that ended without one, which is a
+ * declaration. The absence of any declaration reads *"Sin declarar"*, and the two must not be
+ * worded alike: `/kpis` counts the first and excludes the second.
+ */
+const OUTCOME_LABEL: Readonly<Record<CaseOutcome, string>> = {
+  favorable: 'Favorable',
+  desfavorable: 'Desfavorable',
+  convenio: 'Convenio',
+  sin_resolucion: 'Sin resolución',
 };
 
 const ABSENT = '—';
@@ -165,6 +180,15 @@ function CaseDetailContent({
         <Field label="Fecha de inicio">{formatCalendarDate(detail.openedOn)}</Field>
         {/* Derived by the server from the status. Never typed, never sent. */}
         <Field label="Fecha de cierre">{formatCalendarDate(detail.closedOn)}</Field>
+        {/*
+         * 015/FR-002b. Shown on a closed matter even to somebody who cannot declare one — the
+         * outcome is part of the record, and reading it is not changing it.
+         */}
+        {detail.closedOn !== null ? (
+          <Field label="Resultado">
+            {detail.outcome === null ? 'Sin declarar' : OUTCOME_LABEL[detail.outcome]}
+          </Field>
+        ) : null}
       </dl>
 
       <section aria-labelledby="case-team-heading">
@@ -187,6 +211,16 @@ function CaseDetailContent({
 
       {can('case.change_status', archetype) ? (
         <StatusControl caseId={caseId} currentStatusId={detail.status.id} />
+      ) : null}
+
+      {/*
+       * 015/FR-002c. Gated on the same capability as the status change (015/Decision 3) AND on
+       * the matter being closed, because `case_file_outcome_requires_closed` refuses a
+       * declaration on an open one — offering the choice here would invite a `400` for a choice
+       * the screen itself suggested.
+       */}
+      {can('case.change_status', archetype) && detail.closedOn !== null ? (
+        <OutcomeControl caseId={caseId} current={detail.outcome} />
       ) : null}
     </div>
   );
@@ -295,6 +329,78 @@ function StatusControl({
           Este expediente ya tiene ese estado.
         </p>
       ) : null}
+
+      {refusal !== undefined ? (
+        <ErrorState refusal={classifyRefusal(refusal)} onRetry={() => setRefusal(undefined)} />
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * Declaring how a matter ended (015/US3, FR-002).
+ *
+ * **This is the only way an outcome ever enters the system**, which makes it the one thing
+ * standing between `/kpis` and a permanent "Datos insuficientes". `/speckit-analyze` caught its
+ * absence as HIGH: the endpoint, the aggregate and the chart were all built before anything
+ * could produce the data they read.
+ *
+ * **`null` is offered as a destination nowhere.** A firm may correct a declaration — favorable
+ * to convenio — but "un-declaring" is not a thing the endpoint accepts, and a control offering
+ * a blank option would suggest otherwise. Undeclared is where a matter starts, not somewhere it
+ * can be sent back to.
+ */
+function OutcomeControl({
+  caseId,
+  current,
+}: {
+  readonly caseId: string;
+  readonly current: CaseOutcome | null;
+}): React.JSX.Element {
+  const queryClient = useQueryClient();
+  const [refusal, setRefusal] = useState<FailedResponse | null | undefined>(undefined);
+
+  const declare = useMutation<unknown, FailedResponse | null, CaseOutcome>({
+    mutationFn: (outcome) => declareOutcome(caseId, outcome),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['case', caseId] });
+      void queryClient.invalidateQueries({ queryKey: ['cases'] });
+    },
+    /*
+     * Through the classifier unchanged, `404` included. It may mean the caller was taken off
+     * the matter between opening it and declaring — and it reads identically to a matter that
+     * does not exist, which is exactly what the `assigned` scope is for.
+     */
+    onError: (failed) => setRefusal(failed),
+  });
+
+  return (
+    <section className="flex flex-col gap-2 border-t pt-4">
+      <Label htmlFor="case-outcome">Declarar resultado</Label>
+      {current === null ? (
+        <p data-testid="outcome-prompt" className="text-sm text-muted-foreground">
+          Declara cómo terminó este asunto para que cuente en los indicadores del despacho.
+        </p>
+      ) : null}
+      <Select
+        value={current ?? undefined}
+        onValueChange={(value) => {
+          setRefusal(undefined);
+          declare.mutate(value as CaseOutcome);
+        }}
+        disabled={declare.isPending}
+      >
+        <SelectTrigger id="case-outcome" aria-label="Declarar resultado" className="sm:w-64">
+          <SelectValue placeholder="Sin declarar" />
+        </SelectTrigger>
+        <SelectContent>
+          {CASE_OUTCOMES.map((outcome) => (
+            <SelectItem key={outcome} value={outcome}>
+              {OUTCOME_LABEL[outcome]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {refusal !== undefined ? (
         <ErrorState refusal={classifyRefusal(refusal)} onRetry={() => setRefusal(undefined)} />

@@ -17,7 +17,8 @@
  * and is never accepted as request input". A fixture that set one without the other would put
  * the database in a state the application cannot reach.
  */
-import { DEFAULT_CASE_STATUSES, DEFAULT_MATTER_TYPES } from '../../src/modules/case-core/catalogs/case-catalog.seed';
+import { DEFAULT_CASE_STATUSES } from '../../src/modules/case-core/catalogs/case-catalog.seed';
+import { createHash } from 'node:crypto';
 import { DEMO_PEOPLE, type DemoFirm } from './firm';
 import { DEMO_SEED, intBetween, mulberry32, pick, shuffle } from './rng';
 
@@ -30,6 +31,16 @@ export interface DemoMatter {
   /** `YYYY-MM-DD`, and never a `Date` — a date column is a calendar day, not an instant. */
   readonly openedOn: string;
   readonly closedOn: string | null;
+  /**
+   * 015/Decision 9, closing the forward dependency `022`/Decision 7 recorded: the column did
+   * not exist when `022` shipped, so its closed matters had no outcome and the KPI screen read
+   * "Datos insuficientes" on its most prominent tile — the exact undemonstrable state `022`
+   * existed to end.
+   *
+   * `null` on every OPEN matter, by the same rule the database enforces
+   * (`case_file_outcome_requires_closed`).
+   */
+  readonly outcome: 'favorable' | 'desfavorable' | 'convenio' | 'sin_resolucion' | null;
   readonly leadSlug: string | null;
   readonly collaboratorSlugs: readonly string[];
 }
@@ -70,6 +81,79 @@ function dayInQuarter(next: () => number, start: string, asOf: Date): string {
 
 const CLOSING_STATUS = DEFAULT_CASE_STATUSES.find((s) => s.isClosing)!.name;
 const OPEN_STATUSES = DEFAULT_CASE_STATUSES.filter((s) => !s.isClosing).map((s) => s.name);
+
+/**
+ * The firm PRACTISES IN A FEW AREAS, not evenly across all six — which is both more realistic
+ * and what makes `015`'s by-type success chart legible.
+ *
+ * Spreading 40 matters uniformly over six types leaves ~3 closed matters each, and `015`/FR-009
+ * refuses a rate below five declarations, so every bar read "Datos insuficientes" — a correct
+ * refusal that demonstrated nothing. A real firm concentrates: `case-catalog.seed.ts` says as
+ * much, calling a boutique that retires five of the six "the expected use, not a misuse".
+ *
+ * Weighted by repetition, and `pick` consumes exactly one random number either way — so this
+ * changes the distribution without shifting the stream, and no other generated value moves.
+ * Every type still appears, so the catalog is exercised.
+ */
+const WEIGHTED_MATTER_TYPES: readonly string[] = [
+  'Mercantil', 'Mercantil', 'Mercantil', 'Mercantil', 'Mercantil',
+  'Civil', 'Civil', 'Civil', 'Civil',
+  'Laboral', 'Laboral', 'Laboral',
+  'Familiar',
+  'Amparo',
+  'Penal',
+];
+
+type DemoOutcome = 'favorable' | 'desfavorable' | 'convenio' | 'sin_resolucion';
+
+/**
+ * 015/Decision 9 — how each closed demo matter ended.
+ *
+ * DELIBERATELY UNEVEN BY MATTER TYPE, because `015`'s "success rate by matter type" chart is
+ * five identical bars otherwise, and five identical bars prove nothing about whether the chart
+ * works. The weighting is expressed as repetition in a list drawn from uniformly — legible at a
+ * glance, where a table of probabilities would not be.
+ *
+ * The spread is also not flattering: `Penal` and `Laboral` lose more often than `Mercantil`
+ * wins, so the screen has something to show other than success. A demo firm that wins
+ * everything is a demo nobody believes.
+ */
+const OUTCOMES_BY_TYPE: Readonly<Record<string, readonly DemoOutcome[]>> = {
+  Mercantil: ['favorable', 'favorable', 'favorable', 'convenio', 'convenio', 'desfavorable'],
+  Civil: ['favorable', 'favorable', 'convenio', 'desfavorable', 'sin_resolucion'],
+  Laboral: ['favorable', 'convenio', 'desfavorable', 'desfavorable', 'sin_resolucion'],
+  Familiar: ['convenio', 'convenio', 'favorable', 'sin_resolucion'],
+  Penal: ['desfavorable', 'desfavorable', 'favorable', 'sin_resolucion'],
+  Amparo: ['favorable', 'desfavorable', 'convenio', 'sin_resolucion'],
+};
+
+const DEFAULT_OUTCOME_SPREAD: readonly DemoOutcome[] = [
+  'favorable',
+  'convenio',
+  'desfavorable',
+  'sin_resolucion',
+];
+
+/**
+ * DERIVED FROM THE MATTER'S OWN IDENTITY, NOT DRAWN FROM THE RNG — and that is a correction
+ * worth recording, because the first version drew it with `pick(next, …)` and broke something
+ * subtle.
+ *
+ * Consuming one more random number per matter shifts the whole stream, so every later matter's
+ * dates, client and status change too. The generator stayed self-consistent, but the rows
+ * already in a developer's database did not: `seed-demo.ts` matches on `file_number`, so a
+ * matter that was OPEN on disk received the outcome of a different, closed matter — and
+ * `case_file_outcome_requires_closed` refused the write. The database caught it, which is
+ * exactly what that constraint is for.
+ *
+ * Hashing the file number instead leaves `022`'s generated firm byte-identical apart from the
+ * new field, so no file number moves and no stale row is left behind.
+ */
+function outcomeFor(fileNumber: string, matterTypeName: string): DemoOutcome {
+  const spread = OUTCOMES_BY_TYPE[matterTypeName] ?? DEFAULT_OUTCOME_SPREAD;
+  const digest = createHash('sha256').update(`demo-outcome-${fileNumber}`).digest();
+  return spread[(digest[0] as number) % spread.length] as DemoOutcome;
+}
 
 export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
   const total = firm.sparse ? 5 : 40;
@@ -118,15 +202,32 @@ export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
       const openedOn = dayInQuarter(next, start, asOf);
       const year = openedOn.slice(0, 4);
 
-      // Older matters are likelier to have been resolved, which is what makes the average
-      // resolution time computable and the "active" count smaller than the total.
-      const closeChance = quarterIndex <= 1 ? 0.55 : quarterIndex <= 3 ? 0.3 : 0.08;
+      /*
+       * Older matters are likelier to have been resolved, which is what makes the average
+       * resolution time computable and the "active" count smaller than the total.
+       *
+       * THE RECENT QUARTERS CLOSE MORE THAN REALISM ALONE WOULD SUGGEST, deliberately: `015`
+       * refuses to report a success rate from fewer than five declared outcomes (FR-009), and
+       * the KPI screen defaults to the current quarter. A demo firm that closed two matters
+       * last quarter shows "Datos insuficientes" on its most prominent tile — a correct
+       * refusal, and a poor demonstration of the feature the firm exists to demonstrate.
+       */
+      const closeChance = quarterIndex <= 1 ? 0.55 : quarterIndex <= 3 ? 0.35 : 0.45;
       const isClosed = next() < closeChance;
 
       const openedDate = new Date(`${openedOn}T00:00:00Z`);
       const maxDays = Math.floor((asOf.getTime() - openedDate.getTime()) / (24 * 60 * 60 * 1000));
-      // At least a day, so `closed_on > opened_on` holds strictly.
-      const durationDays = isClosed && maxDays >= 1 ? intBetween(next, 1, Math.min(maxDays, 420)) : 0;
+      /*
+       * DRAWN UNCONDITIONALLY, and used only when the matter closed.
+       *
+       * Drawing it inside the `isClosed` branch made the RNG stream depend on the close
+       * DECISION, so changing a close probability shifted every later matter's dates, client
+       * and status — which meant tuning the distribution silently regenerated the firm and
+       * left rows from the previous generation behind in a developer's database. Consuming the
+       * number either way makes the stream stable under exactly the kind of tuning above.
+       */
+      const candidateDuration = intBetween(next, 1, Math.max(1, Math.min(maxDays, 420)));
+      const durationDays = isClosed && maxDays >= 1 ? candidateDuration : 0;
       const closedOn =
         isClosed && durationDays >= 1
           ? iso(new Date(openedDate.getTime() + durationDays * 24 * 60 * 60 * 1000))
@@ -141,13 +242,17 @@ export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
           ? []
           : shuffle(next, supportCandidates).slice(0, next() < 0.45 ? 1 : 0);
 
+      const matterTypeName = pick(next, WEIGHTED_MATTER_TYPES);
+      const fileNumber = `EXP-${year}-${String(2000 + sequence).padStart(4, '0')}`;
+
       matters.push({
-        fileNumber: `EXP-${year}-${String(2000 + sequence).padStart(4, '0')}`,
+        fileNumber,
         clientIndex: intBetween(next, 0, clientCount - 1),
-        matterTypeName: pick(next, DEFAULT_MATTER_TYPES),
+        matterTypeName,
         statusName: closedOn !== null ? CLOSING_STATUS : pick(next, OPEN_STATUSES),
         openedOn,
         closedOn,
+        outcome: closedOn === null ? null : outcomeFor(fileNumber, matterTypeName),
         leadSlug,
         collaboratorSlugs,
       });

@@ -15,7 +15,7 @@ import {
 } from '../../common/http/errors';
 import { normaliseLimit, type Cursor, type Page } from '../../common/http/pagination';
 import { currentPrincipal } from '../../common/tenant/middleware';
-import { CaseRepository, type CaseRow } from './case.repository';
+import { CASE_OUTCOMES, CaseRepository, type CaseOutcome, type CaseRow } from './case.repository';
 import { ClientRepository } from './client.repository';
 import { CaseCatalogRepository } from './catalogs/case-catalog.repository';
 
@@ -226,6 +226,42 @@ export class CaseService {
     const closedOn = status.isClosing === true ? todayIso() : null;
 
     const row = await this.cases.updateStatus(id, caseStatusId, closedOn);
+    if (!row) throw new ResourceNotFound();
+    return { row, previous };
+  }
+
+  /**
+   * 015/FR-002 — declare how a matter ended.
+   *
+   * ONLY ON A CLOSED MATTER, which is the whole meaning of the field: it is a statement about
+   * how something ended, and a "favorable" matter still in progress would silently corrupt
+   * every success rate computed from it.
+   *
+   * DECLARABLE LATER, AND RE-DECLARABLE. A firm adopting this product has a history of closed
+   * matters that predate the column (015/FR-002a), and one that mis-recorded an outcome must be
+   * able to correct it — the audit log carries the change, which is where a correction belongs.
+   *
+   * Its own route rather than a field on `changeStatus` (015/Decision 3): that endpoint has a
+   * shipped contract, and a field on it could never reach a matter closed last year.
+   */
+  async declareOutcome(
+    id: string,
+    body: unknown,
+  ): Promise<{ readonly row: CaseRow; readonly previous: CaseRow }> {
+    const input = (body ?? {}) as Record<string, unknown>;
+    const outcome = input.outcome;
+
+    if (typeof outcome !== 'string' || !CASE_OUTCOMES.includes(outcome as CaseOutcome)) {
+      throw new ValidationFailed(`outcome must be one of: ${CASE_OUTCOMES.join(', ')}.`);
+    }
+
+    const previous = await this.cases.findById(id);
+    if (!previous) throw new ResourceNotFound();
+    if (previous.closedOn === null) {
+      throw new ValidationFailed('An outcome can only be declared on a closed case.');
+    }
+
+    const row = await this.cases.updateOutcome(id, outcome as CaseOutcome);
     if (!row) throw new ResourceNotFound();
     return { row, previous };
   }

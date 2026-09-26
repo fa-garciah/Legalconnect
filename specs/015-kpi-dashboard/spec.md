@@ -2,7 +2,7 @@
 
 **Feature Branch**: `015-kpi-dashboard` (stacked on `023-firm-documents`)
 **Created**: 2026-09-25
-**Status**: Decided — nine decisions taken by Claude 2026-09-25, pending ratification by Jero
+**Status**: Decided — ten decisions taken by Claude 2026-09-25, pending ratification by Jero
 **Input**: `/kpis` has been in the navigation, marked unavailable, since `016a`. The mockup shows
 four tiles and four charts. Half of what it shows cannot be computed from anything this product
 stores, and the honest slice is the one that says which half.
@@ -208,13 +208,26 @@ A case manager sees whether matters are resolving faster than they were.
   the one before it: active matters, average resolution time in months, success rate, matters per
   attorney, success rate by matter type, and average resolution time per quarter for six quarters.
 - **FR-006**: "Matters per attorney" counts **live `lead` assignments**; matters with no live lead
-  are reported under an explicit "Sin responsable" entry, never dropped.
+  are reported under an explicit "Sin responsable" entry, never dropped. Each entry carries the
+  membership id and the person’s **position**, never an email or any other personal data
+  (Decision 10).
 - **FR-007**: "By matter type" groups untyped matters under an explicit "Sin tipo" entry, never
   dropped.
 - **FR-008**: A bucket with no data is reported as `null`, never as `0` — a quarter in which
   nothing closed is missing data, not instant resolution.
-- **FR-009**: Success rate is reported only when at least five closed matters in the period carry
-  a declared outcome; below that the response says so and names the undeclared count.
+- **FR-009**: The **headline** success rate is reported only when at least five closed matters in
+  the period carry a declared outcome; below that the response withholds it and names the
+  undeclared count. **The by-type breakdown is not subject to that floor**, and reports every
+  group that has at least one declaration — *always* alongside its sample size (FR-009a).
+  *Amended 2026-09-25 during implementation, against real data*: applying one floor to both made
+  the by-type chart unreadable for any firm of realistic size. `022`’s demo firm closes 19
+  matters across its practice areas, so no single area reached five and every bar read "Datos
+  insuficientes" — a correct refusal that demonstrated nothing. The purposes differ: the headline
+  number is the one a partner quotes and one matter must not swing it, while the breakdown exists
+  to be COMPARED, and a comparison carrying its own sample sizes is informative rather than
+  misleading.
+- **FR-009a**: Every rate in the by-type breakdown travels with the count it was computed from,
+  in the response and on the screen, so a reader can weigh a thin bar rather than trust it.
 - **FR-010**: A delta is reported only when the previous period has a comparable figure; there is
   no delta against zero and no infinite percentage.
 - **FR-011**: The endpoint declares a new `kpi.read` capability at `tenant` scope, granted to
@@ -357,20 +370,61 @@ re-read then rather than inherited.
 `self`-scoped variant showing an attorney only their own numbers (a different feature —
 `US06-EP06` territory — and not what the mockup or the story asks for).
 
+### Decision 10 — The workload chart labels people by position, never by email
+
+**Found during implementation, on 2026-09-25**, and recorded here rather than in `plan.md`
+because it is a requirement rather than a technique (Principle I: a plan cannot introduce one).
+
+**The problem**: the mockup labels the workload bars "A. Méndez", "L. Ramírez". **No slice stores
+a person's name** — `identity` holds `subject`, `email` and `mfa_enrolled_at` and nothing else,
+which `019` already recorded as its own Q2. So the only human-readable identifier available is an
+email, and that is reachable only through migration `0044`'s policy, under
+`membership.read_tenant`, which **`SA` and `MP` hold and `CM` does not**. Returning emails from
+this endpoint would either widen access to personal data past what `014` decided, or make the
+chart unreadable for one of the three archetypes that hold `kpi.read`.
+
+**Taken**: the aggregate returns each person's `membershipId` and their **position** from the
+firm's directory (`Socio`, `Asociado Senior`, …) — firm structure, not personal data — and never
+an email. The screen labels each bar with the position, disambiguating people who share one with
+a short reference. **No personal data enters an aggregate at all**, which is the Principle VI
+answer rather than a compromise with it.
+**Consequence, stated plainly**: the chart reads "Socio", "Asociado Senior", "Asociado" rather
+than three surnames. It answers the question the story asks — how is work distributed — and it
+does not pretend to a fidelity the schema cannot supply.
+**Rejected**: emails for `MP`/`SA` and positions for `CM` (the same chart meaning two different
+things depending on who opens it); adding a name column to `identity` (a `002`/`011` decision
+about identity data, with its own privacy questions, not a KPI slice's to take);
+`membershipId` alone (a UUID is not a label).
+**When it improves**: the moment any slice stores a display name — `US02-EP11-PMG` is the natural
+owner — this chart should use it, and nothing here needs to change but the label.
+
 ### Decision 5 — Chart colours become design tokens
 
-**Taken**: five categorical tokens (`--chart-1` … `--chart-5`) and two semantic ones
-(`--chart-positive`, `--chart-negative`) added to `globals.css`, derived from `020`'s existing
-brand and warm-accent families; every chart reads them through `ChartConfig`.
+**Taken**: **one token per series that exists** — `--chart-1` (bars: matters per responsible),
+`--chart-2` (line: resolution trend) and `--chart-positive` (bars: success rate by type) — added
+to `globals.css`, derived from `020`'s existing brand family; every chart reads them through
+`ChartConfig`.
 **Why**: `globals.css` currently defines **no** chart colour of any kind, `chart.tsx` takes colours
 from its `ChartConfig`, and `020`/FR-009 forbids a colour literal in application code — a rule a
 test greps for. Without tokens the only way to draw a coloured bar is the thing the design system
 prohibits.
-**Why semantic ones as well as categorical**: a success-rate chart has a natural good/bad axis, and
-reusing a categorical hue for "favorable" would make the palette say something it does not mean.
-**Contrast is checked, not assumed**: each token is measured against the surface it is drawn on and
-recorded in this slice's own contrast note, the practice `020` established
-(`specs/020-design-language/contrast.md`).
+**Why one semantic token**: a success-rate chart has a natural good axis, and reusing the brand
+indigo for "favorable" would make the palette say something it does not mean. There is no matching
+negative: nothing on this screen colours a figure as bad, because a low rate matters less than the
+sample size beside it and red would drown that.
+**Amended 2026-09-26, during implementation.** This decision was first taken as *five* categorical
+tokens plus *two* semantic ones, and four of the seven ended up with no user anywhere — none of
+the three charts this slice ships is multi-series, and each one's categories are separated by
+their own axis labels and by the table underneath (FR-012), not by hue. The unused four were
+deleted rather than left as a palette written for charts nobody had asked for; a slice that adds a
+real multi-series chart adds the steps it needs and measures them. Recorded here rather than only
+in the code, because the original wording is what a reader would otherwise trust.
+**Contrast is checked, not assumed**: each token is measured against both surfaces it is drawn on
+and recorded in this slice's own contrast note, the practice `020` established
+(`specs/020-design-language/contrast.md`). Six pairs, nothing below 5.64:1.
+**Colour carries no information**: every bar is labelled on its own axis and every chart is
+followed by a table with the same numbers, so a reader who cannot distinguish the hues loses
+nothing (WCAG 1.4.1). That is what makes a three-token palette sufficient.
 **Rejected**: recharts' default palette (arrives as literals, unthemed, and ignores `020`
 entirely); reusing `--color-primary` for every series (indistinguishable bars).
 
@@ -460,6 +514,7 @@ has shape rather than five equal bars.
 - [ ] Decision 2 — revenue and the Financiero tab removed rather than stubbed — *Decided by Claude 2026-09-25, pending ratification by Jero*
 - [ ] Decision 3 — its own route, under `case.change_status` — *Decided by Claude 2026-09-25, pending ratification by Jero*
 - [ ] Decision 4 — `kpi.read` for MP/CM/SA, **not BM** — *Decided by Claude 2026-09-25, pending ratification by Jero*
+- [ ] Decision 10 — workload labelled by position, never by email — *Decided by Claude 2026-09-25, pending ratification by Jero*
 - [ ] Decision 5 — chart colours as design tokens, contrast recorded — *Decided by Claude 2026-09-25, pending ratification by Jero*
 - [ ] Decision 6 — the KPI read is not audited — *Decided by Claude 2026-09-25, pending ratification by Jero*
 - [ ] Decision 7 — month/quarter/year in America/Mexico_City — *Decided by Claude 2026-09-25, pending ratification by Jero*

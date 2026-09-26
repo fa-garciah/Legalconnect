@@ -51,6 +51,8 @@ const DETAIL: CaseDetail = {
   venueCaseReference: '1234/2026',
   openedOn: '2026-03-04',
   closedOn: null,
+  // 015/FR-002b. An open matter can hold none — the database refuses it.
+  outcome: null,
   team: [
     { membershipId: 'm-1', roleOnCase: 'lead', assignedAt: '2026-03-04T00:00:00.000Z' },
     { membershipId: 'm-2', roleOnCase: 'support', assignedAt: '2026-03-05T00:00:00.000Z' },

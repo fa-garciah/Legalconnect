@@ -134,7 +134,7 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it("covers every action in the vocabulary — fifty-four (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three)", () => {
+  it("covers every action in the vocabulary — fifty-nine (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three, 014's one, 013's three, 015's one)", () => {
     // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024 /
     // 007-FR-019 / 003-FR-042 / 005 research.md D8 without a test reaching it.
     //
@@ -147,7 +147,9 @@ describe('audit entry fields and channel gating', () => {
     // elsewhere would defeat that.
     // 014 adds `membership.list_read` (Decision 5), channel-gated like `case.read`.
     // 013 adds three calendar actions, none gated.
-    expect(AUDIT_ACTIONS).toHaveLength(58);
+    // 015 adds `case.outcome_declared` — unconditional, and NOT gated: declaring how a matter
+    // ended is a change to the record, not a read of it, so there is no polling job to throttle.
+    expect(AUDIT_ACTIONS).toHaveLength(59);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
@@ -155,7 +157,7 @@ describe('audit entry fields and channel gating', () => {
     expect(GATED).toHaveLength(6);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
     expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
-    expect(UNCONDITIONAL).toHaveLength(58 - 6 - 4 - 15);
+    expect(UNCONDITIONAL).toHaveLength(59 - 6 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

@@ -64,6 +64,7 @@ const TORRES: CaseListItem = {
   venueCaseReference: '1234/2026',
   openedOn: '2026-03-04',
   closedOn: null,
+  outcome: null,
 };
 
 /** No type, no venue — the record genuinely lacks both. And it is closed. */
@@ -77,6 +78,8 @@ const MINIMO: CaseListItem = {
   venueCaseReference: null,
   openedOn: '2026-01-01',
   closedOn: '2026-08-27',
+  // Closed and undeclared — the state `/kpis` reports as "sin resultado declarado".
+  outcome: null,
 };
 
 const CATALOGS = {

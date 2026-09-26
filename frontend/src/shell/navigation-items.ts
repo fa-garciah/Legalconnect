@@ -125,7 +125,22 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   },
   // 013 (FR-013). BM holds no calendar capability: case-linked events are matter content.
   { id: 'calendario', label: 'Calendario', href: '/calendario', icon: 'calendar', requiredArchetypes: ['MP', 'AA', 'PL', 'CM', 'SA'], available: true },
-  { id: 'kpis', label: 'KPIs', href: '/kpis', icon: 'bar-chart', requiredArchetypes: INTERNAL, available: false },
+  {
+    id: 'kpis',
+    label: 'KPIs',
+    href: '/kpis',
+    icon: 'bar-chart',
+    /*
+     * 015 (FR-013). Narrowed and switched on together, as `023` did for `documentos`, and for
+     * the same reason: it said `INTERNAL`, which includes `AA`, `PL` and `BM` — none of whom
+     * holds `kpi.read`. Firm-wide aggregates summarise every matter in the firm, so only the
+     * three archetypes that already see every matter may read them (015/Decision 4). Switching
+     * the flag with the old list would hand three archetypes a link to a page that refuses
+     * every request it makes.
+     */
+    requiredArchetypes: ['MP', 'CM', 'SA'],
+    available: true,
+  },
   {
     id: 'conectores',
     label: 'Conectores Judiciales',

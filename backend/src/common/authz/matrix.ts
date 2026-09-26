@@ -117,4 +117,9 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   // 013-calendar-core, rows 44-45. BM holds neither: a case-linked event carries matter content.
   'calendar.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'calendar.manage': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // 015 row 47. Narrower than every other tenant-scoped read in this matrix, and that is the
+  // decision: firm-wide aggregates summarise matters, so only the archetypes that already see
+  // every matter may read them. `AA` and `PL` see the matters they are assigned to; `BM` sees
+  // none at all.
+  'kpi.read': new Set(['MP', 'CM', 'SA']),
 };

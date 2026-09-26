@@ -18,7 +18,7 @@ import { Capability, ScopeTarget } from '../../common/authz/declare';
 import { decodeCursor } from '../../common/http/pagination';
 import { assertUuid } from '../tenant/rfc';
 import { CaseService } from './case.service';
-import type { CaseRow, CatalogRef } from './case.repository';
+import type { CaseOutcome, CaseRow, CatalogRef } from './case.repository';
 import { CaseAssignmentRepository, type TeamMemberRow } from './case-assignment.repository';
 
 interface AuditableRequest {
@@ -35,6 +35,8 @@ export interface CaseItem {
   readonly venue: CatalogRef | null;
   readonly openedOn: string;
   readonly closedOn: string | null;
+  /** 015/FR-002b — `null` means undeclared, which is NOT `sin_resolucion`. */
+  readonly outcome: CaseOutcome | null;
 }
 
 export interface CaseDetail extends CaseItem {
@@ -56,6 +58,7 @@ const present = (row: CaseRow): CaseItem => ({
   venue: row.venue,
   openedOn: row.openedOn,
   closedOn: row.closedOn,
+  outcome: row.outcome,
 });
 
 @Controller('tenant/cases')
@@ -154,6 +157,39 @@ export class CaseController {
       ...(previous.closedOn === row.closedOn
         ? {}
         : { closedOn: { from: previous.closedOn, to: row.closedOn } }),
+    });
+
+    return present(row);
+  }
+
+  /**
+   * 015/FR-002 — declare how a matter ended.
+   *
+   * Reuses `case.change_status` rather than inventing a capability (015/Decision 3): closing a
+   * matter and saying how it ended are one act, split across two requests only because
+   * `PATCH …/status` has a shipped contract and cannot reach a matter closed last year. A
+   * separate permission could be granted to somebody who cannot close a matter, which is
+   * meaningless, or withheld from somebody who can, which leaves matters closeable but never
+   * measurable.
+   */
+  @Patch(':caseId/outcome')
+  @HttpCode(200)
+  @Capability('case.change_status')
+  @ScopeTarget('caseId')
+  @Audited({ action: 'case.outcome_declared', targetEntity: 'case_file' })
+  async declareOutcome(
+    @Param('caseId') caseId: string,
+    @Body() body: unknown,
+    @Req() req: AuditableRequest,
+  ): Promise<CaseItem> {
+    const id = assertUuid(caseId, 'case id');
+    req.auditTargetId = id;
+
+    const { row, previous } = await this.cases.declareOutcome(id, body);
+
+    // 004/FR-009's shape — field names and the transition, never matter content.
+    addAuditMetadata(req as object, {
+      outcome: { from: previous.outcome, to: row.outcome },
     });
 
     return present(row);

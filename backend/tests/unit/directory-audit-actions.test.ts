@@ -32,7 +32,7 @@ describe('017 directory audit actions', () => {
   // count is updated rather than the assertion deleted, following the precedent
   // 007 set for the dependency baseline: a future slice growing the vocabulary
   // unnoticed should still fail here and have to say so out loud.
-  it('AUDIT_ACTIONS holds exactly 58 actions (16 from 001/002, 3 from 017, 12 from 006, 8 from 007, 12 from 003, 3 from 005, 1 from 014, 3 from 013)', () => {
-    expect(AUDIT_ACTIONS).toHaveLength(58);
+  it('AUDIT_ACTIONS holds exactly 59 actions (16 from 001/002, 3 from 017, 12 from 006, 8 from 007, 12 from 003, 3 from 005, 1 from 014, 3 from 013, 1 from 015)', () => {
+    expect(AUDIT_ACTIONS).toHaveLength(59);
   });
 });

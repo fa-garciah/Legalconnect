@@ -119,6 +119,8 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'document.manage_catalog': new Set(['MP', 'SA']),
   // 023 row 46 — `document.read_list`, tenant scope, transcribed from 023/spec.md's matrix.
   'document.read_list': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // 015 row 47 — kpi.read, tenant scope, transcribed from 015/spec.md's matrix.
+  'kpi.read': new Set(['MP', 'CM', 'SA']),
 
   /*
    * Rows 44-45, from 013/spec.md's Capability Matrix. Columns there are MP AA PL CM BM SA PO.

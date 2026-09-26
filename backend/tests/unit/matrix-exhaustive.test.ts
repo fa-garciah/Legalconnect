@@ -73,6 +73,9 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   // requires an empty list. The rows are narrowed by live assignment inside the query.
   // Mirrors `document.read` exactly, including BM's absence.
   'document.read_list': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  // 015-kpi-dashboard, row 47. Narrower than the other tenant reads by decision: aggregates
+  // summarise matters, so only the archetypes that already see every matter may read them.
+  'kpi.read': ['MP', 'CM', 'SA'],
   // 013-calendar-core, rows 44-45. Both `tenant`; `BM` excluded because a case-linked event
   // carries matter content (013 Decision 4).
   'calendar.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
@@ -170,8 +173,8 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
     ]);
     // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013) + 1 (023). A census, moved by every
     // slice that extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45, and
-    // 023 to 46 with `document.read_list`.
-    expect(asserted.size).toBe(46);
+    // 023 to 46 with `document.read_list`, and 015 to 47 with `kpi.read`.
+    expect(asserted.size).toBe(47);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

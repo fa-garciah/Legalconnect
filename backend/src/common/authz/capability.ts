@@ -129,6 +129,22 @@ export const CAPABILITIES = {
   // query (013/FR-006); a single case-linked event answers 404 when its case is unreachable.
   'calendar.read': { scope: 'tenant' },
   'calendar.manage': { scope: 'tenant' },
+  /**
+   * 015-kpi-dashboard, row 47 — the firm's aggregate figures, `GET /tenant/kpis`.
+   *
+   * `tenant` scope with **no** per-row narrowing, which is unusual here and deliberate: the
+   * three archetypes granted it (`MP`, `CM`, `SA`) are precisely the three that already see
+   * every matter in the firm, so there is nothing to narrow. That is not a shortcut, it is why
+   * `AA` and `PL` are refused rather than served a scoped variant — "the firm's success rate,
+   * but only over your own matters" is not a smaller version of the metric, it is a different
+   * and meaningless one.
+   *
+   * `BM` is refused too, on Principle VI: every figure here is about matters, and `BM` holds no
+   * case capability at all. The figures that would be theirs — revenue, billed hours — are the
+   * ones 015/Decision 2 removes for want of any data to compute them from. Reconsider when
+   * `010-billing-core` lands.
+   */
+  'kpi.read': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;
