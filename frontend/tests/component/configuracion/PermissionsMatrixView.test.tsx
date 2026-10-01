@@ -24,7 +24,7 @@ describe('PermissionsMatrixView', () => {
   it('names roles in Spanish as column headers', () => {
     render(<PermissionsMatrixView />);
     const table = screen.getAllByRole('table')[0]!;
-    for (const label of ['Administrador', 'Socio', 'Abogado asociado', 'Pasante', 'Gestor de casos', 'Administración']) {
+    for (const label of ['Administrador', 'Socio', 'Abogado asociado', 'Pasante', 'Gestor de casos', 'Facturación y cobranza']) {
       expect(within(table).getByRole('columnheader', { name: label })).toBeInTheDocument();
     }
   });
