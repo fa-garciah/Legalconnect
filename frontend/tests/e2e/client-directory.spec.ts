@@ -19,7 +19,16 @@
  * the default fixture the directory renders a refusal rather than data — which is correct
  * behaviour, and is why the first test here checks the seam before anything else does.
  */
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
+
+/*
+ * Signed in through 022's demo firm, ONCE for the whole suite (demo-session.ts) — as the demo
+ * MP. Until 2026-10-09 this suite relied on principal.fixture.json, which 003 retired; every
+ * test then landed on /ingresar and failed waiting for a screen that never rendered.
+ */
+test.skip(!demoConfigured(), DEMO_SKIP_REASON);
+
 
 /** One per client. The directory is a card grid; each card is an `article`. */
 function dataRows(page: Page) {
@@ -164,14 +173,12 @@ test.describe('the client directory against a running backend', () => {
     }
 
     /*
-     * `documentos`, not `expedientes`.
+     * `conectores` — a section that genuinely has no route yet.
      *
-     * This test originally used `expedientes` as its unavailable example, and slice `019`
-     * built that screen and flipped the flag — so the assertion started failing for the best
-     * possible reason. Pointed at a section that genuinely has no route yet; `007` shipped
-     * the document API and four of its frontend tasks remain.
+     * This test has had to move twice, each time for the best possible reason: it used
+     * `expedientes` until `019` built that screen, then `documentos` until `021`/`023` did.
      */
-    const unbuilt = nav.getByTestId('nav-item-documentos');
+    const unbuilt = nav.getByTestId('nav-item-conectores');
     await expect(unbuilt).toBeVisible();
     await expect(unbuilt).toHaveAttribute('data-unavailable', 'true');
     // Not an anchor, so there is nothing to click through to and nothing to tab onto.

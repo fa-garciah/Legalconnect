@@ -23,6 +23,7 @@ import {
   DEMO_FIRMS,
   DEMO_PASSWORD,
   DEMO_PEOPLE,
+  DEMO_UNENROLLED,
   backupCodesFor,
   totpSecretFor,
 } from '../../drizzle/demo/firm';
@@ -137,7 +138,10 @@ describe('the demo firm seed', () => {
                 (i.mfa_enrolled_at IS NOT NULL) AS enrolled,
                 (f.confirmed_at IS NOT NULL) AS confirmed
            FROM identity i LEFT JOIN identity_factor f ON f.identity_id = i.id
-          WHERE i.subject LIKE 'demo|%'`,
+          WHERE i.subject LIKE 'demo|%' AND i.email = ANY($1::text[])`,
+        // The people who sign in. The one unenrolled person (DEMO_UNENROLLED) has neither, which is
+        // also agreement — asserted in its own block below.
+        [DEMO_PEOPLE.map((p) => p.email)],
       );
       expect(rows).toHaveLength(DEMO_PEOPLE.length);
       for (const row of rows) expect(row.enrolled, row.email).toBe(row.confirmed);
@@ -185,8 +189,44 @@ describe('the demo firm seed', () => {
         WHERE i.subject LIKE 'demo|%' AND m.tenant_id = (SELECT id FROM tenant WHERE rfc = $1)`,
       [DEMO_FIRMS[0]!.rfc],
     );
-    expect(rows.map((r) => r.archetype).sort()).toEqual(['AA', 'AA', 'BM', 'CM', 'MP', 'PL', 'SA']);
+    // Seven people who sign in, plus the one unenrolled associate who exists for the enrollment
+    // walk-through (DEMO_UNENROLLED) — hence a third AA.
+    expect(rows.map((r) => r.archetype).sort()).toEqual(['AA', 'AA', 'AA', 'BM', 'CM', 'MP', 'PL', 'SA']);
     for (const row of rows) expect(row.position, row.archetype).not.toBeNull();
+  });
+
+  describe('the one unenrolled person (auth-enrollment.spec.ts starts from them)', () => {
+    const state = () =>
+      one<{ credential: boolean; factor: boolean; codes: string; enrolled: boolean; member: boolean }>(
+        `SELECT EXISTS (SELECT 1 FROM identity_credential c WHERE c.identity_id = i.id) AS credential,
+                EXISTS (SELECT 1 FROM identity_factor f WHERE f.identity_id = i.id) AS factor,
+                (SELECT count(*) FROM backup_code b WHERE b.identity_id = i.id)::text AS codes,
+                i.mfa_enrolled_at IS NOT NULL AS enrolled,
+                EXISTS (SELECT 1 FROM membership m JOIN tenant t ON t.id = m.tenant_id
+                         WHERE m.identity_id = i.id AND t.rfc = $2 AND m.revoked_at IS NULL) AS member
+           FROM identity i WHERE i.email = $1`,
+        [DEMO_UNENROLLED.email, DEMO_RFCS[0]],
+      );
+
+    it('has a password and a membership, and no second factor', async () => {
+      expect(await state()).toEqual({ credential: true, factor: false, codes: '0', enrolled: false, member: true });
+    });
+
+    it('is put back into that state by every run, even after enrolling', async () => {
+      // As if the e2e walk-through had enrolled them: enrollment sets this column.
+      await migration.query(`UPDATE identity SET mfa_enrolled_at = now() WHERE email = $1`, [DEMO_UNENROLLED.email]);
+      runDemoSeed();
+      expect(await state()).toEqual({ credential: true, factor: false, codes: '0', enrolled: false, member: true });
+    }, 240_000);
+
+    it('is the only demo person without a factor — every other one still signs in', async () => {
+      const { rows } = await migration.query<{ email: string }>(
+        `SELECT i.email FROM identity i
+          WHERE i.subject LIKE 'demo|%' AND NOT EXISTS (SELECT 1 FROM identity_factor f WHERE f.identity_id = i.id)`,
+      );
+      expect(rows.map((r) => r.email)).toEqual([DEMO_UNENROLLED.email]);
+      expect(DEMO_PEOPLE.map((p) => p.email)).not.toContain(DEMO_UNENROLLED.email);
+    });
   });
 
   it('gives one person a membership in both firms, with different archetypes (001/FR-021)', async () => {

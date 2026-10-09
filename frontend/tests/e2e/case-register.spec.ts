@@ -12,15 +12,17 @@
  * fixture the register renders a refusal rather than data — correct behaviour, and why the
  * first test here checks the seam before anything else does.
  */
-import { test, expect, type Page } from '@playwright/test';
-import { SEEDED_IDENTITY_ID, SEEDED_TENANT_ID } from './seeded-principal';
+import type { Page } from '@playwright/test';
+import { test, expect, api, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-
-const HEADERS = {
-  'x-identity-id': SEEDED_IDENTITY_ID,
-  'x-tenant-id': SEEDED_TENANT_ID,
-};
+/*
+ * Signed in through 022's demo firm, ONCE for the whole suite (demo-session.ts) — as the demo SA,
+ * because two tests below read the firm's audit trail and `audit.read_own_tenant` is SA's alone.
+ * Until 2026-10-09 this suite asserted an identity through request headers (principal.fixture.json),
+ * a mechanism 003 retired; every test then landed on /ingresar.
+ */
+test.use({ demoAs: 'admin' });
+test.skip(!demoConfigured('admin'), DEMO_SKIP_REASON);
 
 /** One per matter. The register is a table; each matter is a row. */
 function dataRows(page: Page) {
@@ -154,7 +156,8 @@ test.describe('the case register against a running backend', () => {
  * They are the only two tests in the slice that share mutable server state.
  */
 test.describe.serial('the audit log records deliberate access and nothing else', () => {
-    test('LISTING MATTERS WRITES ZERO AUDIT ENTRIES', async ({ page, request }) => {
+    test('LISTING MATTERS WRITES ZERO AUDIT ENTRIES', async ({ page }) => {
+      const as = await api(page);
       /*
        * SC-005, research D4, and the assertion this file exists for.
        *
@@ -166,7 +169,7 @@ test.describe.serial('the audit log records deliberate access and nothing else',
        * Reading the log needs `audit.read_own_tenant`, which `004` gives to `SA` alone, so this
        * skips loudly under a fixture that does not hold it rather than passing quietly.
        */
-      const probe = await request.get(`${API_BASE}/audit/events?limit=1`, { headers: HEADERS });
+      const probe = await as.get(`/audit/events?limit=1`);
       test.skip(
         probe.status() !== 200,
         `the configured fixture does not hold audit.read_own_tenant (got ${probe.status()}); ` +
@@ -174,9 +177,7 @@ test.describe.serial('the audit log records deliberate access and nothing else',
       );
 
       const countReads = async (): Promise<number> => {
-        const response = await request.get(`${API_BASE}/audit/events?limit=100&action=case.read`, {
-          headers: HEADERS,
-        });
+        const response = await as.get(`/audit/events?limit=100&action=case.read`);
         expect(response.status()).toBe(200);
         const body = (await response.json()) as { items: unknown[] };
         return body.items.length;
@@ -197,24 +198,22 @@ test.describe.serial('the audit log records deliberate access and nothing else',
 
     test('opening one matter writes exactly one access entry, and a refocus writes none', async ({
       page,
-      request,
     }) => {
+      const as = await api(page);
       /*
        * T033, research D3. `006` records an access per interactive read of a case, and this
        * application's query client refetches on window focus by default — so a reader who
        * alt-tabs away and back would silently write a second entry for a matter they opened
        * once. An access log that counts window focus is one nobody can reason about.
        */
-      const probe = await request.get(`${API_BASE}/audit/events?limit=1`, { headers: HEADERS });
+      const probe = await as.get(`/audit/events?limit=1`);
       test.skip(
         probe.status() !== 200,
         `the configured fixture does not hold audit.read_own_tenant (got ${probe.status()})`,
       );
 
       const countReads = async (): Promise<number> => {
-        const response = await request.get(`${API_BASE}/audit/events?limit=100&action=case.read`, {
-          headers: HEADERS,
-        });
+        const response = await as.get(`/audit/events?limit=100&action=case.read`);
         const body = (await response.json()) as { items: unknown[] };
         return body.items.length;
       };

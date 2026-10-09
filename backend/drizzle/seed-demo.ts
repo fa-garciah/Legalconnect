@@ -40,6 +40,7 @@ import {
   DEMO_PASSWORD,
   DEMO_PEOPLE,
   DEMO_POSITIONS_EXTRA,
+  DEMO_UNENROLLED,
   backupCodesFor,
   totpSecretFor,
   type DemoFirm,
@@ -125,6 +126,7 @@ async function main(): Promise<void> {
     }
 
     await seedPeople(migration, written);
+    await seedUnenrolled(migration, written[0]!);
 
     for (const target of written) {
       await seedClientsAndMatters(migration, target);
@@ -715,6 +717,44 @@ async function recomputeStorageCounter(migration: Client, tenantId: string): Pro
         SET storage_bytes_used = (SELECT COALESCE(SUM(size_bytes), 0) FROM document WHERE tenant_id = $1)
       WHERE id = $1`,
     [tenantId],
+  );
+}
+
+/**
+ * The one demo person who has NOT enrolled a second factor (`DEMO_UNENROLLED`): a credential and a
+ * live membership in the full firm, and no factor. Every run puts them back in that state — factor
+ * and backup codes removed, `mfa_enrolled_at` cleared — because `auth-enrollment.spec.ts` enrolls
+ * them, and the walk-through must be repeatable. Only this identity is ever reset.
+ */
+async function seedUnenrolled(migration: Client, home: WrittenFirm): Promise<void> {
+  const person = DEMO_UNENROLLED;
+  const identityId = deterministicUuid('identity', person.email);
+  await migration.query(
+    `INSERT INTO identity (id, subject, email, mfa_enrolled_at)
+     VALUES ($1, $2, $3, NULL)
+     ON CONFLICT (subject) DO UPDATE SET email = excluded.email, mfa_enrolled_at = NULL`,
+    [identityId, `demo|${person.slug}`, person.email],
+  );
+  await migration.query(
+    `INSERT INTO identity_credential (identity_id, digest) VALUES ($1, $2)
+     ON CONFLICT (identity_id) DO UPDATE SET digest = excluded.digest, updated_at = now()`,
+    [identityId, await hashCredential(DEMO_PASSWORD)],
+  );
+  await migration.query(`DELETE FROM backup_code WHERE identity_id = $1`, [identityId]);
+  await migration.query(`DELETE FROM identity_factor WHERE identity_id = $1`, [identityId]);
+  const { rows } = await migration.query<{ id: string }>(
+    `INSERT INTO membership (id, identity_id, tenant_id, archetype)
+     VALUES ($1, $2, $3, $4::archetype)
+     ON CONFLICT (identity_id, tenant_id) DO UPDATE SET archetype = excluded.archetype
+     RETURNING id`,
+    [deterministicUuid('membership', person.email, home.tenantId), identityId, home.tenantId, person.archetype],
+  );
+  await migration.query(
+    `INSERT INTO directory_entry (membership_id, tenant_id, position_id)
+     SELECT $1, $2, p.id FROM position p
+      WHERE p.tenant_id = $2 AND lower(trim(p.name)) = lower(trim($3)) AND p.status = 'active'
+     ON CONFLICT (membership_id) DO UPDATE SET position_id = excluded.position_id`,
+    [rows[0]!.id, home.tenantId, person.position],
   );
 }
 

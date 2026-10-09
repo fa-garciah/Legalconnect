@@ -7,7 +7,16 @@
  * page that scrolls sideways on a phone. Both projects run every test in this file, so each
  * case below is executed at both viewports without being written twice.
  */
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
+
+/*
+ * Signed in through 022's demo firm, ONCE for the whole suite (demo-session.ts) — as the demo
+ * MP. Until 2026-10-09 this suite relied on principal.fixture.json, which 003 retired; every
+ * test then landed on /ingresar and failed waiting for a screen that never rendered.
+ */
+test.skip(!demoConfigured(), DEMO_SKIP_REASON);
+
 
 /**
  * Whether the page itself scrolls sideways.

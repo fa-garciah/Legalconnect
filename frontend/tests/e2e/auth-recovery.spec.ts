@@ -50,7 +50,9 @@ test.describe('recovery, end to end', () => {
     await page.getByRole('button', { name: 'Confirmar' }).click();
 
     // A COMPLETE new set of ten, not the nine that were left (FR-028).
-    await expect(page.getByText('Códigos de respaldo')).toBeVisible();
+    // By role: the acknowledgement checkbox's label ("Ya guardé mis códigos de respaldo.") also
+    // contains the phrase, so a text match resolved to two elements and failed on strict mode.
+    await expect(page.getByRole('heading', { name: 'Códigos de respaldo' })).toBeVisible();
     await expect(page.locator('ul li')).toHaveCount(10);
 
     await page.getByRole('checkbox').check();

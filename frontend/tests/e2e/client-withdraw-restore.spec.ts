@@ -21,10 +21,17 @@
  *
  * **This test writes** and leaves its client behind; `006` has no delete, deliberately.
  */
-import { test, expect, type Page } from '@playwright/test';
-import { SEEDED_IDENTITY_ID, SEEDED_TENANT_ID } from './seeded-principal';
+import type { Page } from '@playwright/test';
+import { test, expect, api, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+/*
+ * Signed in through 022's demo firm, ONCE for the whole suite (demo-session.ts) — as the demo
+ * SA (the audit trail is SA's to read). Until 2026-10-09 this suite relied on principal.fixture.json, which 003 retired; every
+ * test then landed on /ingresar and failed waiting for a screen that never rendered.
+ */
+test.use({ demoAs: 'admin' });
+test.skip(!demoConfigured('admin'), DEMO_SKIP_REASON);
+
 
 function uniqueName(prefix: string): string {
   return `${prefix} ${process.pid}-${test.info().workerIndex}-${test.info().repeatEachIndex}`;
@@ -123,12 +130,10 @@ test.describe('withdrawing a client and undoing it', () => {
     await expect(page.getByText(name)).toBeVisible();
   });
 
-  test('the round trip leaves two distinct audit entries', async ({ page, request }) => {
-    const identityId = SEEDED_IDENTITY_ID;
-    const tenantId = SEEDED_TENANT_ID;
-    const headers = { 'x-identity-id': identityId, 'x-tenant-id': tenantId ?? '' };
-
-    const probe = await request.get(`${API_BASE}/audit/events?limit=1`, { headers });
+  test('the round trip leaves two distinct audit entries', async ({ page }) => {
+    await page.goto('/');
+    const as = await api(page);
+    const probe = await as.get('/audit/events?limit=1');
     test.skip(
       probe.status() !== 200,
       `the configured fixture does not hold audit.read_own_tenant (got ${probe.status()}); ` +
@@ -146,7 +151,7 @@ test.describe('withdrawing a client and undoing it', () => {
     await page.getByRole('button', { name: new RegExp(`restaurar ${name}`, 'i') }).click();
     await expect(rowFor(page, name).getByText('Activo')).toBeVisible({ timeout: 10_000 });
 
-    const response = await request.get(`${API_BASE}/audit/events?limit=50`, { headers });
+    const response = await as.get('/audit/events?limit=50');
     expect(response.status()).toBe(200);
     const body = (await response.json()) as { items: { action: string }[] };
     const actions = body.items.map((item) => item.action);

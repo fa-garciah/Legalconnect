@@ -160,6 +160,26 @@ export const DEMO_PEOPLE: readonly DemoPerson[] = [
   },
 ] as const;
 
+/**
+ * ONE person who has accepted an invitation and set a password but has NOT enrolled a second
+ * factor — the state `003`'s enrollment walk-through (`auth-enrollment.spec.ts`) starts from, and
+ * the one no other demo person can be in. Added 2026-10-09.
+ *
+ * Kept OUT of `DEMO_PEOPLE` on purpose: every other demo person can sign in, and suites, counts and
+ * the printed credential table all rely on that. This one cannot until they enroll — and the seed
+ * PUTS THEM BACK into the unenrolled state on every run (factor and backup codes removed,
+ * `mfa_enrolled_at` cleared), so the walk-through can be repeated: the e2e suite enrolls them, the
+ * next `db:seed:demo` un-enrolls them. That reset is the one deliberate exception to "a re-run
+ * writes nothing", and it only ever touches this identity.
+ */
+export const DEMO_UNENROLLED = {
+  slug: 'sanchez',
+  name: 'Diego Sánchez Ortega',
+  email: email('diego', 'sanchez'),
+  archetype: 'AA' as InternalArchetype,
+  position: 'Asociado',
+} as const;
+
 /* --------------------------------------------------------------------------
  * Derived credential material. Decision 2.
  * ----------------------------------------------------------------------- */
@@ -226,6 +246,8 @@ export function demoVisibleStrings(): readonly string[] {
   return [
     ...DEMO_FIRMS.flatMap((f) => [f.name]),
     ...DEMO_PEOPLE.flatMap((p) => [p.name, p.position, ...(p.alsoAt ? [p.alsoAt.position] : [])]),
+    DEMO_UNENROLLED.name,
+    DEMO_UNENROLLED.position,
     ...DEMO_POSITIONS_EXTRA,
     ...DEMO_CATEGORIES_EXTRA,
   ];

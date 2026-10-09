@@ -1,88 +1,56 @@
 /**
  * T048 (016a), confirmed by T060 (019). A principal lacking the archetype for a
  * navigation item does not see it rendered; a direct call to that item's underlying
- * API route is refused identically whether or not the item was ever hidden.
- * `filterNavigationItems` never touches the network — it cannot have made a route
- * MORE reachable — and `004`'s `AuthorizationInterceptor` is untouched by anything in
- * `frontend/`. This file used to be skipped: `016a` and `018` shipped no real
- * navigation item backed by a real capability to test against. `019` does.
+ * API route is refused all the same. `filterNavigationItems` never touches the network —
+ * it cannot have made a route MORE reachable — and `004`'s `AuthorizationInterceptor` is
+ * untouched by anything in `frontend/`.
  *
- * **The stronger case.** `expedientes` is gated by `case.read_list`, `tenant` scope —
- * the same kind `016a`'s placeholder imagined. `019` also ships an `assigned`-scoped
- * route, `GET /tenant/cases/:id`, reached by `case.read`. Scope kind changes nothing
- * about the guarantee under test: an unrecognised caller is refused by both, and both
- * refusals are the generic `404 not_found` — opaque, indistinguishable from the
- * resource simply not existing (`006/FR-016`–`FR-017`), which is a stronger claim
- * than a `403` would be, since it asserts the response discloses nothing at all.
+ * REWRITTEN 2026-10-09 against a real sign-in. The first version asserted an UNRECOGNISED
+ * identity through an `x-identity-id` header against the backend directly. `003` retired that
+ * mechanism: the backend now resolves the caller from the session, so a header-only request is
+ * refused for having no session before any of the properties below can be observed, and the
+ * suite had been skipped for want of the `principal.fixture.json` it read its tenant from.
  *
- * No seeded fixture identity is used here on purpose. Every real membership in this
- * product's seed (`dual`, `outsider`) either holds `case.read_list`/`case.read`
- * outright or is exempt from the `assigned` check entirely (`006`'s Decision 2, `MP`
- * and `SA`) — there is no seeded archetype this suite can point at that is guaranteed
- * to lack both capabilities on every run. A fabricated identity id is guaranteed to
- * hold neither, on any seed, which is the actual property this test needs: a caller
- * the server has never heard of, exactly as unauthenticated as an item being hidden
- * would suggest.
+ * The property, stated with a real person: the demo firm's billing manager (`BM`) holds no case
+ * capability at all (`matrix.ts`, 006/spec.md rows 29-33), so `Expedientes` is absent from their
+ * navigation — and the case routes refuse them when called directly, through the very proxy the
+ * screens use, with their real session. Hiding the item is cosmetic; the server is the gate.
+ *
+ * **Prerequisites**: backend on 3001, `npm run db:seed:demo`, `E2E_BM_EMAIL` / `E2E_BM_SECRET`.
  */
-import { test, expect } from '@playwright/test';
-import { SEEDED_TENANT_ID } from './seeded-principal';
+import { test, expect, api, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-
-/** Well-formed, and guaranteed to name nobody — no `identity` row is ever seeded with it. */
-const UNKNOWN_IDENTITY_ID = '00000000-0000-0000-0000-000000000000';
-
-const TENANT_ID = SEEDED_TENANT_ID;
+test.use({ demoAs: 'billing' });
+test.skip(!demoConfigured('billing'), DEMO_SKIP_REASON);
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'desktop only — one sign-in per TOTP step');
+});
 
 test.describe('hiding a navigation item is cosmetic only', () => {
-  test('the tenant-scoped route (case.read_list) refuses an unrecognised caller, same as a hidden item would', async ({
-    request,
-  }) => {
-    test.skip(!TENANT_ID, 'principal.fixture.json has no seeded tenant to address');
-
-    const response = await request.get(`${API_BASE}/tenant/cases`, {
-      headers: { 'x-identity-id': UNKNOWN_IDENTITY_ID, 'x-tenant-id': TENANT_ID },
-    });
-
-    expect(response.status()).toBe(404);
-    const body = (await response.json()) as { error: { code: string } };
-    expect(body.error.code).toBe('not_found');
+  test('the billing manager is not shown Expedientes', async ({ page }) => {
+    await page.goto('/');
+    const navigation = page.getByRole('navigation');
+    await expect(navigation).toBeVisible();
+    await expect(navigation.getByText('Expedientes')).toHaveCount(0);
   });
 
-  test('the assigned-scoped route (case.read) refuses an unrecognised caller identically — the stronger case', async ({
-    request,
-  }) => {
-    test.skip(!TENANT_ID, 'principal.fixture.json has no seeded tenant to address');
-
-    // Any well-formed uuid works: an unrecognised caller is refused before the server
-    // ever reaches the question of whether a matter with this id exists (004's refusal
-    // ordering) — so this is not a claim about which matter, only about who is asking.
-    const response = await request.get(
-      `${API_BASE}/tenant/cases/11111111-1111-4111-8111-111111111111`,
-      { headers: { 'x-identity-id': UNKNOWN_IDENTITY_ID, 'x-tenant-id': TENANT_ID } },
-    );
-
-    expect(response.status()).toBe(404);
+  test('the tenant-scoped route (case.read_list) refuses them anyway', async ({ page }) => {
+    const as = await api(page);
+    const response = await as.get('/tenant/cases');
+    expect(response.status()).toBe(403);
     const body = (await response.json()) as { error: { code: string } };
-    expect(body.error.code).toBe('not_found');
+    expect(body.error.code).toBe('not_authorized');
   });
 
-  test('both refusals are byte-identical in shape — no field distinguishes an unrecognised caller from a missing matter', async ({
-    request,
-  }) => {
-    test.skip(!TENANT_ID, 'principal.fixture.json has no seeded tenant to address');
-
-    const [listResponse, singleResponse] = await Promise.all([
-      request.get(`${API_BASE}/tenant/cases`, {
-        headers: { 'x-identity-id': UNKNOWN_IDENTITY_ID, 'x-tenant-id': TENANT_ID },
-      }),
-      request.get(`${API_BASE}/tenant/cases/22222222-2222-4222-8222-222222222222`, {
-        headers: { 'x-identity-id': UNKNOWN_IDENTITY_ID, 'x-tenant-id': TENANT_ID },
-      }),
+  test('the assigned-scoped route (case.read) refuses them identically, whatever matter is named', async ({ page }) => {
+    // Permission is decided before scope (004's refusal ordering): the refusal says nothing about
+    // whether a matter with this id exists, because the server never got as far as asking.
+    const as = await api(page);
+    const [list, single] = await Promise.all([
+      as.get('/tenant/cases'),
+      as.get('/tenant/cases/22222222-2222-4222-8222-222222222222'),
     ]);
-
-    expect(listResponse.status()).toBe(singleResponse.status());
-    const [listBody, singleBody] = await Promise.all([listResponse.json(), singleResponse.json()]);
-    expect(listBody).toEqual(singleBody);
+    expect(single.status()).toBe(list.status());
+    expect(await single.json()).toEqual(await list.json());
   });
 });

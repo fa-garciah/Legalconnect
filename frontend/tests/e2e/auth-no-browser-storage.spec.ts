@@ -11,11 +11,23 @@
  * It also checks INDEXEDDB, which the component tests do not — jsdom has no
  * meaningful implementation, so that third storage area is only observable in
  * a real browser.
+ *
+ * ONE SIGNED-IN SESSION FOR THE WHOLE SUITE (2026-10-09). The four signed-in checks used to sign
+ * in once each, within seconds: the product refuses a TOTP code presented twice, and throttles
+ * sign-in to five attempts per origin per fifteen minutes, so in a single run every check after
+ * the first failed on the challenge rather than on storage. They now share one page, signed in
+ * once in `beforeAll`, and run in order — which is also the realistic sequence: sign in, move
+ * around, reload. The suite costs three sign-in attempts in total: the credential step alone, the
+ * refused one, and the shared complete one.
  */
-import { test, expect, type Page } from '@playwright/test';
-import { E2E, SKIP_REASON, browserStorage, credentialStep, totpCode } from './auth-helpers';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { E2E, SKIP_REASON, browserStorage, credentialStep } from './auth-helpers';
+import { signIn } from './demo-session';
 
 test.skip(!E2E.email || !E2E.secret, SKIP_REASON);
+test.beforeEach(({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'desktop only — one sign-in per TOTP step');
+});
 
 /** Everything that must never appear, whatever the flow. */
 function assertNothingSensitive(stored: string): void {
@@ -28,12 +40,18 @@ function assertNothingSensitive(stored: string): void {
   }
 }
 
-async function completeSignIn(page: Page): Promise<void> {
-  await credentialStep(page, E2E.email);
-  await expect(page).toHaveURL(/\/verificar/);
-  await page.getByRole('textbox').fill(totpCode(E2E.secret));
-  await page.getByRole('button', { name: 'Verificar' }).click();
-  await expect(page.getByRole('navigation')).toBeVisible();
+/**
+ * IndexedDB databases the PRODUCT created. Next's development server opens its own
+ * (`__next_debug_channel`) to talk to its dev overlay; it holds no application data and does not
+ * exist in a production build, so a name starting with `__next` is the framework's, not ours.
+ * Anything else fails the test.
+ */
+async function productDatabases(page: Page): Promise<string[]> {
+  const names = await page.evaluate(async () => {
+    if (typeof indexedDB?.databases !== 'function') return [];
+    return (await indexedDB.databases()).map((database) => database.name ?? '');
+  });
+  return names.filter((name) => !name.startsWith('__next'));
 }
 
 test.describe('no credential material reaches browser storage (FR-051, SC-028)', () => {
@@ -42,33 +60,6 @@ test.describe('no credential material reaches browser storage (FR-051, SC-028)',
     // to survive a reload, this is where it would show.
     await credentialStep(page, E2E.email);
     await expect(page).toHaveURL(/\/verificar/);
-    assertNothingSensitive(await browserStorage(page));
-  });
-
-  test('after a complete sign-in', async ({ page }) => {
-    await completeSignIn(page);
-    assertNothingSensitive(await browserStorage(page));
-  });
-
-  test('after navigating around the product while signed in', async ({ page }) => {
-    // A session that is USED, not merely created. Query caches and client
-    // state accumulate as somebody moves, and this is where an over-eager
-    // persistence layer would show up.
-    await completeSignIn(page);
-    await page.goto('/clientes');
-    await page.goto('/expedientes');
-    await page.goto('/');
-    assertNothingSensitive(await browserStorage(page));
-  });
-
-  test('after a RELOAD — nothing was persisted to survive one', async ({ page }) => {
-    // The strongest form. The session survives a reload because the cookie is
-    // httpOnly and the server reads it; nothing in page-accessible storage
-    // needs to, and if the session still works while storage stays empty,
-    // that is the property proven rather than asserted.
-    await completeSignIn(page);
-    await page.reload();
-    await expect(page.getByRole('navigation')).toBeVisible();
     assertNothingSensitive(await browserStorage(page));
   });
 
@@ -83,12 +74,49 @@ test.describe('no credential material reaches browser storage (FR-051, SC-028)',
     assertNothingSensitive(stored);
   });
 
-  test('INDEXEDDB IS EMPTY — the storage area the component tests cannot see', async ({ page }) => {
-    await completeSignIn(page);
-    const databases = await page.evaluate(async () => {
-      if (typeof indexedDB?.databases !== 'function') return [];
-      return (await indexedDB.databases()).map((database) => database.name ?? '');
+  test.describe('signed in — one session, in order', () => {
+    test.describe.configure({ mode: 'serial' });
+
+    let context: BrowserContext;
+    let page: Page;
+
+    test.beforeAll(async ({ browser }, testInfo) => {
+      if (testInfo.project.name !== 'desktop') return;
+      context = await browser.newContext();
+      page = await context.newPage();
+      await signIn(page);
     });
-    expect(databases).toEqual([]);
+
+    test.afterAll(async () => {
+      await context?.close();
+    });
+
+    test('after a complete sign-in', async () => {
+      assertNothingSensitive(await browserStorage(page));
+    });
+
+    test('after navigating around the product while signed in', async () => {
+      // A session that is USED, not merely created. Query caches and client
+      // state accumulate as somebody moves, and this is where an over-eager
+      // persistence layer would show up.
+      await page.goto('/clientes');
+      await page.goto('/expedientes');
+      await page.goto('/');
+      assertNothingSensitive(await browserStorage(page));
+    });
+
+    test('after a RELOAD — nothing was persisted to survive one', async () => {
+      // The strongest form. The session survives a reload because the cookie is
+      // httpOnly and the server reads it; nothing in page-accessible storage
+      // needs to, and if the session still works while storage stays empty,
+      // that is the property proven rather than asserted.
+      await page.reload();
+      await expect(page.getByRole('navigation')).toBeVisible();
+      assertNothingSensitive(await browserStorage(page));
+    });
+
+    test('INDEXEDDB HOLDS NOTHING OF OURS — the storage area the component tests cannot see', async () => {
+      expect(await productDatabases(page)).toEqual([]);
+    });
   });
 });

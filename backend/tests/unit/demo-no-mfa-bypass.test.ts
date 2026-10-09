@@ -130,3 +130,31 @@ describe('it grants no capability and touches no matrix', () => {
     }
   });
 });
+
+describe('the one un-enrollment the seed performs is fenced to one identity (2026-10-09)', () => {
+  // `seedUnenrolled` removes a factor and clears `mfa_enrolled_at` so `auth-enrollment.spec.ts` can
+  // repeat its walk-through. That makes a person LESS able to sign in, not more — but a factor
+  // deletion that could reach anyone else would be a way to strip the demo firm's MFA, so it is
+  // held to exactly one place and one identity.
+  const seed = code(sources.find((s) => s.name === 'drizzle/seed-demo.ts')!.text);
+  const fn = seed.slice(seed.indexOf('async function seedUnenrolled'), seed.indexOf('main().catch'));
+
+  it('deletes a factor or backup codes ONLY inside seedUnenrolled', () => {
+    expect((seed.match(/DELETE FROM identity_factor/gi) ?? []).length).toBe(1);
+    expect((seed.match(/DELETE FROM backup_code/gi) ?? []).length).toBe(1);
+    expect(fn).toMatch(/DELETE FROM identity_factor/i);
+    expect(fn).toMatch(/DELETE FROM backup_code/i);
+  });
+
+  it('scopes both deletions to the one unenrolled identity', () => {
+    expect(fn).toMatch(/const person = DEMO_UNENROLLED;/);
+    for (const statement of fn.match(/DELETE FROM [a-z_]+ WHERE [^`]*/gi) ?? []) {
+      expect(statement).toMatch(/WHERE identity_id = \$1$/);
+    }
+  });
+
+  it('the unenrolled person is not one of the people who sign in', async () => {
+    const { DEMO_PEOPLE, DEMO_UNENROLLED } = await import('../../drizzle/demo/firm');
+    expect(DEMO_PEOPLE.map((p) => p.email)).not.toContain(DEMO_UNENROLLED.email);
+  });
+});
