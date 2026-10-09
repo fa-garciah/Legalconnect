@@ -2,7 +2,7 @@
 
 **Feature Branch**: `009-time-tracking`
 **Created**: 2026-10-08
-**Status**: Decided — eleven decisions taken by Claude 2026-10-08, pending ratification by Jero
+**Status**: Ratified — eleven decisions taken by Claude 2026-10-08, **all ratified by Jero 2026-10-09**
 **Input**: `registro-specs-mvp.md` row for `009-time-tracking` (EP08 US01/02/04/05/10/11, blocked on
 scope conflict 4), `plan-paralelo-2026-09.md` §4 ("Lo que ningún carril puede tomar"), the
 `horas` entry `016a` left in the navigation, and the MVP-closing brief of 2026-10-08, which asks
@@ -16,7 +16,7 @@ for this slice to be written with every open point of conflict 4 turned into a n
 > still open with the client**: nobody outside CC has said how this firm wants to record time.
 > Every point that conflict leaves open is therefore resolved here as a numbered Decision with the
 > options considered, and each is marked *"Decided by Claude 2026-10-08 — pending ratification by
-> Jero"*. Nothing here is approved. If the client answers conflict 4 differently, the Decision it
+> Jero"*. **All eleven were ratified by Jero on 2026-10-09.** If the client answers conflict 4 differently, the Decision it
 > contradicts is the one to reopen, and the rest of the spec says what moves with it.
 
 ---
@@ -364,9 +364,12 @@ Other slices may depend on the following, and on nothing else:
 ## Decisions
 
 Every decision below was taken rather than deferred, because the client has not answered scope
-conflict 4. **Decided by Claude 2026-10-08 — pending ratification by Jero.**
+conflict 4. **Decided by Claude 2026-10-08 — ratified by Jero 2026-10-09.** Scope conflict 4 remains
+unanswered by the client; if the client answers it differently, the contradicted Decision is reopened.
 
 ### Decision 1 — Both capture methods, one entity
+
+*Ratified by Jero 2026-10-09.*
 
 **Options**: (A) timer only; (B) manual only; (C) both, as two entities (a `timer` table that is
 converted into entries); (D) both, as **one** entity whose running state is a status.
@@ -384,6 +387,8 @@ half-way.
 CHECK constraints are more involved. They are written once, in `0048`, and tested.
 
 ### Decision 2 — Who records, against what, and why `BM` sees nothing
+
+*Ratified by Jero 2026-10-09.*
 
 **Taken**: `MP`, `AA`, `PL` and `CM` record their own time, only on matters they can reach —
 `006`'s resolver, unchanged, with its `MP` exemption (`006`/Decision 2). Every person sees **only
@@ -405,6 +410,8 @@ view (IT3, and a supervision policy nobody has stated).
 
 ### Decision 3 — A narrow correction is promoted to MVP
 
+*Ratified by Jero 2026-10-09.*
+
 **Options**: (A) keep `US03-EP08` at IT2, ship no correction; (B) promote `US03` whole; (C) promote
 a **narrow** version: own entries, 24-hour window, date / duration / description only, void rather
 than delete.
@@ -424,6 +431,8 @@ of one matrix row to the empty set — no route removed, no migration.
 
 ### Decision 4 — `US10-EP08-TTK-ConfigureBillableRates` is deferred to `010`
 
+*Ratified by Jero 2026-10-09.*
+
 **Taken**: no rate of any kind in this slice; `US10-EP08` is amended in the catalog from "MVP" to
 "→ 010", alongside `US03-EP15-QTE-SetCaseHourlyRate`.
 **Why**: a rate has exactly one consumer — pricing hours into an amount — and that consumer is
@@ -438,6 +447,8 @@ same reason, approved by the CC technical lead on 2026-09-23.
 
 ### Decision 5 — `US11-EP08-TTK-ManageTimeTrackingPermissions` is satisfied by fixed rows, read-only
 
+*Ratified by Jero 2026-10-09.*
+
 **Taken**: the four capabilities are fixed matrix rows (48–51), identical for every firm, and
 `/configuracion`'s existing read-only matrix view displays them under "Registro de horas". No
 per-tenant grant/revoke screen is built. The catalog row is amended to read "MVP — satisfied by
@@ -450,6 +461,8 @@ export") belong to IT2 stories that do not exist yet; the third ("log") is rows 
 **Rejected**: a per-tenant override for time rights only (reopens `004`/Decision 4 for one module).
 
 ### Decision 6 — Minutes, whole; the day, Mexico City's; no rounding rules
+
+*Ratified by Jero 2026-10-09.*
 
 **Taken**: integer minutes in `[1, 1440]`; a timer records its elapsed time rounded to the nearest
 whole minute, never fewer than one; the work day is a Mexico City `date`, and a timer belongs to the
@@ -471,6 +484,8 @@ would invent a second act the person never performed.
 
 ### Decision 7 — Hours are internal; the client does not see them
 
+*Ratified by Jero 2026-10-09.*
+
 **Taken**: no portal archetype holds any row; `US13-EP08-TTK-ViewClientHoursPortal` stays TBD behind
 `EP13`.
 **Why**: `EP13` is unvalidated (Recognised Technical Debt item 2) and has no onboarding flow (item
@@ -479,6 +494,8 @@ them to a client is a publication decision per entry, the same question `008`'s 
 raises, and it is not this slice's to take.
 
 ### Decision 8 — Reading one's own timesheet is not audited
+
+*Ratified by Jero 2026-10-09.*
 
 **Options**: (A) audit every timesheet read; (B) audit none.
 **Taken: B.** The list routes write no audit entry; every mutation writes exactly one.
@@ -494,6 +511,8 @@ billing export) is an access in Principle V's full sense and must be audited —
 Contracts says so to whoever builds it.
 
 ### Decision 9 — Writes are nested under the matter; reads are flat
+
+*Ratified by Jero 2026-10-09.*
 
 **Taken**: `POST /tenant/cases/:caseId/time-entries` (manual), `POST …/time-entries/timer` (start),
 `POST …/time-entries/timer/stop`, `PATCH …/time-entries/:id`, `POST …/time-entries/:id/void` —
@@ -513,6 +532,8 @@ standard); stopping an unreachable timer (records time on a matter the person is
 
 ### Decision 10 — `SA` holds none of the four rows
 
+*Ratified by Jero 2026-10-09.*
+
 **Taken**: `SA` is excluded from 48–51 and from the `horas` navigation entry.
 **Why**: a system administrator configures the firm's tool; they are not a timekeeper, and no
 catalog story gives `SA` any time of their own (`US10` and `US11` give `SA` *configuration* rights,
@@ -522,6 +543,8 @@ needs is a capability not granted. `SA` still sees the four rows, read-only, in 
 membership to record time — which is already how archetypes work (one per membership, `001`/FR-021).
 
 ### Decision 11 — `022`'s demo firm gets hours, unevenly
+
+*Ratified by Jero 2026-10-09.*
 
 **Taken**: a deterministic generator in `drizzle/demo/time-entries.ts`, seeded from `022`'s single
 RNG, writes six weeks of working-day entries for the five timekeepers, only on matters each is
@@ -576,17 +599,17 @@ SC-002's scope contrast visible in the demo.
 
 ## Approval Checklist
 
-- [ ] Decision 1 — both capture methods, one entity — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 2 — MP/AA/PL/CM record their own time on reachable matters; own-only reads; BM nothing — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 3 — narrow correction (own, 24 h, void not delete) promoted to MVP — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 4 — `US10-EP08` rates deferred to `010` — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 5 — `US11-EP08` satisfied by fixed rows, read-only — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 6 — integer minutes, nearest-minute timers, Mexico City day, no rounding rules — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 7 — hours internal; `US13` stays TBD behind EP13 — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 8 — reading one's own timesheet is not audited — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 9 — writes nested under the matter, reads and discard flat — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 10 — `SA` holds no time capability — *Decided by Claude 2026-10-08, pending ratification by Jero*
-- [ ] Decision 11 — demo firm gets six uneven weeks of hours — *Decided by Claude 2026-10-08, pending ratification by Jero*
+- [x] Decision 1 — both capture methods, one entity — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 2 — MP/AA/PL/CM record their own time on reachable matters; own-only reads; BM nothing — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 3 — narrow correction (own, 24 h, void not delete) promoted to MVP — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 4 — `US10-EP08` rates deferred to `010` — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 5 — `US11-EP08` satisfied by fixed rows, read-only — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 6 — integer minutes, nearest-minute timers, Mexico City day, no rounding rules — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 7 — hours internal; `US13` stays TBD behind EP13 — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 8 — reading one's own timesheet is not audited — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 9 — writes nested under the matter, reads and discard flat — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 10 — `SA` holds no time capability — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
+- [x] Decision 11 — demo firm gets six uneven weeks of hours — *Decided by Claude 2026-10-08; **ratified by Jero 2026-10-09***
 - [x] Checked against the code, not the catalog — eleven findings recorded above
 - [x] Permission matrix declared (rows 48–51) with Principle IV's four verbs and scope reasoning
 - [x] `master-user-story-catalog.md` amended in this PR: EP08 header, `US03` → MVP (narrow), `US10` → 010, `US11` → fixed rows, still-open item 7

@@ -29,7 +29,7 @@ vendor role.
 | EP05 | CAL | Calendar & Scheduling | 10 | Renamed from ViewUpcomingEvents |
 | EP06 | KPI | KPI Dashboard | 9 | Renamed from ViewOverallKPIs + 1 new |
 | EP07 | JCN | Judicial Connectors | 9 | Existing — **out of MVP, Fase 2** |
-| EP08 | TTK | Time Tracking | 13 | Existing — scope conflict 4 resolved by `009` Decisions 1–7, **pending ratification** |
+| EP08 | TTK | Time Tracking | 13 | Existing — scope conflict 4 resolved by `009` Decisions 1–7, ratified by Jero 2026-10-09 |
 | EP09 | BIL | Billing | 12 | Existing |
 | EP10 | CFG | System Configuration | 16 | Existing + 3 new (017) + 3 new (006) |
 | EP11 | PMG | Profile Management | 3 | Existing |
@@ -400,7 +400,7 @@ Every other epic depends on this one.
 
 ---
 
-## EP08-TimeTracking (TTK) — scope conflict 4 decided by 009, pending ratification
+## EP08-TimeTracking (TTK) — scope conflict 4 decided by 009, ratified by Jero 2026-10-09
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
@@ -418,7 +418,7 @@ Every other epic depends on this one.
 | US12-EP08-TTK-ViewUtilizationDashboard | MP | Utilization rates, quarterly billable hours | IT3 |
 | US13-EP08-TTK-ViewClientHoursPortal | CC | Hours logged on own cases | TBD |
 
-> **Amended 2026-10-08 by slice `009-time-tracking`**, every change pending ratification by Jero.
+> **Amended 2026-10-08 by slice `009-time-tracking`**; every change ratified by Jero 2026-10-09.
 > Scope conflict 4 (capture method) is still unanswered by the client, so `009` resolved it as
 > numbered Decisions rather than leaving the epic blocked: both a live timer and manual entry, as
 > one entity (Decision 1). `US03` is promoted in its **narrow** form, because an MVP in which a
@@ -698,5 +698,5 @@ deliverable.
 5. Are notes client-visible via EP13? Blocks slice 008.
 6. Does EP15 US04 overlap EP09 US12 for payment registration? Blocks slice 012.
 7. ~~Time tracking scope conflict. Blocks slice 009.~~ Resolved for the MVP by `009-time-tracking`
-   Decisions 1–7 (2026-10-08), **pending ratification by Jero**; if the client answers conflict 4
+   Decisions 1–7 (2026-10-08), **ratified by Jero 2026-10-09**; if the client answers conflict 4
    differently, the contradicted Decision is reopened.
