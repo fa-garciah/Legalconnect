@@ -162,6 +162,12 @@ Every other epic depends on this one.
 
 > **Fixed:** source US09 was mislabeled with US08's title; US10 was missing
 > its EP01 segment. US10–US11 are portal-facing and depend on EP13 validation.
+>
+> **Slice `024-dashboard-principal` (2026-10-09, pending ratification)** builds US01–US03.
+> The overlap of US01 with `US01-EP06` (`015`, `/kpis`) is resolved by 024 Decision 1: `/` shows
+> today's figures for the matters the person reaches; the firm's KPIs stay on `/kpis`. US02 is built
+> without the word *overdue* (024 Decision 2): `calendar_event` records no completion, so a met
+> deadline and a missed one cannot be told apart — a "done" state is its own future slice.
 
 ---
 
