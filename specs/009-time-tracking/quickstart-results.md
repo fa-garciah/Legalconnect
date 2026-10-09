@@ -80,6 +80,12 @@ The baseline was taken on `main` (`9f4a1ad`) before any change: **2,145 passed, 
    RLS first (`caseInFirm`) on every write that names one; `time-entries-isolation.test.ts` asserts
    404 for an AA and an MP, byte-identical to a non-existent id, and that nothing is written.
    Worth checking in `007`'s upload path, which relies on the same resolver — not done here.
+   **Superseded 2026-10-09 by the rebase onto `fix-cross-tenant-fk-oracle`:** that branch moved the
+   check into 006's `assigned` resolver (MP/SA are exempt from assignment, never from the firm),
+   probed 32 write paths across the product and found none of `main`'s vulnerable. 009's local
+   `caseInFirm` was then removed; `time-entries-isolation.test.ts` still asserts the identical 404
+   for another firm's real matter and a made-up one — now through the resolver alone — and the five
+   009 write routes joined the shared table in `foreign-reference-oracle.test.ts`.
 3. **SQL precedence.** `logged_at + interval '24 hours' AT TIME ZONE 'UTC'` applies the zone to the
    interval; `iso()` now parenthesises its argument.
 4. **Demo seed idempotency across days** — see the first pre-existing failure; this slice's
@@ -110,3 +116,18 @@ the machine otherwise idle.
 - `backend/.env`: appended `DOCUMENT_MAX_UPLOAD_BYTES=26214400`, the exact line `check:env` printed.
 - A MinIO container `lc-minio-009` from the cached `minio/minio:latest`, with the
   `legalconnect-documents-dev` bucket.
+
+## Rebase onto `fix-cross-tenant-fk-oracle` — 2026-10-09
+
+- One conflict, `demo-seed.test.ts`'s idempotency fingerprint: both sides extended it. Kept both;
+  the time-entry figure sits under the same "same day" condition as storage bytes.
+- **The across-days check reached this slice's demo hours.** Which (person, day, position) keys
+  produce an entry depends on which matters were open that day, so a re-seed on another day could
+  leave the previous day's hours beside today's. `seed-demo.ts` now voids the demo rows in the
+  generator's own key space (`demoTimeEntryKeySpace`) that the current generation did not write —
+  never an entry a person recorded — and `demo-seed.test.ts` asserts that after a re-seed 200 days
+  later, and again today, the logged demo hours are exactly that generation's.
+- Migration `0048` is still the next free number after the rebase.
+- Gates, all on a fresh disposable PostgreSQL (port 5459), no exclusions: backend 222 files /
+  2,404 tests with coverage thresholds met; `test:isolation` 134, `test:rls` 35, `verify:role` 4,
+  `test:auth-coverage` 32; frontend 91 files / 779 tests; lint, typecheck, check:env and build clean.

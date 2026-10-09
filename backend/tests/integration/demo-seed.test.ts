@@ -27,7 +27,7 @@ import {
   totpSecretFor,
 } from '../../drizzle/demo/firm';
 import { demoMatters } from '../../drizzle/demo/matters';
-import { demoTimeEntries } from '../../drizzle/demo/time-entries';
+import { demoTimeEntries, demoTimeEntryKeySpace } from '../../drizzle/demo/time-entries';
 import { deterministicUuid } from '../../drizzle/demo/deterministic-id';
 
 const backendRoot = join(__dirname, '..', '..');
@@ -465,12 +465,33 @@ describe('the demo firm seed', () => {
       // Two hundred days later on purpose: a different quarter AND a different year, the case in
       // which every file number changes. Byte totals are excluded only because a document's bytes
       // name its matter's file number; the number of rows is what must not move.
+      // Recorded time (009) is checked separately: WHICH hours exist legitimately depends on the
+      // day (nobody records time on a matter that was not open), so its count is not a constant —
+      // but after any re-seed the logged demo hours must be EXACTLY the current generation's,
+      // never that plus the previous day's.
+      const firm = DEMO_FIRMS[0]!;
+      const loggedDemoHours = async () =>
+        Number(
+          (
+            await one<{ n: string }>(
+              `SELECT count(*)::text AS n FROM time_entry
+                WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1) AND status = 'logged'
+                  AND id = ANY($2::uuid[])`,
+              [firm.rfc, demoTimeEntryKeySpace(firm).map((key) => deterministicUuid('time-entry', ...key))],
+            )
+          ).n,
+        );
+      const generated = (day: Date) => demoTimeEntries(firm, demoMatters(firm, day), day).length;
+
       const before = await snapshot(false);
-      const shifted = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
+      const shiftedDay = new Date(Date.now() + 200 * 86_400_000);
+      const shifted = shiftedDay.toISOString().slice(0, 10);
       runDemoSeed(shifted);
       expect(await snapshot(false)).toBe(before);
+      expect(await loggedDemoHours()).toBe(generated(new Date(`${shifted}T12:00:00Z`)));
       runDemoSeed();
       expect(await snapshot(false)).toBe(before);
+      expect(await loggedDemoHours()).toBe(generated(new Date()));
       const docs = await one<{ n: string }>(
         `SELECT count(*)::text AS n FROM document WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1)`,
         [DEMO_RFCS[0]],

@@ -180,20 +180,6 @@ export class TimeEntriesRepository {
     };
   }
 
-  /**
-   * Whether the matter exists IN THIS FIRM — read under RLS, so another firm's matter and one that
-   * exists nowhere both answer false.
-   *
-   * Needed because 006's resolver lets MP through BEFORE any query (006 Decision 2): for an MP the
-   * resolver never looks at the matter at all. Without this, an MP naming another firm's matter id
-   * reached the INSERT — and a foreign-key check does not apply RLS — so the response told them
-   * whether that id existed in some other firm. Found by `time-entries-isolation.test.ts`.
-   */
-  async caseInFirm(caseId: string): Promise<boolean> {
-    const { rows } = await currentTx().execute<{ id: string }>(sql`SELECT id FROM case_file WHERE id = ${caseId}::uuid`);
-    return rows.length > 0;
-  }
-
   /** Throws the database's `23505` when a timer is already running (FR-006); the service maps it. */
   async startTimer(tenantId: string, caseId: string, membershipId: string, description: string | null): Promise<string> {
     const { rows } = await currentTx().execute<{ id: string }>(sql`

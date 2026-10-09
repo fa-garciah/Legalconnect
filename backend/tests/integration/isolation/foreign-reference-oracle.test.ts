@@ -149,6 +149,13 @@ describe('no write path is a cross-tenant existence oracle (Principle II)', () =
     ['PATCH document category — body categoryId', (id) => as(a.mp, a)(server().patch(`/tenant/cases/${a.caseId}/documents/${a.documentId}/category`)).send({ categoryId: id((f) => f.categoryId) })],
     ['POST calendar event — body caseId', (id) => as(a.mp, a)(server().post('/tenant/calendar/events')).send({ type: 'meeting', title: 'x', allDay: true, startsOn: '2026-11-03', caseId: id((f) => f.caseId) })],
     ['PATCH calendar event — body caseId', (id) => as(a.mp, a)(server().patch(`/tenant/calendar/events/${a.eventId}`)).send({ caseId: id((f) => f.caseId) })],
+    // --- 009, recorded time: every write is nested under the matter, so the resolver alone decides
+    // (009's own service-level check was removed once the resolver checked the firm for MP/SA) ---
+    ['POST time entry — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries`)).send({ workDate: '2026-10-01', minutes: 30, description: 'x' })],
+    ['POST timer start — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries/timer`)).send({})],
+    ['POST timer stop — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries/timer/stop`)).send({ description: 'x' })],
+    ['PATCH time entry — :caseId', (id) => as(a.mp, a)(server().patch(`/tenant/cases/${id((f) => f.caseId)}/time-entries/${NOWHERE}`)).send({ minutes: 5 })],
+    ['POST time entry void — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries/${NOWHERE}/void`))],
   ];
 
   const nowhere = () => NOWHERE;

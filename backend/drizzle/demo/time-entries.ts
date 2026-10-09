@@ -114,6 +114,31 @@ function archetypeIn(firm: DemoFirm, slug: string): string | undefined {
   return person.alsoAt?.firmRfc === firm.rfc ? person.alsoAt.archetype : undefined;
 }
 
+/**
+ * Every id key this generator COULD produce for `firm`, on any day: each timekeeper × each
+ * working-day index × each position within a day up to the busiest load.
+ *
+ * Which of them a given day produces is legitimately date-dependent — a person with no open matter
+ * that day records nothing — so a re-seed on another day may stop producing a key it produced
+ * before. `seed-demo.ts` voids the demo rows in this space that the current generation did not
+ * produce, so a re-seed never leaves the previous day's hours beside today's.
+ */
+export function demoTimeEntryKeySpace(firm: DemoFirm): readonly (readonly string[])[] {
+  const days = firm.sparse ? WORKING_DAYS_SPARSE : WORKING_DAYS;
+  const busiest = Math.max(
+    ...[...Object.values(LOAD_BY_ARCHETYPE), ...Object.values(LOAD_BY_SLUG)].map((load) => load.perDay[1]),
+  );
+  const keys: string[][] = [];
+  for (const person of DEMO_PEOPLE) {
+    const archetype = archetypeIn(firm, person.slug);
+    if (archetype !== 'MP' && archetype !== 'AA' && archetype !== 'PL' && archetype !== 'CM') continue;
+    for (let d = 0; d < days; d += 1) {
+      for (let k = 0; k < busiest; k += 1) keys.push([firm.rfc, person.slug, `d${d}`, `k${k}`]);
+    }
+  }
+  return keys;
+}
+
 export function demoTimeEntries(
   firm: DemoFirm,
   matters: readonly DemoMatter[],

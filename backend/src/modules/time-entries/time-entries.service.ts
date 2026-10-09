@@ -87,7 +87,6 @@ export class TimeEntriesService {
   async startTimer(caseId: string, body: unknown): Promise<RunningTimerRow> {
     const { description } = normaliseTimerStart(body);
     const who = viewer();
-    await this.assertCaseInFirm(caseId);
     if (await this.repo.runningTimer(who)) throw new TimerRunning();
     const principal = currentPrincipal();
     try {
@@ -102,7 +101,6 @@ export class TimeEntriesService {
   /** FR-007, FR-011. Stopping needs a description from somewhere, and at most a day of time. */
   async stopTimer(caseId: string, body: unknown): Promise<EntryRow> {
     const given = normaliseStopBody(body).description;
-    await this.assertCaseInFirm(caseId);
     const principal = currentPrincipal();
     const running = await this.repo.lockRunningOn(principal.membershipId, caseId);
     if (!running) throw new NoRunningTimer();
@@ -123,7 +121,6 @@ export class TimeEntriesService {
   /** FR-011: time is recorded for work done — never after today in Mexico City. */
   async logManual(caseId: string, body: unknown): Promise<EntryRow> {
     const input = normaliseManualEntry(body);
-    await this.assertCaseInFirm(caseId);
     if (input.workDate > (await this.repo.today())) {
       throw new ValidationFailed('workDate cannot be after today.');
     }
@@ -150,15 +147,6 @@ export class TimeEntriesService {
     await this.correctable(caseId, id);
     await this.repo.void(id);
     return { id };
-  }
-
-  /**
-   * 404 for a matter that is not this firm's. The resolver has already refused every archetype but
-   * MP for an unreachable matter; this closes the MP path, which the resolver waves through without
-   * a query (see `TimeEntriesRepository.caseInFirm`).
-   */
-  private async assertCaseInFirm(caseId: string): Promise<void> {
-    if (!(await this.repo.caseInFirm(caseId))) throw new ResourceNotFound();
   }
 
   /**

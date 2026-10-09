@@ -48,7 +48,7 @@ import { demoClients } from './demo/clients';
 import { demoMatters } from './demo/matters';
 import { demoDocuments } from './demo/documents';
 import { demoCalendarEvents } from './demo/calendar';
-import { demoTimeEntries } from './demo/time-entries';
+import { demoTimeEntries, demoTimeEntryKeySpace } from './demo/time-entries';
 import { deterministicUuid } from './demo/deterministic-id';
 import { renderCredentialTable } from './demo/report';
 import { hashCredential, hashHighEntropy } from '../src/common/auth/argon2';
@@ -646,11 +646,13 @@ async function seedCalendar(migration: Client, target: WrittenFirm): Promise<voi
 async function seedTimeEntries(migration: Client, target: WrittenFirm): Promise<void> {
   const { tenantId, firm } = target;
   const matters = demoMatters(firm, AS_OF);
+  const written = new Set<string>();
 
   for (const entry of demoTimeEntries(firm, matters, AS_OF)) {
     const membershipId = target.memberships.get(entry.personSlug);
     const caseId = target.cases.get(entry.matterFileNumber);
     if (!membershipId || !caseId) continue;
+    written.add(deterministicUuid('time-entry', ...entry.idKey));
 
     await migration.query(
       `INSERT INTO time_entry
@@ -679,6 +681,23 @@ async function seedTimeEntries(migration: Client, target: WrittenFirm): Promise<
       ],
     );
   }
+
+  /*
+   * ACROSS DAYS: void what this generation no longer produces. Which (person, day, position) keys
+   * produce an entry depends on which matters were open that day, so a re-seed on another day can
+   * stop producing a key the previous one wrote. Left alone, that row would sit beside today's as
+   * a second generation of hours. Voided, not deleted — exactly what the product does — and only
+   * rows whose id lies in the generator's own key space, so an entry a person recorded through the
+   * screen is never touched.
+   */
+  const stale = demoTimeEntryKeySpace(firm)
+    .map((key) => deterministicUuid('time-entry', ...key))
+    .filter((id) => !written.has(id));
+  await migration.query(
+    `UPDATE time_entry SET status = 'voided', voided_at = now(), updated_at = now()
+      WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'logged'`,
+    [tenantId, stale],
+  );
 }
 
 /**

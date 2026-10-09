@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEMO_FIRMS, DEMO_PEOPLE } from '../../drizzle/demo/firm';
 import { demoMatters } from '../../drizzle/demo/matters';
-import { demoTimeEntries } from '../../drizzle/demo/time-entries';
+import { demoTimeEntries, demoTimeEntryKeySpace } from '../../drizzle/demo/time-entries';
 
 const AS_OF = new Date('2026-10-08T18:00:00Z');
 const full = DEMO_FIRMS[0]!;
@@ -122,5 +122,24 @@ describe('uneven on purpose (Decision 11, SC-008)', () => {
 
   it('descriptions are Spanish prose a litigator would write', () => {
     for (const e of entries) expect(e.description).toMatch(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñü]/);
+  });
+});
+
+describe('the key space the seed voids against', () => {
+  it('contains every key the generator produces, on any day — so a stale row is always found', () => {
+    for (const firm of DEMO_FIRMS) {
+      const space = new Set(demoTimeEntryKeySpace(firm).map((k) => k.join('|')));
+      for (const day of [AS_OF, new Date('2027-04-27T18:00:00Z'), new Date('2026-12-31T23:00:00Z')]) {
+        for (const e of demoTimeEntries(firm, demoMatters(firm, day), day)) {
+          expect(space.has(e.idKey.join('|')), e.idKey.join('|')).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('never includes BM or SA', () => {
+    const slugs = new Set(demoTimeEntryKeySpace(DEMO_FIRMS[0]!).map((k) => k[1]));
+    expect(slugs.has('pantoja')).toBe(false);
+    expect(slugs.has('carrasco')).toBe(false);
   });
 });
