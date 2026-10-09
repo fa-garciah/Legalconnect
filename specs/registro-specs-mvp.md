@@ -61,7 +61,7 @@ Cerrada la fundación, `plan.md` de 001 queda sin ítems abiertos.
 | **012-quotes-and-payments** | EP15 US01–US04 | **BLOQUEADO** | Registro de pago vive en EP09 US12 **y** EP15 US04. Si vive en dos sitios, el ledger diverge |
 | **013-calendar-core** | EP05 US01/02/03/04 | **IMPLEMENTADO 2026-09-23** | Sin sync judicial ni export a Google (conflictos de alcance 3). US02/03 subidas a MVP por la Decisión 1; recordatorios solo en la app (Decisión 2) |
 | **014-admin-ui** | EP10 US01–US04 | **POR ESCRIBIR** | Debe **consumir** el mecanismo de 002/004, no reimplementarlo |
-| **015-dashboards** | EP01 US01–US03 · EP06 US01/09 | **POR ESCRIBIR** | Al final por definición: lee de todo lo anterior. Requiere `## Exposed Read Contracts` de EP00/02/04/06/09/12/14. Resolver solape EP01 US01 vs. EP06 US01 |
+| **024-dashboard-principal** (antes «015-dashboards») | EP01 US01–US03 | **IMPLEMENTADO 2026-10-09 — rama `024-dashboard-principal`, apilada sobre 008, NO mergeado: 8 decisiones pendientes de Jero** | El número 015 lo tomó `015-kpi-dashboard`, que ya cubre EP06 US01 en `/kpis`; el solape se resolvió con la Decisión 1 de `024/spec.md` (`/` = hoy y mis expedientes; los KPI del despacho quedan en `/kpis`). EP06 US09 sigue detrás de 010. US02 sin «vencido»: `calendar_event` no registra cumplimiento (Decisión 2). Fila 56, sin migración |
 
 ### Frontend
 

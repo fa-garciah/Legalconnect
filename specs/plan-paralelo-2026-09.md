@@ -164,7 +164,7 @@ Sí `contracts/`, porque va a necesitar declarar qué lee de cada upstream.
 
 **Estimación:** 2–3 semanas con TDD estricto. **Dependencias:** 002, 004, 017 — todas cerradas.
 
-#### F3. (Solo si F1 y F2 cierran antes de tiempo) `015-dashboards`
+#### F3. (Solo si F1 y F2 cierran antes de tiempo) `015-dashboards` — **tomado 2026-10-09 como `024-dashboard-principal`** (rama apilada sobre 008; alcance recortado en su `spec.md`, como pedía esta sección; pendiente de Jero)
 
 Ojo: 015 es agregador por definición, lee de EP00/02/04/06/09/12/14. Con 009, 010 y 012 sin
 existir, hoy solo puede leer de 006 y 017 — es decir, **rendiría una fracción del dashboard
