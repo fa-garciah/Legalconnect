@@ -748,3 +748,35 @@ describe('notes and activity copy is Spanish-only (008/T022)', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/*
+ * 024 — the dashboard. Its wire vocabulary is the event types (`hearing`, `deadline`, `meeting`) and
+ * the audit action ids the activity sentences are built from.
+ */
+import { DashboardView } from '@/app/DashboardView';
+
+describe('dashboard copy is Spanish-only (024)', () => {
+  it('DashboardView — tiles, events, deadlines and activity', async () => {
+    const CASE = { id: 'k1', fileNumber: 'EXP-1' };
+    answer({
+      '/tenant/dashboard': {
+        today: '2026-10-09',
+        activeMatters: 3,
+        myMinutesToday: 90,
+        todayEvents: [{ id: 'e1', type: 'hearing', title: 'Audiencia', allDay: false, startsAt: '2026-10-09T16:00:00.000Z', startsOn: null, case: CASE }],
+        deadlines: {
+          upcoming: [{ id: 'd1', type: 'deadline', title: 'Contestar', allDay: true, startsAt: null, startsOn: '2026-10-12', case: CASE }],
+          recent: [{ id: 'd2', type: 'deadline', title: 'Pruebas', allDay: true, startsAt: null, startsOn: '2026-10-06', case: CASE }],
+        },
+        recentActivity: [
+          { id: 'a1', action: 'case.status_changed', occurredAt: '2026-10-09T15:00:00.000Z', actor: { membershipId: 'm', position: 'Socio' }, fileName: null, case: CASE },
+        ],
+      },
+    });
+    const { container } = withQueryClient(<DashboardView archetype="MP" />);
+    await adminScreen.findByText('Socio cambió el estado del expediente');
+    assertOnlySpanish(container);
+    expect(renderedWords(container)).not.toMatch(/\b(hearing|deadline|meeting|status_changed|myMinutesToday|activeMatters)\b/i);
+    vi.unstubAllGlobals();
+  });
+});

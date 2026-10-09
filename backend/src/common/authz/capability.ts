@@ -177,6 +177,13 @@ export const CAPABILITIES = {
   'note.create': { scope: 'assigned' },
   'note.correct_own': { scope: 'assigned' },
   'case.read_activity': { scope: 'assigned' },
+  /**
+   * 024-dashboard-principal, row 56 — `GET /tenant/dashboard`. `tenant`, NOT `assigned`, and **do not
+   * tidy it**: row 29's reason again. A resolver returns a boolean, and a person with no assignments
+   * must land on an empty dashboard, not a refusal. Every section is narrowed to the caller's
+   * reachable matters inside the query (024/FR-004).
+   */
+  'dashboard.read': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

@@ -30,6 +30,7 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   { prefix: ['time'], title: 'Registro de horas' },
   // 008. `case.read_activity` stays under "Expedientes" by its prefix: it is a read of the matter.
   { prefix: ['note'], title: 'Notas' },
+  { prefix: ['dashboard'], title: 'Dashboard Principal' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -75,6 +76,7 @@ const LABELS: Readonly<Record<string, string>> = {
   'note.create': 'Escribir notas en sus expedientes',
   'note.correct_own': 'Corregir o eliminar sus notas en las primeras 24 h',
   'case.read_activity': 'Ver la actividad de sus expedientes',
+  'dashboard.read': 'Ver el tablero de inicio de sus expedientes',
 };
 
 export interface MatrixRow {

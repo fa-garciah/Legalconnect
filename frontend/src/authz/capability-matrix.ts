@@ -104,4 +104,7 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'note.create': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
   'note.correct_own': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
   'case.read_activity': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
+  // 024 row 56 — the dashboard. Every section is about matters, so BM holds it no more than any case
+  // row (Decision 4); SA reaches every matter and keeps it.
+  'dashboard.read': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'SA']),
 };

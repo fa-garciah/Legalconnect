@@ -21,6 +21,7 @@ import { KpiModule } from './modules/kpi/kpi.module';
 // 009 — recorded time; writes reach a matter through CaseCoreModule's resolver.
 import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
 import { NotesModule } from './modules/notes/notes.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AuthModule } from './modules/auth/auth.module';
 
 /**
@@ -77,6 +78,7 @@ import { AuthModule } from './modules/auth/auth.module';
     // @ScopeTarget('caseId'); rows 49 and 51 are `tenant` scope.
     TimeEntriesModule,
     NotesModule,
+    DashboardModule,
     AuthModule,
   ],
   providers: [

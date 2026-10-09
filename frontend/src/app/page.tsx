@@ -1,12 +1,24 @@
 /**
- * T028 — the default landing inside the shell. No business screen content ships in
- * this slice (spec.md, Out of Scope); once a domain slice adds its first real screen,
- * this redirects into it instead of rendering placeholder text.
+ * 024 — `/`, the Dashboard Principal. Replaces `016a`'s placeholder (T028), which said it would give
+ * way once there was something real to land on. Thin, like `/horas`: resolves the active membership's
+ * archetype through the shell's own `resolveActiveTenant` and hands it to the client view.
  */
-export default function Home(): React.JSX.Element {
-  return (
-    <div data-testid="page-content">
-      <p>Bienvenido a LegalConnect MX.</p>
-    </div>
-  );
+import type { Metadata } from 'next';
+import { getPrincipal } from '@/session/principal';
+import { readActiveTenantServer } from '@/session/active-tenant.server';
+import { resolveActiveTenant } from '@/shell/resolve-active-tenant';
+import { DashboardView } from './DashboardView';
+
+export const metadata: Metadata = {
+  title: 'Dashboard Principal · LegalConnect MX',
+};
+
+export default async function Home(): Promise<React.JSX.Element> {
+  const [principal, activeTenant] = await Promise.all([getPrincipal(), readActiveTenantServer()]);
+  const resolved = resolveActiveTenant(activeTenant, principal);
+  const membership =
+    resolved.status === 'active' ? principal.memberships.find((m) => m.tenantId === resolved.tenantId) : undefined;
+
+  if (!membership) return <></>;
+  return <DashboardView archetype={membership.archetype} />;
 }

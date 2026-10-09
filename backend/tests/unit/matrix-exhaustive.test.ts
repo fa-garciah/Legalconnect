@@ -84,6 +84,9 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   // entries on reachable matters inside the query (009/FR-009), and discarding names no matter at
   // all (FR-008). BM and SA hold neither (009 Decisions 2 and 10).
   'time.read_own': ['MP', 'AA', 'PL', 'CM'],
+  // 024 row 56 — the dashboard. Tenant scope narrowed in the query (row 29's reason); BM excluded:
+  // every section is about matters.
+  'dashboard.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
   'time.discard_timer': ['MP', 'AA', 'PL', 'CM'],
 };
 
@@ -189,8 +192,8 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
     ]);
     // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013) + 1 (023). A census, moved by every
     // slice that extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45, and
-    // 023 to 46 with `document.read_list`, 015 to 47 with `kpi.read`, 009 to 51 with `time.*`, and 008 to 55.
-    expect(asserted.size).toBe(55);
+    // 023 to 46 with `document.read_list`, 015 to 47 with `kpi.read`, 009 to 51 with `time.*`, 008 to 55, and 024 to 56 with `dashboard.read`.
+    expect(asserted.size).toBe(56);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

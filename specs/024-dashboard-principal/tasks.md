@@ -9,21 +9,21 @@ Strict TDD: every test task is run and **seen failing** before its implementatio
 
 ## Phase 2 — Foundational
 
-- [ ] T002 Matrix tests first: row 56 in `backend/tests/unit/matrix-exhaustive.test.ts`; count 56 in `registry-shape.test.ts` and `capability-declared-everywhere.test.ts`. **See them fail.** Then `capability.ts`, `matrix.ts`.
-- [ ] T003 Extract 008's activity SELECT into `backend/src/modules/notes/activity-query.ts` (one function taking a "which matters" predicate); `activity.repository.ts` calls it; 008's `case-activity.test.ts` stays green unchanged.
+- [X] T002 Matrix tests first: row 56 in `backend/tests/unit/matrix-exhaustive.test.ts`; count 56 in `registry-shape.test.ts` and `capability-declared-everywhere.test.ts`. **See them fail.** Then `capability.ts`, `matrix.ts`.
+- [X] T003 Extract 008's activity SELECT into `backend/src/modules/notes/activity-query.ts` (one function taking a "which matters" predicate); `activity.repository.ts` calls it; 008's `case-activity.test.ts` stays green unchanged.
 
 ## Phase 3 — User Stories 1–3 (backend)
 
-- [ ] T004 [US1] [US2] [US3] Contract test `backend/tests/contract/dashboard.test.ts`: `today`; `activeMatters` excludes closing statuses; `myMinutesToday` own only, `null` for SA; `todayEvents` today only, no cancelled; `deadlines.upcoming` / `recent` by ±7 days, deadlines only; `recentActivity` allow-listed, newest first, with `case`, ≤ 20; whole-JSON scan (no `metadata`, no status ids, no note text, no revenue words); no audit row written; BM `403`. **See it fail.**
-- [ ] T005 [US1] [US2] [US3] `backend/src/modules/dashboard/*`, registered in `app.module.ts`.
-- [ ] T006 Isolation test `backend/tests/integration/isolation/dashboard-isolation.test.ts`: an AA with an unassigned matter carrying an event, a deadline, hours and activity sees none of it; an AA with no assignments gets zeros and empty lists (`200`); firm B's data never appears; taken off a matter, its rows leave on the next request. **See it fail where new.**
-- [ ] T007 Backend gates.
+- [X] T004 [US1] [US2] [US3] Contract test `backend/tests/contract/dashboard.test.ts`: `today`; `activeMatters` excludes closing statuses; `myMinutesToday` own only, `null` for SA; `todayEvents` today only, no cancelled; `deadlines.upcoming` / `recent` by ±7 days, deadlines only; `recentActivity` allow-listed, newest first, with `case`, ≤ 20; whole-JSON scan (no `metadata`, no status ids, no note text, no revenue words); no audit row written; BM `403`. **See it fail.**
+- [X] T005 [US1] [US2] [US3] `backend/src/modules/dashboard/*`, registered in `app.module.ts`.
+- [X] T006 Isolation test `backend/tests/integration/isolation/dashboard-isolation.test.ts`: an AA with an unassigned matter carrying an event, a deadline, hours and activity sees none of it; an AA with no assignments gets zeros and empty lists (`200`); firm B's data never appears; taken off a matter, its rows leave on the next request. **See it fail where new.**
+- [X] T007 Backend gates.
 
 ## Phase 4 — Frontend
 
-- [ ] T008 Mirror row 56 + sync fixture (test first) + matrix-view label.
-- [ ] T009 [US1] [US2] [US3] Component test `frontend/tests/component/dashboard/DashboardView.test.tsx`: tiles; "Mis horas de hoy" absent when `null`; deadlines with the past-deadline sentence and never "vencido"; activity sentences with file numbers linking to `/actividad`; `/kpis` link only with `kpi.read`; BM welcome with no request; empty states. **See it fail.**
-- [ ] T010 `frontend/src/dashboard/{types,api}.ts`, `frontend/src/app/DashboardView.tsx`, `frontend/src/app/page.tsx`; Spanish-copy additions.
+- [X] T008 Mirror row 56 + sync fixture (test first) + matrix-view label.
+- [X] T009 [US1] [US2] [US3] Component test `frontend/tests/component/dashboard/DashboardView.test.tsx`: tiles; "Mis horas de hoy" absent when `null`; deadlines with the past-deadline sentence and never "vencido"; activity sentences with file numbers linking to `/actividad`; `/kpis` link only with `kpi.read`; BM welcome with no request; empty states. **See it fail.**
+- [X] T010 `frontend/src/dashboard/{types,api}.ts`, `frontend/src/app/DashboardView.tsx`, `frontend/src/app/page.tsx`; Spanish-copy additions.
 
 ## Phase 5 — Polish
 

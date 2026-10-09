@@ -156,6 +156,13 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'note.create': new Set(['MP', 'AA', 'PL', 'CM']),
   'note.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
   'case.read_activity': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+
+  /*
+   * Row 56, from 024/spec.md's Capability Matrix. Columns MP AA PL CM BM SA PO.
+   *
+   *   | 56 | dashboard.read | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   */
+  'dashboard.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {
