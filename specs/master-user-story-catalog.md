@@ -29,7 +29,7 @@ vendor role.
 | EP05 | CAL | Calendar & Scheduling | 10 | Renamed from ViewUpcomingEvents |
 | EP06 | KPI | KPI Dashboard | 9 | Renamed from ViewOverallKPIs + 1 new |
 | EP07 | JCN | Judicial Connectors | 9 | Existing — **out of MVP, Fase 2** |
-| EP08 | TTK | Time Tracking | 13 | Existing — **scope conflict open** |
+| EP08 | TTK | Time Tracking | 13 | Existing — scope conflict 4 resolved by `009` Decisions 1–7, **pending ratification** |
 | EP09 | BIL | Billing | 12 | Existing |
 | EP10 | CFG | System Configuration | 16 | Existing + 3 new (017) + 3 new (006) |
 | EP11 | PMG | Profile Management | 3 | Existing |
@@ -400,23 +400,34 @@ Every other epic depends on this one.
 
 ---
 
-## EP08-TimeTracking (TTK) — SCOPE CONFLICT OPEN
+## EP08-TimeTracking (TTK) — scope conflict 4 decided by 009, pending ratification
 
 | ID | Archetype | Capability | Slice |
 |---|---|---|---|
 | US01-EP08-TTK-StartStopTimer | AA | Live timer on a case | MVP |
 | US02-EP08-TTK-LogManualHours | AA | Manual entry with date, case, description | MVP |
-| US03-EP08-TTK-EditTimeEntries | AA | Edit/delete within 24 h | IT2 |
+| US03-EP08-TTK-EditTimeEntries | AA | Edit/delete within 24 h | MVP (narrow — own entries, 24 h, void not delete; 009 Decision 3) |
 | US04-EP08-TTK-ViewMyTimesheet | AA | Own timesheet by date range | MVP |
 | US05-EP08-TTK-LogParalegalHours | PL | Record support work time | MVP |
 | US06-EP08-TTK-ApproveTimeEntries | BM | Approve/reject submitted entries | IT2 |
 | US07-EP08-TTK-ExportTimeDataToCFDI | BM | Export approved entries to invoicing | IT2 |
 | US08-EP08-TTK-ViewTeamHours | CM | Aggregated hours per member per case | IT3 |
 | US09-EP08-TTK-SetTimeEntryAlerts | CM | Weekly alerts for missing timesheets | IT3 |
-| US10-EP08-TTK-ConfigureBillableRates | SA | Default and case-specific rates | MVP |
-| US11-EP08-TTK-ManageTimeTrackingPermissions | SA | Grant/revoke log, approve, export rights | MVP |
+| US10-EP08-TTK-ConfigureBillableRates | SA | Default and case-specific rates | → 010 (009 Decision 4) |
+| US11-EP08-TTK-ManageTimeTrackingPermissions | SA | Grant/revoke log, approve, export rights | MVP — satisfied by fixed rows 48–51, read-only (009 Decision 5; 014 Decision 1) |
 | US12-EP08-TTK-ViewUtilizationDashboard | MP | Utilization rates, quarterly billable hours | IT3 |
 | US13-EP08-TTK-ViewClientHoursPortal | CC | Hours logged on own cases | TBD |
+
+> **Amended 2026-10-08 by slice `009-time-tracking`**, every change pending ratification by Jero.
+> Scope conflict 4 (capture method) is still unanswered by the client, so `009` resolved it as
+> numbered Decisions rather than leaving the epic blocked: both a live timer and manual entry, as
+> one entity (Decision 1). `US03` is promoted in its **narrow** form, because an MVP in which a
+> mistyped duration can never be fixed is defective rather than smaller (Decision 3). `US10` moves
+> to `010` beside `US03-EP15-QTE-SetCaseHourlyRate` — a rate with no consumer, set in a second
+> place, is how a ledger diverges (Decision 4; `014` Decision 2 is the precedent). `US11` is
+> satisfied by four fixed matrix rows shown read-only in `/configuracion`, as `014` Decision 1
+> resolved the identical conflict for `US03-EP10` (Decision 5). Owned by `009`: US01, US02,
+> US03 (narrow), US04, US05, US11. No story count changes.
 
 ---
 
@@ -686,4 +697,6 @@ deliverable.
 4. Offline operation unspecified and unestimated.
 5. Are notes client-visible via EP13? Blocks slice 008.
 6. Does EP15 US04 overlap EP09 US12 for payment registration? Blocks slice 012.
-7. Time tracking scope conflict. Blocks slice 009.
+7. ~~Time tracking scope conflict. Blocks slice 009.~~ Resolved for the MVP by `009-time-tracking`
+   Decisions 1–7 (2026-10-08), **pending ratification by Jero**; if the client answers conflict 4
+   differently, the contradicted Decision is reopened.
