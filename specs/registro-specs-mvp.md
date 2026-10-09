@@ -54,7 +54,7 @@ Cerrada la fundación, `plan.md` de 001 queda sin ítems abiertos.
 |---|---|---|---|
 | **006-client-case-core** | EP03 US02/03/04 · EP02 US01/03/09/10 | **POR ESCRIBIR** | Definition of Done exige la matriz de 004 implementada y testeada |
 | **007-document-management** | EP04 US01/02/03/06/15 | **POR ESCRIBIR** | — |
-| **008-notes-and-activity** | EP14 US01/02/05 · EP02 US11/12 | **BLOQUEADO** | Visibilidad de notas: ¿producto de trabajo interno o visible al cliente vía EP13? Afecta privilegio. Decisión de counsel |
+| **008-notes-and-activity** | EP14 US01/02/03 (acotada)/05 · EP02 US11/12 | **IMPLEMENTADO 2026-10-09 — rama `008-notes-and-activity`, NO mergeado: 8 decisiones pendientes de Jero; la Decisión 1 (visibilidad) requiere además a Felipe** | El bloqueo se convirtió en la Decisión 1 de `008/spec.md`: notas internas, con una columna `visibility` que solo admite `internal`; abrirla al cliente sería una migración revisada y una decisión de *counsel*. Actividad derivada de `audit_event` con lista blanca, sin valores. Filas 52–55 |
 | **009-time-tracking** | EP08 US01/02/03 (acotada)/04/05/11 | **MERGEADO 2026-10-09 — 11 decisiones ratificadas por Jero 2026-10-09** | El conflicto de alcance 4 sigue sin respuesta del cliente; se resolvió con 11 Decisiones de `009/spec.md` (ratificadas por Jero 2026-10-09). Cronómetro y captura manual como una sola entidad; US03 acotada a MVP; US10 (tarifas) → 010; US11 = filas fijas 48–51 de solo lectura. Rama `009-time-tracking` |
 | **010-billing-core** | EP09 US01/05/09/12 | **POR ESCRIBIR** | — |
 | **011-cfdi-stamping** | *ninguna* | **NO EXISTE** | Doble: PAC sigue `[PENDING]` **y** el catálogo no tiene una sola historia de timbrado, cancelación, complemento de pago o multi-emisor de CSD. Ver §4 |
