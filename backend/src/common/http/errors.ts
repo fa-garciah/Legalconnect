@@ -505,3 +505,10 @@ export class EntryVoided extends HttpException {
     super(errorBody('entry_voided', 'The entry is voided.'), HttpStatus.CONFLICT);
   }
 }
+
+/** 008 (FR-008). Correcting or voiding a note that is already voided. */
+export class NoteVoided extends HttpException {
+  constructor() {
+    super(errorBody('note_voided', 'The note is voided.'), HttpStatus.CONFLICT);
+  }
+}

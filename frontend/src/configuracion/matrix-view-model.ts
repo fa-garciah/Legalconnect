@@ -28,6 +28,8 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   // 009 Decision 5. This group IS `US11-EP08-TTK-ManageTimeTrackingPermissions`: the rights are
   // fixed rows, identical for every firm, shown here read-only as 014 Decision 1 did for `US03-EP10`.
   { prefix: ['time'], title: 'Registro de horas' },
+  // 008. `case.read_activity` stays under "Expedientes" by its prefix: it is a read of the matter.
+  { prefix: ['note'], title: 'Notas' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -69,6 +71,10 @@ const LABELS: Readonly<Record<string, string>> = {
   'time.read_own': 'Ver su propio registro de horas',
   'time.correct_own': 'Corregir o eliminar sus horas en las primeras 24 h',
   'time.discard_timer': 'Descartar su cronómetro en marcha',
+  'note.read': 'Leer las notas de sus expedientes',
+  'note.create': 'Escribir notas en sus expedientes',
+  'note.correct_own': 'Corregir o eliminar sus notas en las primeras 24 h',
+  'case.read_activity': 'Ver la actividad de sus expedientes',
 };
 
 export interface MatrixRow {

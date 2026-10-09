@@ -167,6 +167,16 @@ export const CAPABILITIES = {
   'time.read_own': { scope: 'tenant' },
   'time.correct_own': { scope: 'assigned' },
   'time.discard_timer': { scope: 'tenant' },
+  /**
+   * 008-notes-and-activity, rows 52-55 — all `assigned`. Every route is nested under
+   * `/tenant/cases/:caseId` with `@ScopeTarget('caseId')`, so 006's resolver — firm-checked for every
+   * archetype, MP and SA included — decides reach. There is no cross-matter list here (unlike 009's
+   * own timesheet), so no row needs `tenant` scope.
+   */
+  'note.read': { scope: 'assigned' },
+  'note.create': { scope: 'assigned' },
+  'note.correct_own': { scope: 'assigned' },
+  'case.read_activity': { scope: 'assigned' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

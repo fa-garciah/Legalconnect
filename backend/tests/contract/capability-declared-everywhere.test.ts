@@ -153,7 +153,8 @@ describe('capability declared everywhere', () => {
     // 023 takes it to 46 with `document.read_list`, which DOES have a route — so the
     // `NO_ROUTE_YET` list asserted below is unchanged.
     // 009 takes it to 51 with four `time.*` rows, every one of which has a route.
-    expect(declaredIds.size + undeclaredInRegistry.length).toBe(51);
+    // 008 takes it to 55 with three `note.*` rows and `case.read_activity`, every one with a route.
+    expect(declaredIds.size + undeclaredInRegistry.length).toBe(55);
     expect(undeclaredInRegistry.sort()).toEqual([...NO_ROUTE_YET].sort());
   });
 

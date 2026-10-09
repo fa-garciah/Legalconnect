@@ -143,6 +143,19 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
   'time.read_own': new Set(['MP', 'AA', 'PL', 'CM']),
   'time.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
   'time.discard_timer': new Set(['MP', 'AA', 'PL', 'CM']),
+
+  /*
+   * Rows 52-55, from 008/spec.md's Capability Matrix. Columns there are MP AA PL CM BM SA PO.
+   *
+   *   | 52 | note.read          | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 53 | note.create        | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 54 | note.correct_own   | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 55 | case.read_activity | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ PO ❌ |
+   */
+  'note.read': new Set(['MP', 'AA', 'PL', 'CM']),
+  'note.create': new Set(['MP', 'AA', 'PL', 'CM']),
+  'note.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'case.read_activity': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

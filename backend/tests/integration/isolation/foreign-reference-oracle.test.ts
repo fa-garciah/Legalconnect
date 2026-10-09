@@ -156,6 +156,12 @@ describe('no write path is a cross-tenant existence oracle (Principle II)', () =
     ['POST timer stop — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries/timer/stop`)).send({ description: 'x' })],
     ['PATCH time entry — :caseId', (id) => as(a.mp, a)(server().patch(`/tenant/cases/${id((f) => f.caseId)}/time-entries/${NOWHERE}`)).send({ minutes: 5 })],
     ['POST time entry void — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/time-entries/${NOWHERE}/void`))],
+    // --- 008, notes and activity: nested under the matter like 009, so the resolver alone decides ---
+    ['POST note — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/notes`)).send({ body: 'x' })],
+    ['PATCH note — :caseId', (id) => as(a.mp, a)(server().patch(`/tenant/cases/${id((f) => f.caseId)}/notes/${NOWHERE}`)).send({ body: 'x' })],
+    ['POST note void — :caseId', (id) => as(a.mp, a)(server().post(`/tenant/cases/${id((f) => f.caseId)}/notes/${NOWHERE}/void`))],
+    ['GET notes — :caseId', (id) => as(a.mp, a)(server().get(`/tenant/cases/${id((f) => f.caseId)}/notes`))],
+    ['GET activity — :caseId', (id) => as(a.mp, a)(server().get(`/tenant/cases/${id((f) => f.caseId)}/activity`))],
   ];
 
   const nowhere = () => NOWHERE;
@@ -178,6 +184,7 @@ describe('no write path is a cross-tenant existence oracle (Principle II)', () =
        + (SELECT count(*) FROM document d JOIN case_file c ON c.id = d.case_id WHERE d.tenant_id <> c.tenant_id)
        + (SELECT count(*) FROM document d JOIN document_category k ON k.id = d.category_id WHERE d.tenant_id <> k.tenant_id)
        + (SELECT count(*) FROM calendar_event e JOIN case_file c ON c.id = e.case_id WHERE e.tenant_id <> c.tenant_id)
+       + (SELECT count(*) FROM case_note n JOIN case_file c ON c.id = n.case_id WHERE n.tenant_id <> c.tenant_id)
        + (SELECT count(*) FROM case_file c JOIN client l ON l.id = c.client_id WHERE c.tenant_id <> l.tenant_id)
        + (SELECT count(*) FROM directory_entry de JOIN position p ON p.id = de.position_id WHERE de.tenant_id <> p.tenant_id)
        )::text AS n`,

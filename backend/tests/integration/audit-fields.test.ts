@@ -134,7 +134,7 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it("covers every action in the vocabulary — sixty-five (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three, 014's one, 013's three, 015's one, 009's six)", () => {
+  it("covers every action in the vocabulary — sixty-nine (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three, 014's one, 013's three, 015's one, 009's six, 008's four)", () => {
     // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024 /
     // 007-FR-019 / 003-FR-042 / 005 research.md D8 without a test reaching it.
     //
@@ -151,15 +151,17 @@ describe('audit entry fields and channel gating', () => {
     // ended is a change to the record, not a read of it, so there is no polling job to throttle.
     // 009 adds six time-entry actions, one per mutation, none gated: reading one's own timesheet
     // is not audited at all (009 Decision 8), so there is no read to gate.
-    expect(AUDIT_ACTIONS).toHaveLength(65);
+    // 008 adds three note mutations, unconditional, and `note.list_read` — gated, as `case.read`
+    // is: reading a matter's notes discloses their text (008 Decision 4).
+    expect(AUDIT_ACTIONS).toHaveLength(69);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
     // monitoring job from inflating the log it watches.
-    expect(GATED).toHaveLength(6);
+    expect(GATED).toHaveLength(7);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
     expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
-    expect(UNCONDITIONAL).toHaveLength(65 - 6 - 4 - 15);
+    expect(UNCONDITIONAL).toHaveLength(69 - 7 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

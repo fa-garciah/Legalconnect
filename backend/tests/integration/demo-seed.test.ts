@@ -29,6 +29,7 @@ import {
 } from '../../drizzle/demo/firm';
 import { demoMatters } from '../../drizzle/demo/matters';
 import { demoTimeEntries, demoTimeEntryKeySpace } from '../../drizzle/demo/time-entries';
+import { DEMO_NOTE_KEYS_PER_MATTER, demoNotes } from '../../drizzle/demo/notes';
 import { deterministicUuid } from '../../drizzle/demo/deterministic-id';
 
 const backendRoot = join(__dirname, '..', '..');
@@ -464,6 +465,52 @@ describe('the demo firm seed', () => {
     });
   });
 
+  describe('notes (008 T023)', () => {
+    const seededNoteIds = (): string[] => {
+      const firm = DEMO_FIRMS[0]!;
+      const asOf = new Date();
+      return demoNotes(firm, demoMatters(firm, asOf), asOf).map((n) => deterministicUuid('case-note', ...n.idKey));
+    };
+
+    it('writes the generated notes, active and internal, by MP, AA, PL and CM only', async () => {
+      const ids = seededNoteIds();
+      const row = await one<{ total: string; wrong_role: string; inactive: string; not_internal: string }>(
+        `SELECT count(*)::text AS total,
+                count(*) FILTER (WHERE m.archetype NOT IN ('MP', 'AA', 'PL', 'CM'))::text AS wrong_role,
+                count(*) FILTER (WHERE n.status <> 'active')::text AS inactive,
+                count(*) FILTER (WHERE n.visibility <> 'internal')::text AS not_internal
+           FROM case_note n JOIN membership m ON m.id = n.author_membership_id
+          WHERE n.id = ANY($1::uuid[])`,
+        [ids],
+      );
+      expect(Number(row.total)).toBe(ids.length);
+      expect(Number(row.total)).toBeGreaterThan(20);
+      expect(Number(row.wrong_role)).toBe(0);
+      expect(Number(row.inactive)).toBe(0);
+      expect(Number(row.not_internal)).toBe(0);
+    });
+
+    it('every author is on the matter, so they can read what they wrote', async () => {
+      const row = await one<{ unassigned: string }>(
+        `SELECT count(*)::text AS unassigned FROM case_note n
+          WHERE n.id = ANY($1::uuid[])
+            AND NOT EXISTS (SELECT 1 FROM case_assignment a
+                             WHERE a.case_id = n.case_id AND a.membership_id = n.author_membership_id
+                               AND a.unassigned_at IS NULL)`,
+        [seededNoteIds()],
+      );
+      expect(Number(row.unassigned)).toBe(0);
+    });
+
+    it('writes no audit row for them — the activity feed shows the product being used, not the seed', async () => {
+      const row = await one<{ n: string }>(
+        `SELECT count(*)::text AS n FROM audit_event WHERE action LIKE 'note.%' AND target_id = ANY($1::uuid[])`,
+        [seededNoteIds()],
+      );
+      expect(Number(row.n)).toBe(0);
+    });
+  });
+
   describe('idempotency (FR-014, SC-003)', () => {
     const snapshot = async (withBytes = true): Promise<string> => {
         const row = await one<{ fingerprint: string }>(
@@ -479,6 +526,7 @@ describe('the demo firm seed', () => {
               (SELECT count(*) FROM document WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT count(*) FROM calendar_event WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT CASE WHEN $2 THEN count(*) FILTER (WHERE status = 'logged') || ':' || coalesce(sum(minutes) FILTER (WHERE status = 'logged'), 0) END FROM time_entry WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
+              (SELECT CASE WHEN $2 THEN count(*) FILTER (WHERE status = 'active') END FROM case_note WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT CASE WHEN $2 THEN coalesce(sum(storage_bytes_used), 0) END FROM tenant WHERE rfc = ANY($1::text[]))
             ) AS fingerprint`,
           [DEMO_RFCS, withBytes],
@@ -522,6 +570,24 @@ describe('the demo firm seed', () => {
           ).n,
         );
       const generated = (day: Date) => demoTimeEntries(firm, demoMatters(firm, day), day).length;
+      // Notes (008) the same way: which matters are open moves with the day, so the active demo notes
+      // after a re-seed must be exactly the current generation's.
+      const activeDemoNotes = async () =>
+        Number(
+          (
+            await one<{ n: string }>(
+              `SELECT count(*)::text AS n FROM case_note
+                WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1) AND status = 'active' AND id = ANY($2::uuid[])`,
+              [
+                firm.rfc,
+                demoMatters(firm, new Date()).flatMap((m) =>
+                  Array.from({ length: DEMO_NOTE_KEYS_PER_MATTER }, (_, i) => deterministicUuid('case-note', firm.rfc, m.slot, `n${i}`)),
+                ),
+              ],
+            )
+          ).n,
+        );
+      const generatedNotes = (day: Date) => demoNotes(firm, demoMatters(firm, day), day).length;
 
       const before = await snapshot(false);
       const shiftedDay = new Date(Date.now() + 200 * 86_400_000);
@@ -529,9 +595,11 @@ describe('the demo firm seed', () => {
       runDemoSeed(shifted);
       expect(await snapshot(false)).toBe(before);
       expect(await loggedDemoHours()).toBe(generated(new Date(`${shifted}T12:00:00Z`)));
+      expect(await activeDemoNotes()).toBe(generatedNotes(new Date(`${shifted}T12:00:00Z`)));
       runDemoSeed();
       expect(await snapshot(false)).toBe(before);
       expect(await loggedDemoHours()).toBe(generated(new Date()));
+      expect(await activeDemoNotes()).toBe(generatedNotes(new Date()));
       const docs = await one<{ n: string }>(
         `SELECT count(*)::text AS n FROM document WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1)`,
         [DEMO_RFCS[0]],

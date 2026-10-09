@@ -20,6 +20,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { KpiModule } from './modules/kpi/kpi.module';
 // 009 — recorded time; writes reach a matter through CaseCoreModule's resolver.
 import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
+import { NotesModule } from './modules/notes/notes.module';
 import { AuthModule } from './modules/auth/auth.module';
 
 /**
@@ -75,6 +76,7 @@ import { AuthModule } from './modules/auth/auth.module';
     // 009-time-tracking. No resolver of its own: rows 48 and 50 reuse CaseCoreModule's through
     // @ScopeTarget('caseId'); rows 49 and 51 are `tenant` scope.
     TimeEntriesModule,
+    NotesModule,
     AuthModule,
   ],
   providers: [

@@ -118,6 +118,13 @@ const ASSIGNED_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   // (009 Decision 9). Four holders: SA is not a timekeeper (Decision 10), BM has no case content.
   'time.log': ['MP', 'AA', 'PL', 'CM'],
   'time.correct_own': ['MP', 'AA', 'PL', 'CM'],
+  // 008-notes-and-activity, rows 52-55 — all `assigned`, through the resolver via `:caseId`. Notes are
+  // privileged work product: the four archetypes who work matters, not SA (008 Decision 6). SA keeps
+  // the activity feed, which discloses no content. BM holds none.
+  'note.read': ['MP', 'AA', 'PL', 'CM'],
+  'note.create': ['MP', 'AA', 'PL', 'CM'],
+  'note.correct_own': ['MP', 'AA', 'PL', 'CM'],
+  'case.read_activity': ['MP', 'AA', 'PL', 'CM', 'SA'],
 };
 
 /** Rows 9-10, `self` scope — not archetype-decided by anybody (research.md D8). */
@@ -182,8 +189,8 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
     ]);
     // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013) + 1 (023). A census, moved by every
     // slice that extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45, and
-    // 023 to 46 with `document.read_list`, 015 to 47 with `kpi.read`, and 009 to 51 with `time.*`.
-    expect(asserted.size).toBe(51);
+    // 023 to 46 with `document.read_list`, 015 to 47 with `kpi.read`, 009 to 51 with `time.*`, and 008 to 55.
+    expect(asserted.size).toBe(55);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

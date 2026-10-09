@@ -18,9 +18,9 @@ const STEP_UP_ROWS: readonly CapabilityId[] = [
 describe('capability registry shape', () => {
   const ids = Object.keys(CAPABILITIES) as CapabilityId[];
 
-  it('holds exactly 51 rows (21 from 004, 017 rows 22-24, 006 rows 25-35, 007 rows 36-43, 013 rows 44-45, 023 row 46, 015 row 47, 009 rows 48-51)', () => {
-    expect(ids).toHaveLength(51);
-    expect(new Set(ids).size).toBe(51);
+  it('holds exactly 51 rows (21 from 004, 017 rows 22-24, 006 rows 25-35, 007 rows 36-43, 013 rows 44-45, 023 row 46, 015 row 47, 009 rows 48-51, 008 rows 52-55)', () => {
+    expect(ids).toHaveLength(55);
+    expect(new Set(ids).size).toBe(55);
   });
 
   it('every id matches module.verb', () => {

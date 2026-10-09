@@ -142,6 +142,15 @@ export const AUDIT_ACTIONS = [
   'time_entry.logged',
   'time_entry.corrected',
   'time_entry.voided',
+  // Slice 008 (FR-009, migration 0049). Three mutations, one per write, none carrying note text —
+  // and one ACCESS record: reading a matter's notes discloses their full text, which is reading
+  // privileged content, so it is recorded as `case.read` records opening a matter (008 Decision 4).
+  // Channel-gated below for the same reason. The activity feed read is NOT audited: it discloses no
+  // content and is itself a read of this log.
+  'note.created',
+  'note.corrected',
+  'note.voided',
+  'note.list_read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -167,6 +176,9 @@ export const CHANNEL_GATED_ACTIONS: ReadonlySet<AuditAction> = new Set<AuditActi
   // 014. A person listing the firm's members with their email is the access worth
   // recording; a monitoring job doing it is not.
   'membership.list_read',
+  // 008 Decision 4. A person reading a matter's notes — their full text — is the access a firm
+  // needs evidence of; a monitoring job doing it is not.
+  'note.list_read',
 ]);
 
 export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
@@ -264,6 +276,11 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'time_entry.logged': 'time_entry',
   'time_entry.corrected': 'time_entry',
   'time_entry.voided': 'time_entry',
+  'note.created': 'case_note',
+  'note.corrected': 'case_note',
+  'note.voided': 'case_note',
+  // The subject of a notes-list read is the MATTER whose notes were read — there is no single note.
+  'note.list_read': 'case_file',
 };
 
 export type Channel = 'interactive' | 'automated';

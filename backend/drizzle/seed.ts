@@ -102,6 +102,7 @@ async function main(): Promise<void> {
     await seedDocuments(tenantIds[0]!, tenantIds[1]!);
     await seedCalendarEvents(tenantIds[0]!, tenantIds[1]!);
     await seedTimeEntries(tenantIds[0]!, tenantIds[1]!);
+    await seedCaseNotes(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -514,6 +515,41 @@ async function seedTimeEntries(tenantA: string, tenantB: string): Promise<void> 
       );
     }
     console.log('seeded 1 fixture time entry per tenant');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 008-notes-and-activity. One fixture note per tenant, for the reason `seedTimeEntries` gives:
+ * `no-context.test.ts` sweeps every registered tenant table and needs each one non-empty while a
+ * tenant is active. Idempotent by body.
+ */
+async function seedCaseNotes(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      const { rows } = await client.query<{ membership_id: string; case_id: string }>(
+        `SELECT (SELECT id FROM membership WHERE tenant_id = $1 ORDER BY created_at LIMIT 1) AS membership_id,
+                (SELECT id FROM case_file WHERE tenant_id = $1 ORDER BY file_number LIMIT 1) AS case_id`,
+        [tenantId],
+      );
+      const { membership_id: membershipId, case_id: caseId } = rows[0] ?? {};
+      if (!membershipId || !caseId) throw new Error(`seedCaseNotes: no membership or case for tenant ${tenantId}`);
+
+      await client.query(
+        `INSERT INTO case_note (tenant_id, case_id, author_membership_id, body)
+         SELECT $1, $2, $3, 'Nota de expediente de prueba'
+          WHERE NOT EXISTS (SELECT 1 FROM case_note WHERE tenant_id = $1 AND body = 'Nota de expediente de prueba')`,
+        [tenantId, caseId, membershipId],
+      );
+    }
+    console.log('seeded 1 fixture case note per tenant');
   } finally {
     await client.end();
   }

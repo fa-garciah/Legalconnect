@@ -678,3 +678,73 @@ describe('time copy is Spanish-only (009/T028)', () => {
     assertNoTimeWireVocabulary(document.body);
   });
 });
+
+/*
+ * 008/T022 — notes and activity. The wire vocabulary is the note's visibility and status
+ * (`internal`, `active`, `voided`), the audit action ids the feed is built from (`note.created`,
+ * `document.uploaded`…), and the refusal codes (`note_voided`, `correction_window_closed`).
+ */
+import { NotesView } from '@/app/expedientes/[caseId]/notas/NotesView';
+import { CorrectNoteDialog } from '@/app/expedientes/[caseId]/notas/CorrectNoteDialog';
+import { VoidNoteDialog } from '@/app/expedientes/[caseId]/notas/VoidNoteDialog';
+import { ActivityView } from '@/app/expedientes/[caseId]/actividad/ActivityView';
+
+const NOTE_WIRE_WORDS =
+  /\b(internal|voided|note_voided|correction_window_closed|own|truncated|[a-z_]+\.(created|corrected|voided|uploaded|status_changed|team_member_assigned|cancelled))\b/i;
+
+function assertNoNoteWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(NOTE_WIRE_WORDS);
+}
+
+describe('notes and activity copy is Spanish-only (008/T022)', () => {
+  const NOTE = {
+    id: 'n1', body: 'El juez difirió la audiencia', createdAt: '2026-10-08T17:00:00.000Z',
+    author: { membershipId: 'm1', position: 'Asociado' }, own: true, correctableUntil: '2026-10-09T17:00:00.000Z',
+  };
+
+  it('NotesView — composer, month and notes', async () => {
+    answer({ '/tenant/cases/k1/notes': { month: '2026-10', items: [NOTE, { ...NOTE, id: 'n2', own: false, correctableUntil: null }] } });
+    const { container } = withQueryClient(<NotesView caseId="k1" archetype="AA" month="2026-10" />);
+    await adminScreen.findAllByText('El juez difirió la audiencia');
+    assertOnlySpanish(container);
+    assertNoNoteWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('CorrectNoteDialog and VoidNoteDialog', async () => {
+    const correct = withQueryClient(<CorrectNoteDialog caseId="k1" note={NOTE as never} onClose={() => {}} />);
+    await adminScreen.findByLabelText('Texto de la nota');
+    assertOnlySpanish(document.body);
+    assertNoNoteWireVocabulary(document.body);
+    correct.unmount();
+    withQueryClient(<VoidNoteDialog caseId="k1" note={NOTE as never} onClose={() => {}} />);
+    await adminScreen.findByText(/se conserva en el historial/i);
+    assertOnlySpanish(document.body);
+    assertNoNoteWireVocabulary(document.body);
+  });
+
+  it('ActivityView — every allow-listed change, and the truncation notice', async () => {
+    const actions = [
+      'case.created', 'case.status_changed', 'case.outcome_declared', 'case.team_member_assigned',
+      'case.team_member_unassigned', 'document.uploaded', 'document.category_changed', 'document.withdrawn',
+      'document.restored', 'calendar_event.created', 'calendar_event.updated', 'calendar_event.cancelled',
+      'note.created', 'note.corrected', 'note.voided',
+    ];
+    answer({
+      '/tenant/cases/k1/activity': {
+        month: '2026-10',
+        truncated: true,
+        items: actions.map((action, i) => ({
+          id: `a${i}`, action, occurredAt: '2026-10-08T17:00:00.000Z',
+          actor: { membershipId: 'm1', position: 'Socio' }, fileName: action.startsWith('document.') ? 'Demanda.pdf' : null,
+        })),
+      },
+    });
+    const { container } = withQueryClient(<ActivityView caseId="k1" archetype="AA" month="2026-10" />);
+    await adminScreen.findByText(/200 cambios/);
+    assertOnlySpanish(container);
+    assertNoNoteWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+});

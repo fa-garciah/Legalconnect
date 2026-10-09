@@ -130,4 +130,12 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   'time.read_own': new Set(['MP', 'AA', 'PL', 'CM']),
   'time.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
   'time.discard_timer': new Set(['MP', 'AA', 'PL', 'CM']),
+  // 008-notes-and-activity, rows 52-55. Notes are attorney work product under privilege: the four
+  // archetypes who work matters read and write them; `SA`, who runs the tool, does not (008
+  // Decision 6). `SA` keeps the activity feed — kinds of change, not content. `BM` holds none: matter
+  // content, as for cases, documents, calendar and hours.
+  'note.read': new Set(['MP', 'AA', 'PL', 'CM']),
+  'note.create': new Set(['MP', 'AA', 'PL', 'CM']),
+  'note.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'case.read_activity': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
 };

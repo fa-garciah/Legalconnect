@@ -20,7 +20,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
+import { FileText, History, NotebookPen } from 'lucide-react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -206,6 +206,26 @@ function CaseDetailContent({
         >
           <FileText aria-hidden className="h-4 w-4" />
           Documentos del expediente
+        </Link>
+      ) : null}
+
+      {/* 008 (FR-016). Notes and activity hang off the matter the same way. */}
+      {can('note.read', archetype) ? (
+        <Link
+          href={`/expedientes/${caseId}/notas`}
+          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          <NotebookPen aria-hidden className="h-4 w-4" />
+          Notas del expediente
+        </Link>
+      ) : null}
+      {can('case.read_activity', archetype) ? (
+        <Link
+          href={`/expedientes/${caseId}/actividad`}
+          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          <History aria-hidden className="h-4 w-4" />
+          Actividad del expediente
         </Link>
       ) : null}
 

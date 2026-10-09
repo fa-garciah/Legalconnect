@@ -160,3 +160,49 @@ describe('an opened matter offers each archetype exactly its row', () => {
     });
   }
 });
+
+/**
+ * 008 FR-016 — the panel links "Notas" and "Actividad", transcribed from 008/spec.md's matrix:
+ *
+ *   | 52 | note.read          | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ |
+ *   | 55 | case.read_activity | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ✅ |
+ *
+ * `SA` is the row worth reading twice: it opens every matter and sees its activity, and is shown no
+ * way into its notes (Decision 6 — privileged work product).
+ */
+describe('an opened matter links notes and activity exactly for their rows', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation(router);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const LINKS: ReadonlyArray<{ readonly archetype: Archetype; readonly notes: boolean; readonly activity: boolean }> = [
+    { archetype: 'MP', notes: true, activity: true },
+    { archetype: 'AA', notes: true, activity: true },
+    { archetype: 'PL', notes: true, activity: true },
+    { archetype: 'CM', notes: true, activity: true },
+    { archetype: 'SA', notes: false, activity: true },
+  ];
+
+  for (const row of LINKS) {
+    it(`${row.archetype}: notes ${row.notes ? 'linked' : 'not linked'}, activity ${row.activity ? 'linked' : 'not linked'}`, async () => {
+      renderWithClient(<CaseDetailPanel open caseId="c1" archetype={row.archetype} onClose={vi.fn()} />);
+      const panel = await screen.findByRole('dialog');
+      await within(panel).findByTestId('case-team');
+
+      const notes = within(panel).queryByRole('link', { name: 'Notas del expediente' });
+      const activity = within(panel).queryByRole('link', { name: 'Actividad del expediente' });
+      expect(notes !== null, `notes link for ${row.archetype}`).toBe(row.notes);
+      expect(activity !== null, `activity link for ${row.archetype}`).toBe(row.activity);
+      if (notes) expect(notes).toHaveAttribute('href', '/expedientes/c1/notas');
+      if (activity) expect(activity).toHaveAttribute('href', '/expedientes/c1/actividad');
+    });
+  }
+});

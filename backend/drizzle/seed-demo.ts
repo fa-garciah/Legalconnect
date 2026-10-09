@@ -50,6 +50,7 @@ import { demoMatters } from './demo/matters';
 import { demoDocuments } from './demo/documents';
 import { demoCalendarEvents } from './demo/calendar';
 import { demoTimeEntries, demoTimeEntryKeySpace } from './demo/time-entries';
+import { DEMO_NOTE_KEYS_PER_MATTER, demoNotes } from './demo/notes';
 import { deterministicUuid } from './demo/deterministic-id';
 import { renderCredentialTable } from './demo/report';
 import { hashCredential, hashHighEntropy } from '../src/common/auth/argon2';
@@ -134,6 +135,7 @@ async function main(): Promise<void> {
       missingObjects.push(...missing);
       await seedCalendar(migration, target);
       await seedTimeEntries(migration, target);
+      await seedNotes(migration, target);
       await recomputeStorageCounter(migration, target.tenantId);
     }
 
@@ -698,6 +700,44 @@ async function seedTimeEntries(migration: Client, target: WrittenFirm): Promise<
   await migration.query(
     `UPDATE time_entry SET status = 'voided', voided_at = now(), updated_at = now()
       WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'logged'`,
+    [tenantId, stale],
+  );
+}
+
+/**
+ * 008 T023 — notes on the open matters. Upserted by a date-free id (see `demo/notes.ts`), and — as
+ * for hours — a demo note this generation no longer produces is VOIDED, never deleted, and only
+ * inside the generator's own key space, so a note somebody wrote through the screen is never touched.
+ * No audit row: the seed never writes `audit_event` (022).
+ */
+async function seedNotes(migration: Client, target: WrittenFirm): Promise<void> {
+  const { tenantId, firm } = target;
+  const matters = demoMatters(firm, AS_OF);
+  const written = new Set<string>();
+
+  for (const note of demoNotes(firm, matters, AS_OF)) {
+    const membershipId = target.memberships.get(note.authorSlug);
+    const caseId = target.cases.get(note.matterFileNumber);
+    if (!membershipId || !caseId) continue;
+    const id = deterministicUuid('case-note', ...note.idKey);
+    written.add(id);
+    await migration.query(
+      `INSERT INTO case_note (id, tenant_id, case_id, author_membership_id, body, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $6::timestamptz)
+       ON CONFLICT (id) DO UPDATE
+         SET case_id = excluded.case_id, author_membership_id = excluded.author_membership_id,
+             body = excluded.body, created_at = excluded.created_at, updated_at = excluded.updated_at,
+             status = 'active', voided_at = NULL`,
+      [id, tenantId, caseId, membershipId, note.body, note.createdAt],
+    );
+  }
+
+  const stale = matters
+    .flatMap((m) => Array.from({ length: DEMO_NOTE_KEYS_PER_MATTER }, (_, i) => deterministicUuid('case-note', firm.rfc, m.slot, `n${i}`)))
+    .filter((id) => !written.has(id));
+  await migration.query(
+    `UPDATE case_note SET status = 'voided', voided_at = now(), updated_at = now()
+      WHERE tenant_id = $1 AND id = ANY($2::uuid[]) AND status = 'active'`,
     [tenantId, stale],
   );
 }
