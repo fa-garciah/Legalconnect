@@ -1,0 +1,87 @@
+# 024-deployment-pipeline — the LegalConnect stack as Dokploy runs it (a "Compose" service).
+#
+# The images are built and pushed by .github/workflows/deploy.yml; nothing is built on the server.
+# Every ${VAR} comes from the Compose service's Environment tab in Dokploy (never from this file).
+# PostgreSQL is a separate Dokploy Database service on `dokploy-network`, reached by its internal host.
+#
+# Each service receives ONLY the variables listed under it. That is what keeps the owner connection
+# and the role passwords inside `migrate` and out of the running API (024/FR-008, .env.example).
+
+services:
+  # One-shot: applies pending migrations, sets the role passwords, exits. The API starts only if
+  # this exits 0 — a failed migration leaves the previous containers serving.
+  migrate:
+    image: ghcr.io/fa-garciah/legalconnect-backend:${IMAGE_TAG:-main}
+    pull_policy: always
+    command: ["node", "dist/drizzle/migrate.js"]
+    restart: "no"
+    environment:
+      DATABASE_URL_MIGRATION: ${DATABASE_URL_MIGRATION}
+      LC_APP_PASSWORD: ${LC_APP_PASSWORD}
+      LC_PLATFORM_PASSWORD: ${LC_PLATFORM_PASSWORD}
+      LC_RETENTION_PASSWORD: ${LC_RETENTION_PASSWORD}
+      LC_AUTH_PASSWORD: ${LC_AUTH_PASSWORD}
+    networks: [dokploy-network]
+
+  backend:
+    image: ghcr.io/fa-garciah/legalconnect-backend:${IMAGE_TAG:-main}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Must be 0.0.0.0 to be reachable from the proxy. The platform surface no longer relies on
+      # this: it answers only a loopback peer (024/FR-001).
+      PLATFORM_BIND_HOST: 0.0.0.0
+      DATABASE_URL_APP: ${DATABASE_URL_APP}
+      DATABASE_URL_PLATFORM: ${DATABASE_URL_PLATFORM}
+      DATABASE_URL_AUTH: ${DATABASE_URL_AUTH}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      OBJECT_STORE_REGION: ${OBJECT_STORE_REGION}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET}
+      OBJECT_STORE_ACCESS_KEY_ID: ${OBJECT_STORE_ACCESS_KEY_ID}
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${OBJECT_STORE_SECRET_ACCESS_KEY}
+      DOCUMENT_MAX_UPLOAD_BYTES: ${DOCUMENT_MAX_UPLOAD_BYTES:-26214400}
+      # The production assertion refuses to boot with the local key provider (003/T027).
+      AUTH_KEY_PROVIDER: kms
+      AUTH_KMS_KEY_ID: ${AUTH_KMS_KEY_ID}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AUTH_LOCKOUT_THRESHOLD: ${AUTH_LOCKOUT_THRESHOLD:-5}
+      AUTH_LOCKOUT_MINUTES: ${AUTH_LOCKOUT_MINUTES:-15}
+      AUTH_BACKUP_CODE_COUNT: ${AUTH_BACKUP_CODE_COUNT:-10}
+      INVITATION_MAX_FAILED_ATTEMPTS: ${INVITATION_MAX_FAILED_ATTEMPTS:-10}
+      INVITATION_ISSUANCE_RATE_PER_HOUR: ${INVITATION_ISSUANCE_RATE_PER_HOUR:-200}
+      EMAIL_PROVIDER_REGION: ${EMAIL_PROVIDER_REGION:-us-east-1}
+      EMAIL_SENDER_ADDRESS: ${EMAIL_SENDER_ADDRESS}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [dokploy-network]
+
+  frontend:
+    image: ghcr.io/fa-garciah/legalconnect-frontend:${IMAGE_TAG:-main}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      # Auth.js v5 behind a reverse proxy: trust the forwarded host, and name the public URL.
+      AUTH_URL: ${APP_PUBLIC_URL}
+      NEXTAUTH_URL: ${APP_PUBLIC_URL}
+      AUTH_TRUST_HOST: "true"
+      AUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+    networks: [dokploy-network]
+
+networks:
+  dokploy-network:
+    external: true

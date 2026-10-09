@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { assertApplicationRoleIsSafe } from './common/db/client';
 import { assertKeyProviderIsSafe } from './common/auth/deployment-assertions';
 import { ensureUpcomingPartitions } from './modules/audit/partition-maintenance';
+import { registerHealthRoute } from './common/http/health';
 
 function loadEnvFile(path: string): void {
   if (!existsSync(path)) return;
@@ -99,6 +100,9 @@ async function bootstrap(): Promise<void> {
         'Set it to the frontend origin, or leave it unset deliberately for a server-to-server deployment.',
     );
   }
+
+  // 024/FR-016. Beside the router rather than in it — see health.ts.
+  registerHealthRoute(app);
 
   const port = Number(process.env.PORT ?? 3000);
 
