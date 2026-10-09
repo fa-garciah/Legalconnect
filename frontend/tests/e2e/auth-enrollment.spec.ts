@@ -71,6 +71,10 @@ test.describe('enrollment, end to end', () => {
 
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Continuar' }).click();
+    // "Continuar" hands the session enrollment minted to NextAuth, THEN navigates to `/`. Navigating
+    // away before that lands aborts the handoff and leaves no cookie — so wait for the product's own
+    // navigation, the signal that the session is in place.
+    await expect(page).not.toHaveURL(/\/enrolar/, { timeout: 15_000 });
 
     // After: the same route, now reachable. Same person, same browser, same
     // membership — the only thing that changed is the second factor.
