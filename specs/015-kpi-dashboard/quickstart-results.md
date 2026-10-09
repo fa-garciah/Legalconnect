@@ -1,7 +1,7 @@
 # Quickstart results — `015-kpi-dashboard`
 
 **Run**: 2026-09-26, same machine as `022` and `023` (Windows 11, Node 22.13.1, PostgreSQL 16 in
-Docker on port 5455, MinIO **unavailable**, backend on 3001, frontend on 3000).
+Docker on port 5455, object store **unreachable**, backend on 3001, frontend on 3000).
 
 What was verified, and what was not. Nothing here is claimed from a sibling suite or a reading.
 
@@ -45,7 +45,7 @@ The last line is the one worth keeping: it is the invariant that caught the defe
 | backend `npm run test:rls` | **33 passed** |
 | backend `npm run verify:role` | **4 passed** |
 | backend `npm run test:auth-coverage` | **32 passed / 4 files** |
-| backend `npm run test:isolation` | **83 passed, 3 failed** — the three failures are `pre-signed-url-isolation.test.ts`, which needs MinIO |
+| backend `npm run test:isolation` | **83 passed, 3 failed** — the three failures are `pre-signed-url-isolation.test.ts`, which needs the object store |
 | backend `tests/contract/kpis.test.ts` | **22 passed** |
 | backend `tests/contract/case-outcome.test.ts` | **14 passed** |
 | backend `tests/integration/case-outcome-constraint.test.ts` | **6 passed** |
@@ -138,7 +138,7 @@ only then into the service. A missing requirement goes into the spec, never only
 **2107 passed, 26 failed, 13 skipped, across 209 files (11 failed).**
 
 The failing eleven are byte-for-byte the set `022` established and `023` re-confirmed as
-MinIO-dependent:
+object-store-dependent:
 
 ```
 tests/contract/document-access-audited.test.ts        tests/contract/documents-upload-cap.test.ts
@@ -152,9 +152,9 @@ tests/contract/documents-download-disposition.test.ts
 Same files, same 26 failures. Passing tests rose from 2029 (`023`) to **2107**. An intermediate
 run of this slice showed **28** failures across **13** files; the two extra were real and are
 fixed (defects 1 and 2 above). This slice introduces no new failure and fixes none of the
-environmental ones: the MinIO image cannot be pulled here at all — `quay.io` answers `401` for
-the pinned `minio/minio`, verified by direct `docker pull` and by a raw token request, while
-Docker Hub works, so it is not a proxy.
+environmental ones: the object store is unreachable on this machine — its container image could
+not be pulled, verified by direct `docker pull` and by a raw token request, while Docker Hub
+works, so it is not a proxy.
 
 ### The coverage thresholds — **not evaluated, and it is not possible to evaluate them here**
 
@@ -163,9 +163,9 @@ write.
 
 `npm test -- --coverage` produced **no report at all** — no table, no `coverage/` directory, and
 no threshold verdict. Vitest skips the coverage report when the run fails, and this run fails on
-the 26 MinIO tests. Two further attempts pinned it down rather than assumed it:
+the 26 object-store tests. Two further attempts pinned it down rather than assumed it:
 
-1. Re-run with the eleven MinIO files excluded. Still red — **4 failures in 3 files**, all
+1. Re-run with the eleven object-store files excluded. Still red — **4 failures in 3 files**, all
    `expected 429 to be 201`: `enumeration-duplicate-invite`, `invitation-reissue` and
    `revoke-invitation` hit `003`'s in-memory issuance rate limiter. Removing eleven files changes
    how the rest are scheduled, so more invitations land in one window. An artefact of the

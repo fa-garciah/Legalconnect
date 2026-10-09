@@ -48,10 +48,4 @@ describe('S3ObjectStore region discovery', () => {
     await store.presignGet('b');
     expect(send).toHaveBeenCalledTimes(1);
   });
-
-  it('never probes a custom endpoint (MinIO): regions there are nominal', async () => {
-    const send = vi.spyOn(S3Client.prototype, 'send');
-    await new S3ObjectStore({ ...CONFIG, endpoint: 'http://localhost:9000', forcePathStyle: true }).presignGet('k');
-    expect(send).not.toHaveBeenCalled();
-  });
 });

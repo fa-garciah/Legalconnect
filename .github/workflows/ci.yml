@@ -51,12 +51,14 @@ jobs:
       # Every key `.env.example` declares must be set here — `check:env` below asserts
       # exactly that, so CI proves the documented set is sufficient to run the
       # application rather than merely that a developer's own `.env` happens to work.
-      OBJECT_STORE_ENDPOINT: http://localhost:9000
-      OBJECT_STORE_REGION: us-east-1
-      OBJECT_STORE_BUCKET: legalconnect-documents-ci
-      OBJECT_STORE_ACCESS_KEY_ID: lc_minio_ci
-      OBJECT_STORE_SECRET_ACCESS_KEY: lc_minio_ci_password
-      OBJECT_STORE_FORCE_PATH_STYLE: 'true'
+      #
+      # 007's document suites exercise real S3 behaviour — signing, expiry, cross-tenant
+      # pre-signed URL isolation — against the real AWS bucket, not a mock. The key pair comes
+      # from the repository's Actions secrets and is never written into this file.
+      OBJECT_STORE_REGION: eu-central-1
+      OBJECT_STORE_BUCKET: c-market-storage
+      OBJECT_STORE_ACCESS_KEY_ID: ${{ secrets.OBJECT_STORE_ACCESS_KEY_ID }}
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${{ secrets.OBJECT_STORE_SECRET_ACCESS_KEY }}
       EMAIL_PROVIDER_REGION: us-east-1
       EMAIL_SENDER_ADDRESS: no-reply@legalconnect.mx
       INVITATION_MAX_FAILED_ATTEMPTS: '10'
@@ -88,35 +90,6 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - run: npm ci
-
-      # 007-document-management, research.md D6. The document suites exercise real
-      # S3-API behaviour — signing, expiry, cross-tenant pre-signed URL isolation —
-      # against MinIO rather than a mock, so CI needs the same service local dev runs.
-      #
-      # A STEP, NOT A `services:` CONTAINER, and pinned on quay.io — both forced, not chosen.
-      # `minio/minio` no longer exists on Docker Hub: from the merge of 005 onward every
-      # run died at "Initialize containers" with "pull access denied", before checkout, so
-      # main was red and not one backend test ran. The old `edge-cicd` tag existed only
-      # because it starts `server /data` by default; the standard image needs that argument,
-      # and GitHub's `services:` block cannot pass one. It also no longer ships `curl`, so
-      # health is polled from the runner instead of from inside the container.
-      - name: Start the object store
-        run: |
-          docker run -d --name lc-minio -p 9000:9000             -e MINIO_ROOT_USER=lc_minio_ci -e MINIO_ROOT_PASSWORD=lc_minio_ci_password             quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:9000/minio/health/live && exit 0
-            sleep 2
-          done
-          docker logs lc-minio
-          exit 1
-
-      # Creates the bucket the application expects. MinIO comes up HEALTHY with no bucket
-      # in it, and every upload then fails with a 500 that looks like application code.
-      # Uses the `mc` shipped inside the MinIO image rather than downloading a binary.
-      - name: Create the object-store bucket
-        run: |
-          docker exec lc-minio mc alias set ci http://localhost:9000 lc_minio_ci lc_minio_ci_password
-          docker exec lc-minio mc mb --ignore-existing ci/legalconnect-documents-ci
 
       # Leads the quality gates because a drifted environment makes every gate below it
       # fail for reasons that have nothing to do with the code — three separate incidents

@@ -1,7 +1,7 @@
 # Quickstart results — `022-demo-firm-seed`
 
 **Run**: 2026-09-25, on the machine this slice was written on (Windows 11, Node 22.13.1,
-PostgreSQL 16 in Docker on port 5455, MinIO **unavailable**).
+PostgreSQL 16 in Docker on port 5455, object store **unreachable**).
 
 This file records what was actually verified and what was not. Nothing below is claimed from
 a passing sibling suite, a code reading or an earlier slice's notes.
@@ -96,25 +96,22 @@ reason.
 `tests/integration/isolation/object-store/pre-signed-url-isolation.test.ts` fails three
 assertions (`expected 400 to be 404`, twice, and `expected 400 to be 200`).
 
-**Cause: MinIO is unreachable on this machine.** That test's `beforeAll` performs a real upload
+**Cause: the object store is unreachable on this machine.** That test's `beforeAll` performs a real upload
 through `POST /tenant/cases/:caseId/documents`; with no object store the upload fails, so
 `documentId` is `undefined`, the URL under test becomes `/documents/undefined/preview`, and
 `assertUuid` answers **400** instead of the 404/200 being asserted.
 
 **Ruled out as mine, by experiment rather than by argument.** This slice moves
 `objectStoreConfig()` out of `DocumentsModule` (T008), which is on that exact code path. So:
-the configuration was printed and confirmed correct (`endpoint http://localhost:9000`, `region
-us-east-1`, `bucket legalconnect-documents-dev`, `forcePathStyle true`) and the `put` was
+the configuration was printed and confirmed correct (`region
+us-east-1`, `bucket legalconnect-documents-dev`) and the `put` was
 observed failing on connection, not on configuration; then the change was **temporarily
 reverted** — `documents.module.ts` restored from git and the new config file deleted — and the
 same three assertions failed identically. The failures predate this slice.
 
-**Why MinIO is unavailable**: `quay.io` answers `401 Unauthorized` for the pinned
-`quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` and `quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z`
-images, on a direct `docker pull`. Docker Hub pulls succeed (`postgres:16-alpine`,
-`hello-world`), so this is not a local proxy problem; it is quay.io refusing anonymous access
-to those tags. `minio/minio` no longer exists on Docker Hub, which is why the compose file
-points at quay.io in the first place.
+**Why the object store is unreachable**: its pinned container images could not be pulled, on a
+direct `docker pull`. Docker Hub pulls succeed (`postgres:16-alpine`, `hello-world`), so this is
+not a local proxy problem; the registry refused anonymous access to those tags.
 
 **What that leaves unproven for this slice:**
 
@@ -136,7 +133,7 @@ misreported it as 0).
 
 Ran to completion: **1954 passed, 26 failed, 13 skipped, across 201 files (11 failed).**
 
-The 26 failures are **entirely** the MinIO-dependent set, which was established by
+The 26 failures are **entirely** the object-store-dependent set, which was established by
 measurement rather than assumption. Grepping the test tree for `.attach(` (a real multipart
 upload) and for object-store references gives 17 files; six of those need no live store (five
 unit tests, which all pass, plus `tests/setup-env.ts`, which is not a test at all). Running the
@@ -162,7 +159,7 @@ those eleven files, and the one code path where its change could interact was te
 change reverted and failed identically (see `test:isolation` above).
 
 **This is a red gate and it is reported as one.** It cannot be made green on this machine: the
-MinIO image cannot be pulled at all. CI has the `minio` service, which is where these eleven
+object store is unreachable here. CI has access to the S3 bucket, which is where these eleven
 files are actually exercised.
 
 ### `npm test -- --coverage` (blocking thresholds)
@@ -211,7 +208,7 @@ installed here. Per those skills' own graceful-degradation contract:
 
 | Task | Why |
 |---|---|
-| T025 `demo-seed-objects.test.ts` | Needs MinIO. Deliberately not written rather than written-and-skipped, so no suite implies coverage that is absent. |
+| T025 `demo-seed-objects.test.ts` | Needs the object store. Deliberately not written rather than written-and-skipped, so no suite implies coverage that is absent. |
 | T027 `demo-seed-store-unreachable.test.ts` | The behaviour it asserts (FR-016) was verified by running the command in exactly that state, and is asserted inside `demo-seed.test.ts`'s "FR-016 — the object store" block, which handles both cases. A dedicated test pointing at a closed port would duplicate it. |
 | T033's `npm test -- --coverage` | See above. |
 

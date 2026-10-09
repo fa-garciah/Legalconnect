@@ -16,7 +16,7 @@ route (D2), `Content-Disposition` on signed URLs plus a 25 MB upload cap (D4), a
 | Backend | NestJS 11, Drizzle 0.45, PostgreSQL 16 with RLS, `@aws-sdk/client-s3` + presigner, multer via `@nestjs/platform-express` |
 | Frontend | Next.js 16 App Router, React Query, shadcn + `020` tokens, `apiFetch` → `/api/lc` proxy |
 | Testing | Vitest (backend contract/integration with Testcontainers-free local DB; frontend unit/component), Playwright e2e |
-| Storage | MinIO (`quay.io/minio/minio`) in dev and CI at `http://localhost:9000` |
+| Storage | AWS S3 in dev and CI (bucket `c-market-storage`, configured by `OBJECT_STORE_*`) |
 | New dependencies | **None** (`no-new-dependency.test.ts` must stay green) |
 
 ## Constitution Check
@@ -73,13 +73,13 @@ frontend/src/
 ```
 
 Preview: an `<iframe title="Vista previa de {filename}">` for `pdf`, `<img alt={filename}>` for
-`image`. The iframe's `src` is the signed MinIO/S3 URL. The frontend has no CSP today, so nothing
+`image`. The iframe's `src` is the signed S3 URL. The frontend has no CSP today, so nothing
 is relaxed; if one is added later it must allow the configured object-store origin in `frame-src`
 and `img-src`.
 
 ## Risks
 
-- **MinIO framing**: MinIO sends no `X-Frame-Options` by default; verified in e2e, not assumed.
+- **S3 framing**: S3 sends no `X-Frame-Options` by default; verified in e2e, not assumed.
 - **Rename collision**: a firm that already created "Sin clasificar" keeps both rows; the default
   lookup prefers the Spanish one. Covered by a migration test with both states.
 - **Coverage**: `src/common/**` blocking thresholds are unaffected except `common/http/errors.ts`

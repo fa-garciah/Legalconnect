@@ -33,7 +33,7 @@ Stories: US1 upload · US2 find & read · US3 organize (category, withdraw/resto
       `filename*` for "Contrato Señor Pérez.pdf"; quotes and CR/LF stripped. **See it fail.**
 - [x] T005 Contract test `backend/tests/contract/documents-download-disposition.test.ts`: the
       download URL carries `response-content-disposition=attachment…` with the original name;
-      preview carries `inline`; fetching the download URL from MinIO returns that header.
+      preview carries `inline`; fetching the download URL from S3 returns that header.
       **See it fail.**
 - [x] T006 `ObjectStore.presignGet(key, { disposition })`, `contentDisposition()` helper, and the
       service using them. Keep `object-store-chokepoint.test.ts` green.
@@ -121,7 +121,7 @@ Stories: US1 upload · US2 find & read · US3 organize (category, withdraw/resto
 - [x] T028 Add every new component to `frontend/tests/component/spanish-copy.test.tsx`, with a
       wire-vocabulary check for `withdrawn`, `active`, `retired`, `Unclassified`, `pending`.
 - [x] T029 e2e `frontend/tests/e2e/documentos.spec.ts`: upload a PDF → preview renders inline
-      (MinIO framing) → download keeps its name → change category → withdraw → restore; no signed
+      (S3 framing) → download keeps its name → change category → withdraw → restore; no signed
       URL in browser storage.
 - [x] T030 Full gates: backend `npm test -- --coverage`; frontend `npm test`, `typecheck`, `lint`,
       `build`; zero colour literals.

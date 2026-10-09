@@ -19,8 +19,8 @@ No migration. No new table, endpoint, capability or audit action. No new depende
 | Runtime | Node 22, TypeScript, executed by `tsx` (the runner `db:migrate` and `db:seed` already use) |
 | Database | PostgreSQL 16; the **migration** connection (`DATABASE_URL_MIGRATION`), per `seed.ts:121-126` |
 | Auth primitives | `common/auth/argon2.ts` (`hashCredential`, `hashHighEntropy`), `common/auth/totp.ts` (`generateAt`), `common/auth/key-provider.ts` (`resolveKeyProvider`). `modules/auth/backup-codes.ts` supplies the **`XXXXX-XXXXX-…` format and its alphabet only**; its `generateBackupCodeSet()` is deliberately **not** called, because FR-014 requires a re-run to print the same codes |
-| Storage | `ObjectStorePort.put` via `S3ObjectStore`, pointed at MinIO by `OBJECT_STORE_*` |
-| Testing | Vitest. Unit tests for the generators and the guard (no database); integration tests for the writes (local Postgres); the object-store assertions need MinIO |
+| Storage | `ObjectStorePort.put` via `S3ObjectStore`, pointed at the S3 bucket by `OBJECT_STORE_*` |
+| Testing | Vitest. Unit tests for the generators and the guard (no database); integration tests for the writes (local Postgres); the object-store assertions need the S3 bucket |
 | New dependencies | **None** — `backend/tests/integration/no-new-dependency.test.ts` holds an exact baseline of the manifest and stays green unedited |
 
 ## Constitution Check
@@ -145,9 +145,7 @@ which is stable because the document id is derived (Decision 5); `identity` on `
 
 ## Risks
 
-- **MinIO is unreachable on this machine.** `quay.io` returns `401` for the pinned
-  `minio/minio` and `minio/mc` tags, verified by direct `docker pull` on 2026-09-25 (Docker Hub
-  pulls work, so it is not a proxy). FR-016's degraded path is therefore the one that will be
+- **The object store is unreachable on this machine**, verified on 2026-09-25. FR-016's degraded path is therefore the one that will be
   exercised here, and `quickstart-results.md` will say exactly which document assertions did not
   run. This is a reporting obligation, not a reason to weaken FR-009.
 - **`gitleaks`** is blocking in CI and a base32 blob looks like a secret. Decision 2's

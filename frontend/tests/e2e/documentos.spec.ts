@@ -1,12 +1,12 @@
 /**
  * 021 T029 — a matter's documents, against a running backend and the real object store.
  *
- * Upload a PDF → it previews inline (MinIO serves it framable and `inline`) → download keeps its
+ * Upload a PDF → it previews inline (S3 serves it framable and `inline`) → download keeps its
  * original, accented name (Decision 4) → change its category → withdraw → find it under
  * "Retirados" → restore. And no signed URL is left in browser storage (FR-011).
  *
- * **Prerequisites**: as `configuracion.spec.ts` — backend on 3001 with migration 0045, MinIO on
- * 9000, `E2E_SIGNIN_*` for an enrolled MP or SA of `E2E_ADMIN_FIRM`, which has at least one case.
+ * **Prerequisites**: as `configuracion.spec.ts` — backend on 3001 with migration 0045 and its S3
+ * bucket configured, `E2E_SIGNIN_*` for an enrolled MP or SA of `E2E_ADMIN_FIRM`, which has at least one case.
  * **Writes** a document into that case and leaves it (restored) behind; 007 has no delete.
  */
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';

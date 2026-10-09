@@ -215,7 +215,7 @@ describe('FirmDocuments', () => {
         if (path === '/tenant/cases') return Promise.resolve(json(CASES));
         if (path.endsWith('/preview')) {
           previewedUrl = path;
-          return Promise.resolve(json({ previewUrl: 'http://localhost:9000/x', renderAs: 'pdf', expiresAt: '2030-01-01T00:00:00Z' }));
+          return Promise.resolve(json({ previewUrl: 'https://bucket.s3.amazonaws.com/x', renderAs: 'pdf', expiresAt: '2030-01-01T00:00:00Z' }));
         }
         return Promise.reject(new Error(`unrouted ${String(init?.method ?? 'GET')} ${path}`));
       });
@@ -241,7 +241,7 @@ describe('FirmDocuments', () => {
         if (path.endsWith('/download')) {
           downloadedUrl = path;
           return Promise.resolve(
-            json({ downloadUrl: 'http://localhost:9000/y', expiresAt: '2030-01-01T00:00:00Z', filename: 'dictamen-pericial.pdf' }),
+            json({ downloadUrl: 'https://bucket.s3.amazonaws.com/y', expiresAt: '2030-01-01T00:00:00Z', filename: 'dictamen-pericial.pdf' }),
           );
         }
         return Promise.reject(new Error(`unrouted ${path}`));
@@ -253,7 +253,7 @@ describe('FirmDocuments', () => {
 
       await waitFor(() => {
         expect(downloadedUrl).toBe(`/tenant/cases/${CASE_B}/documents/doc-b/download`);
-        expect(openDownload).toHaveBeenCalledWith('http://localhost:9000/y');
+        expect(openDownload).toHaveBeenCalledWith('https://bucket.s3.amazonaws.com/y');
       });
     });
 
