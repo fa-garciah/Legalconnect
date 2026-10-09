@@ -27,8 +27,8 @@ Strict TDD: every test task is run and **seen failing** before its implementatio
 
 ## Phase 5 — Polish
 
-- [ ] T011 e2e `frontend/tests/e2e/dashboard.spec.ts` (demo-session helper): the MP lands on `/` and sees the tiles; a note written on a matter appears in "Actividad reciente" without its text.
-- [ ] T012 Frontend gates; `quickstart-results.md`; registro and plan-paralelo rows; catalog EP01 note.
+- [X] T011 e2e `frontend/tests/e2e/dashboard.spec.ts` (demo-session helper): the MP lands on `/` and sees the tiles; a note written on a matter appears in "Actividad reciente" without its text.
+- [X] T012 Frontend gates; `quickstart-results.md`; registro and plan-paralelo rows; catalog EP01 note.
 
 ## Dependencies
 
