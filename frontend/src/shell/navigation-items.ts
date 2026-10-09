@@ -149,7 +149,20 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredArchetypes: INTERNAL,
     available: false,
   },
-  { id: 'horas', label: 'Registro de Horas', href: '/horas', icon: 'clock', requiredArchetypes: INTERNAL, available: false },
+  {
+    id: 'horas',
+    label: 'Registro de Horas',
+    href: '/horas',
+    icon: 'clock',
+    /*
+     * 009 (FR-017). Narrowed and switched on together, as `023` did for `documentos` and `015` for
+     * `kpis`: it said `INTERNAL`, which includes `BM` and `SA` — neither of whom holds any `time.*`
+     * capability (009 Decisions 2 and 10). `tests/unit/time/navigation.test.ts` derives the
+     * expectation from `can('time.read_own')` rather than restating this list.
+     */
+    requiredArchetypes: ['MP', 'AA', 'PL', 'CM'],
+    available: true,
+  },
   {
     id: 'facturacion',
     label: 'Facturación',

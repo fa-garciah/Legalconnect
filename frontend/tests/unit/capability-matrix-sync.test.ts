@@ -130,6 +130,19 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
    */
   'calendar.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'calendar.manage': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
+
+  /*
+   * Rows 48-51, from 009/spec.md's Capability Matrix. Columns there are MP AA PL CM BM SA PO.
+   *
+   *   | 48 | time.log           | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 49 | time.read_own      | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 50 | time.correct_own   | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   *   | 51 | time.discard_timer | MP ✅ AA ✅ PL ✅ CM ✅ BM ❌ SA ❌ PO ❌ |
+   */
+  'time.log': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.read_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.discard_timer': new Set(['MP', 'AA', 'PL', 'CM']),
 };
 
 describe('capability-matrix.ts stays in sync with 004/spec.md', () => {

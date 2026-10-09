@@ -122,4 +122,12 @@ export const MATRIX: Readonly<Record<CapabilityId, ReadonlySet<Subject>>> = {
   // every matter may read them. `AA` and `PL` see the matters they are assigned to; `BM` sees
   // none at all.
   'kpi.read': new Set(['MP', 'CM', 'SA']),
+  // 009-time-tracking, rows 48-51. The four archetypes that do matter work record their own time.
+  // `BM` holds none: hours on a matter are matter content, and there is no price for BM to put on
+  // them until `010` exists (009 Decision 2 — reconsider there, through 010's own capability).
+  // `SA` holds none: an administrator configures the tool and is not a timekeeper (Decision 10).
+  'time.log': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.read_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.correct_own': new Set(['MP', 'AA', 'PL', 'CM']),
+  'time.discard_timer': new Set(['MP', 'AA', 'PL', 'CM']),
 };

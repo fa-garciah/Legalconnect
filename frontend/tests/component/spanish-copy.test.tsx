@@ -603,3 +603,78 @@ describe('indicator copy is Spanish-only (015/T023)', () => {
     vi.unstubAllGlobals();
   });
 });
+
+/*
+ * 009/T028 — recorded time. The wire vocabulary is the entry's source and status (`timer`,
+ * `manual`, `running`, `logged`, `voided`) and the refusal codes the screen explains in words
+ * (`timer_running`, `correction_window_closed`). Each is an English word or snake_case — and
+ * "manual" is also Spanish, which is why it is matched only in its wire forms below rather than
+ * as a bare word: the label "Manual" is correct Spanish and must stay allowed.
+ */
+import { TimesheetView } from '@/app/horas/TimesheetView';
+import { LogTimeDialog } from '@/app/horas/LogTimeDialog';
+import { VoidEntryDialog } from '@/app/horas/VoidEntryDialog';
+
+const TIME_WIRE_WORDS = /\b(timer|running|logged|voided|timesheet|hours|minutes|timer_running|correction_window_closed|entry_voided)\b/i;
+
+function assertNoTimeWireVocabulary(container: HTMLElement): void {
+  const text = renderedWords(container);
+  expect(text, `the wire's own vocabulary reached the screen: "${text}"`).not.toMatch(TIME_WIRE_WORDS);
+}
+
+describe('time copy is Spanish-only (009/T028)', () => {
+  const ENTRY = {
+    id: 'te1', case: { id: 'k1', fileNumber: 'EXP-1' }, workDate: '2026-10-08', minutes: 90,
+    description: 'Redacción de demanda', source: 'timer', loggedAt: '2026-10-08T17:00:00.000Z',
+    correctableUntil: '2026-10-09T17:00:00.000Z',
+  };
+  const MANUAL = { ...ENTRY, id: 'te2', source: 'manual', correctableUntil: null };
+
+  it('TimesheetView — a running timer, the range, the days and their entries', async () => {
+    answer({
+      '/tenant/time-entries': { items: [ENTRY, MANUAL], totalMinutes: 180, days: [{ date: '2026-10-08', minutes: 180 }] },
+      '/tenant/time-entries/timer': { timer: { id: 'te9', case: { id: 'k1', fileNumber: 'EXP-1' }, caseAvailable: true, startedAt: '2026-10-08T16:00:00.000Z', description: null } },
+      '/tenant/cases': { items: [], nextCursor: null },
+    });
+    const { container } = withQueryClient(<TimesheetView archetype="AA" today="2026-10-08" />);
+    await adminScreen.findAllByText('Redacción de demanda');
+    await adminScreen.findByRole('timer');
+    assertOnlySpanish(container);
+    assertNoTimeWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('TimesheetView — a timer whose matter is gone', async () => {
+    answer({
+      '/tenant/time-entries': { items: [], totalMinutes: 0, days: [] },
+      '/tenant/time-entries/timer': { timer: { id: 'te9', case: null, caseAvailable: false, startedAt: '2026-10-08T16:00:00.000Z', description: null } },
+      '/tenant/cases': { items: [], nextCursor: null },
+    });
+    const { container } = withQueryClient(<TimesheetView archetype="PL" today="2026-10-08" />);
+    await adminScreen.findByText(/ya no está disponible/i);
+    assertOnlySpanish(container);
+    assertNoTimeWireVocabulary(container);
+    vi.unstubAllGlobals();
+  });
+
+  it('LogTimeDialog — record and correct', async () => {
+    answer({ '/tenant/cases': { items: [], nextCursor: null } });
+    const create = withQueryClient(<LogTimeDialog mode="create" today="2026-10-08" onClose={() => {}} />);
+    await adminScreen.findByLabelText('Descripción');
+    assertOnlySpanish(document.body);
+    assertNoTimeWireVocabulary(document.body);
+    create.unmount();
+    withQueryClient(<LogTimeDialog mode="edit" entry={ENTRY as never} today="2026-10-08" onClose={() => {}} />);
+    await adminScreen.findByText('EXP-1');
+    assertOnlySpanish(document.body);
+    assertNoTimeWireVocabulary(document.body);
+    vi.unstubAllGlobals();
+  });
+
+  it('VoidEntryDialog', async () => {
+    withQueryClient(<VoidEntryDialog entry={ENTRY as never} onClose={() => {}} />);
+    await adminScreen.findByText(/se conserva en el historial/i);
+    assertOnlySpanish(document.body);
+    assertNoTimeWireVocabulary(document.body);
+  });
+});

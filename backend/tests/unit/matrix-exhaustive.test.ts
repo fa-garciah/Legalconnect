@@ -80,6 +80,11 @@ const TENANT_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   // carries matter content (013 Decision 4).
   'calendar.read': ['MP', 'AA', 'PL', 'CM', 'SA'],
   'calendar.manage': ['MP', 'AA', 'PL', 'CM', 'SA'],
+  // 009-time-tracking, rows 49 and 51. Both `tenant`: the timesheet is narrowed to the caller's own
+  // entries on reachable matters inside the query (009/FR-009), and discarding names no matter at
+  // all (FR-008). BM and SA hold neither (009 Decisions 2 and 10).
+  'time.read_own': ['MP', 'AA', 'PL', 'CM'],
+  'time.discard_timer': ['MP', 'AA', 'PL', 'CM'],
 };
 
 /**
@@ -109,6 +114,10 @@ const ASSIGNED_ROWS: Readonly<Record<string, readonly Subject[]>> = {
   'document.change_category': ['MP', 'CM', 'SA'],
   'document.withdraw': ['MP', 'SA'],
   'document.restore': ['MP', 'SA'],
+  // 009-time-tracking, rows 48 and 50 — through 006's resolver via the URL's `:caseId`
+  // (009 Decision 9). Four holders: SA is not a timekeeper (Decision 10), BM has no case content.
+  'time.log': ['MP', 'AA', 'PL', 'CM'],
+  'time.correct_own': ['MP', 'AA', 'PL', 'CM'],
 };
 
 /** Rows 9-10, `self` scope — not archetype-decided by anybody (research.md D8). */
@@ -173,8 +182,8 @@ describe('matrix — exhaustive, every (subject × capability) pair', () => {
     ]);
     // 21 (004) + 3 (017) + 11 (006) + 8 (007) + 2 (013) + 1 (023). A census, moved by every
     // slice that extends the registry — 006 took it from 24 to 35, 007 to 43, 013 to 45, and
-    // 023 to 46 with `document.read_list`, and 015 to 47 with `kpi.read`.
-    expect(asserted.size).toBe(47);
+    // 023 to 46 with `document.read_list`, 015 to 47 with `kpi.read`, and 009 to 51 with `time.*`.
+    expect(asserted.size).toBe(51);
     expect([...allIds].sort()).toEqual([...asserted].sort());
   });
 

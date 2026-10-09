@@ -211,7 +211,7 @@ líder técnico de CC. Media hora de decisión; semanas de retrabajo si se omite
 | Slice | Por qué no |
 |---|---|
 | 008-notes-and-activity | Visibilidad de notas sin resolver: ¿producto de trabajo interno o visible al cliente? Afecta privilegio. Decisión de *counsel*, no de ingeniería |
-| 009-time-tracking | Conflicto de alcance 4 abierto con el cliente |
+| ~~009-time-tracking~~ | ~~Conflicto de alcance 4 abierto con el cliente~~ — **Tomado 2026-10-08** (rama `009-time-tracking`): el conflicto sigue abierto con el cliente, así que cada punto quedó como Decisión numerada en `009/spec.md`, pendiente de ratificación de Jero. Si el cliente responde distinto, se reabre la Decisión contradicha |
 | 011-cfdi-stamping | **Doble bloqueo: el PAC sigue `[PENDING]` y el catálogo no tiene una sola historia de timbrado, cancelación, complemento de pago ni multi-emisor de CSD.** Es el trabajo técnico más pesado del MVP, y no está especificado ni estimado. Riesgo número uno de la Fase 1, hoy igual que hace un mes |
 | 012-quotes-and-payments | Depende de la misma decisión que B3 |
 | EP13 Portal del Cliente | Sin validar y sin flujo de onboarding externo |

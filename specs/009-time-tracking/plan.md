@@ -31,14 +31,14 @@ carries no description, duration or date).
 
 | # | Method & path | Capability (row, scope) | Audit | Notes |
 |---|---|---|---|---|
-| 1 | `GET /tenant/time-entries?from&to` | `time_entry.read_own` (49, tenant) | — | own `logged` entries on reachable matters + totals (FR-009, FR-010) |
-| 2 | `GET /tenant/time-entries/timer` | `time_entry.read_own` (49, tenant) | — | own running timer, matter only if reachable (FR-008) |
-| 3 | `POST /tenant/time-entries/timer/discard` | `time_entry.discard_timer` (51, tenant) | `time_entry.timer_discarded` | own running timer → voided |
-| 4 | `POST /tenant/cases/:caseId/time-entries` | `time_entry.log` (48, assigned) | `time_entry.logged` | manual entry |
-| 5 | `POST /tenant/cases/:caseId/time-entries/timer` | `time_entry.log` (48, assigned) | `time_entry.timer_started` | `409 timer_running` on the partial unique index |
-| 6 | `POST /tenant/cases/:caseId/time-entries/timer/stop` | `time_entry.log` (48, assigned) | `time_entry.timer_stopped` | `409 no_running_timer`, `409 timer_too_long` |
-| 7 | `PATCH /tenant/cases/:caseId/time-entries/:entryId` | `time_entry.correct_own` (50, assigned) | `time_entry.corrected` `{changed:[…]}` | own, logged, in window |
-| 8 | `POST /tenant/cases/:caseId/time-entries/:entryId/void` | `time_entry.correct_own` (50, assigned) | `time_entry.voided` | own, logged, in window |
+| 1 | `GET /tenant/time-entries?from&to` | `time.read_own` (49, tenant) | — | own `logged` entries on reachable matters + totals (FR-009, FR-010) |
+| 2 | `GET /tenant/time-entries/timer` | `time.read_own` (49, tenant) | — | own running timer, matter only if reachable (FR-008) |
+| 3 | `POST /tenant/time-entries/timer/discard` | `time.discard_timer` (51, tenant) | `time_entry.timer_discarded` | own running timer → voided |
+| 4 | `POST /tenant/cases/:caseId/time-entries` | `time.log` (48, assigned) | `time_entry.logged` | manual entry |
+| 5 | `POST /tenant/cases/:caseId/time-entries/timer` | `time.log` (48, assigned) | `time_entry.timer_started` | `409 timer_running` on the partial unique index |
+| 6 | `POST /tenant/cases/:caseId/time-entries/timer/stop` | `time.log` (48, assigned) | `time_entry.timer_stopped` | `409 no_running_timer`, `409 timer_too_long` |
+| 7 | `PATCH /tenant/cases/:caseId/time-entries/:entryId` | `time.correct_own` (50, assigned) | `time_entry.corrected` `{changed:[…]}` | own, logged, in window |
+| 8 | `POST /tenant/cases/:caseId/time-entries/:entryId/void` | `time.correct_own` (50, assigned) | `time_entry.voided` | own, logged, in window |
 
 Routes 4–8 carry `@ScopeTarget('caseId')`. Routes 1–3 are on a separate controller
 (`tenant/time-entries`) so the nested one (`tenant/cases/:caseId/time-entries`) never needs an
@@ -77,6 +77,15 @@ frontend/src/time/{types,api,duration,range,schema}.ts
 frontend/src/app/horas/{page,TimesheetView,TimerCard,LogTimeDialog,CorrectEntryDialog,VoidEntryDialog}.tsx
 frontend/src/{authz/capability-matrix.ts, configuracion/matrix-view-model.ts, shell/navigation-items.ts}
 ```
+
+## Naming, found during implementation
+
+The capability ids are `time.log`, `time.read_own`, `time.correct_own` and `time.discard_timer` —
+**not** `time_entry.*`, as the first draft of this plan had them. `registry-shape.test.ts` requires
+every capability id to match `^[a-z]+\.[a-z_]+$`: the module half admits no underscore. The audit
+vocabulary has no such rule (`document_category.created` already exists), so the six actions keep
+the table's name, `time_entry.*`. Recorded rather than silently fixed, because the ids appear in
+spec.md's matrix and a reader comparing the two would otherwise find a contradiction.
 
 ## Coverage
 

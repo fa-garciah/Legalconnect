@@ -467,3 +467,41 @@ export class EventCancelled extends HttpException {
     super(errorBody('event_cancelled', 'The event is cancelled.'), HttpStatus.CONFLICT);
   }
 }
+
+/** 009-time-tracking (FR-006). The caller already has a running timer — one per person. */
+export class TimerRunning extends HttpException {
+  constructor() {
+    super(errorBody('timer_running', 'A timer is already running.'), HttpStatus.CONFLICT);
+  }
+}
+
+/** 009 (contract §3, §6). Stop or discard with no running timer — including a second click. */
+export class NoRunningTimer extends HttpException {
+  constructor() {
+    super(errorBody('no_running_timer', 'There is no running timer.'), HttpStatus.CONFLICT);
+  }
+}
+
+/** 009 (FR-007). A timer past 24 hours cannot become an entry; it can be discarded. */
+export class TimerTooLong extends HttpException {
+  constructor() {
+    super(errorBody('timer_too_long', 'The timer has run for more than 24 hours.'), HttpStatus.CONFLICT);
+  }
+}
+
+/** 009 (FR-013, Decision 3). The 24-hour correction window has closed. */
+export class CorrectionWindowClosed extends HttpException {
+  constructor() {
+    super(
+      errorBody('correction_window_closed', 'The entry can no longer be corrected.'),
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
+/** 009 (FR-013). Correcting or voiding an entry that is already voided. */
+export class EntryVoided extends HttpException {
+  constructor() {
+    super(errorBody('entry_voided', 'The entry is voided.'), HttpStatus.CONFLICT);
+  }
+}

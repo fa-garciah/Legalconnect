@@ -25,6 +25,9 @@ const GROUPS: readonly { readonly prefix: readonly string[]; readonly title: str
   // the firm's aggregate figures, and it is granted more narrowly than any case row — an SA
   // reading this screen should see that difference rather than infer it.
   { prefix: ['kpi'], title: 'Indicadores' },
+  // 009 Decision 5. This group IS `US11-EP08-TTK-ManageTimeTrackingPermissions`: the rights are
+  // fixed rows, identical for every firm, shown here read-only as 014 Decision 1 did for `US03-EP10`.
+  { prefix: ['time'], title: 'Registro de horas' },
 ];
 
 const LABELS: Readonly<Record<string, string>> = {
@@ -62,6 +65,10 @@ const LABELS: Readonly<Record<string, string>> = {
   'calendar.manage': 'Crear, cambiar y cancelar eventos',
   // 015. Unlabelled rows render their capability id on a Spanish screen — 023 hit exactly this.
   'kpi.read': 'Ver los indicadores del despacho',
+  'time.log': 'Registrar sus propias horas en sus expedientes',
+  'time.read_own': 'Ver su propio registro de horas',
+  'time.correct_own': 'Corregir o eliminar sus horas en las primeras 24 h',
+  'time.discard_timer': 'Descartar su cronómetro en marcha',
 };
 
 export interface MatrixRow {

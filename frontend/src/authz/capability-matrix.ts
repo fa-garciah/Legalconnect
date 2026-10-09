@@ -92,4 +92,10 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   // 015 row 47 — narrower than every other tenant read: firm-wide aggregates summarise matters,
   // so only the archetypes that already see every matter may read them. BM sees none at all.
   'kpi.read': new Set<Subject>(['MP', 'CM', 'SA']),
+  // 009 rows 48-51 — recorded time. The four archetypes that do matter work record their own; BM
+  // has no case content and no price to put on hours yet, SA is not a timekeeper (Decisions 2, 10).
+  'time.log': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
+  'time.read_own': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
+  'time.correct_own': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
+  'time.discard_timer': new Set<Subject>(['MP', 'AA', 'PL', 'CM']),
 };

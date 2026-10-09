@@ -134,7 +134,7 @@ describe('audit entry fields and channel gating', () => {
       }>(`SELECT * FROM audit_event WHERE metadata ->> 'marker' = $1`, [marker])
     ).rows;
 
-  it("covers every action in the vocabulary — fifty-nine (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three, 014's one, 013's three, 015's one)", () => {
+  it("covers every action in the vocabulary — sixty-five (001's seven, 002's nine, 017's three, 006's twelve, 007's eight, 003's twelve, 005's three, 014's one, 013's three, 015's one, 009's six)", () => {
     // Guards against an action being added to FR-014 / FR-031 / 017-FR-003 / 006-FR-024 /
     // 007-FR-019 / 003-FR-042 / 005 research.md D8 without a test reaching it.
     //
@@ -149,7 +149,9 @@ describe('audit entry fields and channel gating', () => {
     // 013 adds three calendar actions, none gated.
     // 015 adds `case.outcome_declared` — unconditional, and NOT gated: declaring how a matter
     // ended is a change to the record, not a read of it, so there is no polling job to throttle.
-    expect(AUDIT_ACTIONS).toHaveLength(59);
+    // 009 adds six time-entry actions, one per mutation, none gated: reading one's own timesheet
+    // is not audited at all (009 Decision 8), so there is no read to gate.
+    expect(AUDIT_ACTIONS).toHaveLength(65);
     // 006/FR-023 adds `case.read` to 001's two. 007/FR-020 adds `document.previewed` and
     // `document.downloaded` to that set. Principle V requires recording ACCESS to cases
     // and documents and not only their modification, and the gate is what keeps a
@@ -157,7 +159,7 @@ describe('audit entry fields and channel gating', () => {
     expect(GATED).toHaveLength(6);
     expect(RESERVED_TO_IDENTITY_WRITER).toHaveLength(4);
     expect(RESERVED_TO_AUTH_WRITER).toHaveLength(15);
-    expect(UNCONDITIONAL).toHaveLength(59 - 6 - 4 - 15);
+    expect(UNCONDITIONAL).toHaveLength(65 - 6 - 4 - 15);
   });
 
   it('lc_app is refused at the grant level for the four identity-writer-reserved actions', async () => {

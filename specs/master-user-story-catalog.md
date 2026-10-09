@@ -426,7 +426,7 @@ Every other epic depends on this one.
 > to `010` beside `US03-EP15-QTE-SetCaseHourlyRate` — a rate with no consumer, set in a second
 > place, is how a ledger diverges (Decision 4; `014` Decision 2 is the precedent). `US11` is
 > satisfied by four fixed matrix rows shown read-only in `/configuracion`, as `014` Decision 1
-> resolved the identical conflict for `US03-EP10` (Decision 5). Owned by `009`: US01, US02,
+> resolved the identical conflict for `US03-EP10` (Decision 5). Delivered by `009`: US01, US02,
 > US03 (narrow), US04, US05, US11. No story count changes.
 
 ---

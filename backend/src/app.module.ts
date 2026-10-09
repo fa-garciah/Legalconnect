@@ -18,6 +18,8 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 // 015 — a read model over 006's tables, with its own capability and no CRUD.
 import { KpiModule } from './modules/kpi/kpi.module';
+// 009 — recorded time; writes reach a matter through CaseCoreModule's resolver.
+import { TimeEntriesModule } from './modules/time-entries/time-entries.module';
 import { AuthModule } from './modules/auth/auth.module';
 
 /**
@@ -70,6 +72,9 @@ import { AuthModule } from './modules/auth/auth.module';
     // 013-calendar-core. No resolver of its own: rows 44-45 are `tenant` scope.
     CalendarModule,
     KpiModule,
+    // 009-time-tracking. No resolver of its own: rows 48 and 50 reuse CaseCoreModule's through
+    // @ScopeTarget('caseId'); rows 49 and 51 are `tenant` scope.
+    TimeEntriesModule,
     AuthModule,
   ],
   providers: [

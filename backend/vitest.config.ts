@@ -87,6 +87,16 @@ export default defineConfig({
           functions: 100,
           lines: 100,
         },
+        // 009-time-tracking, FR-020. The constitution puts 'fee and billable-hour calculation' on the
+        // blocking critical-coverage list, and this ONE FILE is where this slice calculates: a timer's
+        // elapsed time to minutes, and minutes to totals. Scoped to the file, as 006 scoped its
+        // threshold to the resolver rather than to the whole module.
+        'src/modules/time-entries/duration.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
       },
     },
   },

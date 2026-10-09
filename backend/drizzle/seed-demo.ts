@@ -48,6 +48,7 @@ import { demoClients } from './demo/clients';
 import { demoMatters } from './demo/matters';
 import { demoDocuments } from './demo/documents';
 import { demoCalendarEvents } from './demo/calendar';
+import { demoTimeEntries } from './demo/time-entries';
 import { deterministicUuid } from './demo/deterministic-id';
 import { renderCredentialTable } from './demo/report';
 import { hashCredential, hashHighEntropy } from '../src/common/auth/argon2';
@@ -130,6 +131,7 @@ async function main(): Promise<void> {
       const missing = await seedDocuments(migration, target);
       missingObjects.push(...missing);
       await seedCalendar(migration, target);
+      await seedTimeEntries(migration, target);
       await recomputeStorageCounter(migration, target.tenantId);
     }
 
@@ -160,7 +162,7 @@ async function main(): Promise<void> {
  * `relation "calendar_event" does not exist` forty statements in.
  */
 async function assertMigrated(migration: Client): Promise<void> {
-  const required = ['tenant', 'identity', 'identity_credential', 'identity_factor', 'backup_code', 'client', 'case_file', 'document', 'calendar_event'];
+  const required = ['tenant', 'identity', 'identity_credential', 'identity_factor', 'backup_code', 'client', 'case_file', 'document', 'calendar_event', 'time_entry'];
   const { rows } = await migration.query<{ table_name: string }>(
     `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1::text[])`,
     [required],
@@ -624,6 +626,56 @@ async function seedCalendar(migration: Client, target: WrittenFirm): Promise<voi
         event.remindMinutesBefore,
         membershipId,
         deterministicUuid('calendar-event', firm.rfc, event.key),
+      ],
+    );
+  }
+}
+
+/**
+ * 009/FR-022, Decision 11 — six weeks of recorded time for the five timekeepers.
+ *
+ * UPSERT ON A DATE-FREE ID, and that is the whole idempotency story: `demo/time-entries.ts` derives
+ * each id from the person and the working-day index counted back from the seed day, so re-seeding on
+ * a later day rewrites the same rows into the new window rather than adding a second history beside
+ * the first. Every generated column is refreshed on conflict, for the reason `seedClientsAndMatters`
+ * gives: a partial update splices two generations into one row.
+ *
+ * Written as `logged`, never `running`: a demo person signing in to a timer that has been running
+ * since the seed would be refused when stopping it (FR-007), which demonstrates the wrong thing.
+ */
+async function seedTimeEntries(migration: Client, target: WrittenFirm): Promise<void> {
+  const { tenantId, firm } = target;
+  const matters = demoMatters(firm, AS_OF);
+
+  for (const entry of demoTimeEntries(firm, matters, AS_OF)) {
+    const membershipId = target.memberships.get(entry.personSlug);
+    const caseId = target.cases.get(entry.matterFileNumber);
+    if (!membershipId || !caseId) continue;
+
+    await migration.query(
+      `INSERT INTO time_entry
+         (id, tenant_id, case_id, membership_id, source, status, work_date, minutes, description,
+          started_at, stopped_at, logged_at)
+       VALUES ($1, $2, $3, $4, $5::time_entry_source, 'logged', $6::date, $7, $8,
+               $9::timestamptz, $10::timestamptz, $11::timestamptz)
+       ON CONFLICT (id) DO UPDATE
+         SET case_id = excluded.case_id, membership_id = excluded.membership_id,
+             source = excluded.source, status = 'logged', work_date = excluded.work_date,
+             minutes = excluded.minutes, description = excluded.description,
+             started_at = excluded.started_at, stopped_at = excluded.stopped_at,
+             logged_at = excluded.logged_at, voided_at = NULL, updated_at = now()`,
+      [
+        deterministicUuid('time-entry', ...entry.idKey),
+        tenantId,
+        caseId,
+        membershipId,
+        entry.source,
+        entry.workDate,
+        entry.minutes,
+        entry.description,
+        entry.startedAt,
+        entry.stoppedAt,
+        entry.loggedAt,
       ],
     );
   }

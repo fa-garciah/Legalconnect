@@ -26,6 +26,9 @@ import {
   backupCodesFor,
   totpSecretFor,
 } from '../../drizzle/demo/firm';
+import { demoMatters } from '../../drizzle/demo/matters';
+import { demoTimeEntries } from '../../drizzle/demo/time-entries';
+import { deterministicUuid } from '../../drizzle/demo/deterministic-id';
 
 const backendRoot = join(__dirname, '..', '..');
 const DEMO_RFCS = DEMO_FIRMS.map((f) => f.rfc);
@@ -367,6 +370,60 @@ describe('the demo firm seed', () => {
     expect(Number(row.types)).toBeGreaterThanOrEqual(3);
   });
 
+  describe('recorded time (009/FR-022, Decision 11)', () => {
+    /**
+     * The rows THIS seed wrote, by their deterministic ids — not the whole table. The demo firm is
+     * for people to use: an e2e run or a reviewer stopping a timer and voiding an entry is the
+     * product working, and must not read as the seed being wrong.
+     */
+    const seededIds = (): string[] => {
+      const firm = DEMO_FIRMS[0]!;
+      const asOf = new Date();
+      return demoTimeEntries(firm, demoMatters(firm, asOf), asOf).map((e) => deterministicUuid('time-entry', ...e.idKey));
+    };
+
+    it('records time only for MP, AA, PL and CM, all logged, never BM or SA', async () => {
+      const ids = seededIds();
+      const row = await one<{ total: string; wrong_role: string; not_logged: string; people: string }>(
+        `SELECT count(*)::text AS total,
+                count(*) FILTER (WHERE m.archetype NOT IN ('MP', 'AA', 'PL', 'CM'))::text AS wrong_role,
+                count(*) FILTER (WHERE t.status <> 'logged')::text AS not_logged,
+                count(DISTINCT t.membership_id)::text AS people
+           FROM time_entry t JOIN membership m ON m.id = t.membership_id
+          WHERE t.id = ANY($1::uuid[])`,
+        [ids],
+      );
+      expect(Number(row.total)).toBe(ids.length);
+      expect(Number(row.total)).toBeGreaterThan(150);
+      expect(Number(row.wrong_role)).toBe(0);
+      expect(Number(row.not_logged)).toBe(0);
+      expect(Number(row.people)).toBe(5);
+    });
+
+    it('every entry is on a matter its person is assigned to, so their own timesheet shows it', async () => {
+      const row = await one<{ unassigned: string }>(
+        `SELECT count(*)::text AS unassigned
+           FROM time_entry t
+          WHERE t.tenant_id = (SELECT id FROM tenant WHERE rfc = $1)
+            AND NOT EXISTS (SELECT 1 FROM case_assignment a
+                             WHERE a.case_id = t.case_id AND a.membership_id = t.membership_id
+                               AND a.unassigned_at IS NULL)`,
+        [DEMO_RFCS[0]],
+      );
+      expect(Number(row.unassigned)).toBe(0);
+    });
+
+    it('the heaviest timekeeper records at least twice the lightest (SC-008)', async () => {
+      const { rows } = await migration.query<{ minutes: string }>(
+        `SELECT sum(minutes)::text AS minutes FROM time_entry
+          WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1) GROUP BY membership_id`,
+        [DEMO_RFCS[0]],
+      );
+      const totals = rows.map((r) => Number(r.minutes));
+      expect(Math.max(...totals)).toBeGreaterThanOrEqual(2 * Math.min(...totals));
+    });
+  });
+
   describe('idempotency (FR-014, SC-003)', () => {
     const snapshot = async (withBytes = true): Promise<string> => {
         const row = await one<{ fingerprint: string }>(
@@ -381,6 +438,7 @@ describe('the demo firm seed', () => {
               (SELECT count(*) FROM case_assignment WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT count(*) FROM document WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT count(*) FROM calendar_event WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
+              (SELECT CASE WHEN $2 THEN count(*) FILTER (WHERE status = 'logged') || ':' || coalesce(sum(minutes) FILTER (WHERE status = 'logged'), 0) END FROM time_entry WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT CASE WHEN $2 THEN coalesce(sum(storage_bytes_used), 0) END FROM tenant WHERE rfc = ANY($1::text[]))
             ) AS fingerprint`,
           [DEMO_RFCS, withBytes],

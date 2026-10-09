@@ -145,6 +145,28 @@ export const CAPABILITIES = {
    * `010-billing-core` lands.
    */
   'kpi.read': { scope: 'tenant' },
+  /**
+   * 009-time-tracking, rows 48-51. Ids are `time.*`, not `time_entry.*`: `registry-shape.test.ts`
+   * admits no underscore in the module half of a capability id (the audit actions keep the table's
+   * name, `time_entry.*`).
+   *
+   * Rows 48 and 50 are `assigned` and every route declaring them is nested under
+   * `/tenant/cases/:caseId` with `@ScopeTarget('caseId')`, so 006's resolver decides reach exactly
+   * as it does for documents (009 Decision 9) — no service re-checks it by hand.
+   *
+   * Row 49 is `tenant` for row 29's reason, and **do not tidy it to `assigned` or `self`**: a
+   * resolver returns a boolean, and a person with no assignments must receive an empty timesheet,
+   * not a refusal. It is narrowed inside the query to the caller's OWN entries on matters they
+   * still reach, list and totals alike (009/FR-009, FR-010).
+   *
+   * Row 51 is `tenant` because discarding must work when the matter is NOT reachable — somebody
+   * taken off a matter mid-timer must be able to clear it or they can never start another
+   * (009/FR-008). It names no matter, and its service touches only the caller's own running row.
+   */
+  'time.log': { scope: 'assigned' },
+  'time.read_own': { scope: 'tenant' },
+  'time.correct_own': { scope: 'assigned' },
+  'time.discard_timer': { scope: 'tenant' },
 } as const satisfies Readonly<Record<string, CapabilityDef>>;
 
 export type CapabilityId = keyof typeof CAPABILITIES;

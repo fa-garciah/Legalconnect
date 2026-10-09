@@ -101,6 +101,7 @@ async function main(): Promise<void> {
     await seedDocumentCategories(tenantIds[0]!, tenantIds[1]!);
     await seedDocuments(tenantIds[0]!, tenantIds[1]!);
     await seedCalendarEvents(tenantIds[0]!, tenantIds[1]!);
+    await seedTimeEntries(tenantIds[0]!, tenantIds[1]!);
   } finally {
     await client.end();
   }
@@ -475,6 +476,44 @@ async function seedCalendarEvents(tenantA: string, tenantB: string): Promise<voi
       );
     }
     console.log('seeded 1 fixture calendar event per tenant');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * 009-time-tracking (FR-021). One logged, manual fixture entry per tenant, for the reason
+ * `seedCalendarEvents` gives: `no-context.test.ts` sweeps every registered tenant table and needs
+ * each one non-empty while a tenant is active. Idempotent by description, so re-seeding adds nothing.
+ */
+async function seedTimeEntries(tenantA: string, tenantB: string): Promise<void> {
+  const connectionString = process.env.DATABASE_URL_MIGRATION;
+  if (!connectionString) throw new Error('DATABASE_URL_MIGRATION is not set');
+
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    for (const tenantId of [tenantA, tenantB]) {
+      const { rows } = await client.query<{ membership_id: string; case_id: string }>(
+        `SELECT (SELECT id FROM membership WHERE tenant_id = $1 ORDER BY created_at LIMIT 1) AS membership_id,
+                (SELECT id FROM case_file WHERE tenant_id = $1 ORDER BY file_number LIMIT 1) AS case_id`,
+        [tenantId],
+      );
+      const { membership_id: membershipId, case_id: caseId } = rows[0] ?? {};
+      if (!membershipId || !caseId) throw new Error(`seedTimeEntries: no membership or case for tenant ${tenantId}`);
+
+      await client.query(
+        `INSERT INTO time_entry
+           (tenant_id, case_id, membership_id, source, status, work_date, minutes, description, logged_at)
+         SELECT $1, $2, $3, 'manual', 'logged', current_date, 30, 'Revisión del expediente', now()
+          WHERE NOT EXISTS (
+            SELECT 1 FROM time_entry WHERE tenant_id = $1 AND description = 'Revisión del expediente'
+          )`,
+        [tenantId, caseId, membershipId],
+      );
+    }
+    console.log('seeded 1 fixture time entry per tenant');
   } finally {
     await client.end();
   }

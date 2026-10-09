@@ -69,6 +69,12 @@ export const TENANT_SCOPED_TABLES: readonly TenantScopedTable[] = [
     scopeColumn: 'tenant_id',
     note: 'A case-linked event is further narrowed by live assignment in calendar.repository.ts (013/FR-006); RLS scopes it to the firm.',
   },
+  // 009-time-tracking (migration 0048).
+  {
+    table: 'time_entry',
+    scopeColumn: 'tenant_id',
+    note: 'RLS scopes it to the firm; reads are further narrowed to the caller\'s own entries on matters they still reach (009/FR-009), writes by 006\'s assigned resolver.',
+  },
   {
     table: 'matter_type',
     scopeColumn: 'tenant_id',

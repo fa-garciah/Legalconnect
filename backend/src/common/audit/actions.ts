@@ -132,6 +132,16 @@ export const AUDIT_ACTIONS = [
   'calendar_event.created',
   'calendar_event.updated',
   'calendar_event.cancelled',
+  // Slice 009 (FR-014, migration 0048). One per mutation; none channel-gated. Reading one's own
+  // timesheet is not audited (009 Decision 8): the only reader of an entry is the person who wrote
+  // it. The first route that lets one person read ANOTHER's time is an access in Principle V's full
+  // sense and must add its own action here.
+  'time_entry.timer_started',
+  'time_entry.timer_stopped',
+  'time_entry.timer_discarded',
+  'time_entry.logged',
+  'time_entry.corrected',
+  'time_entry.voided',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -248,6 +258,12 @@ export const TARGET_ENTITY_BY_ACTION: Readonly<Record<AuditAction, string>> = {
   'calendar_event.created': 'calendar_event',
   'calendar_event.updated': 'calendar_event',
   'calendar_event.cancelled': 'calendar_event',
+  'time_entry.timer_started': 'time_entry',
+  'time_entry.timer_stopped': 'time_entry',
+  'time_entry.timer_discarded': 'time_entry',
+  'time_entry.logged': 'time_entry',
+  'time_entry.corrected': 'time_entry',
+  'time_entry.voided': 'time_entry',
 };
 
 export type Channel = 'interactive' | 'automated';

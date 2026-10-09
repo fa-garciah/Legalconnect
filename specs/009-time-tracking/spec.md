@@ -125,7 +125,7 @@ A partner spent an hour on a call from the car. Back at the desk, they record it
 
 **Acceptance Scenarios**:
 
-1. **Given** someone holding `time_entry.log`, **When** they press "Registrar horas" and give a
+1. **Given** someone holding `time.log`, **When** they press "Registrar horas" and give a
    matter, a date, hours and minutes, and a description, **Then** the entry is recorded and appears
    on their timesheet under that date.
 2. **Given** a date after today in Mexico City, **Then** it is refused before sending and by the
@@ -148,7 +148,7 @@ At the end of the week, an associate checks what they recorded.
 
 **Acceptance Scenarios**:
 
-1. **Given** someone holding `time_entry.read_own`, **When** they open `/horas`, **Then** they see
+1. **Given** someone holding `time.read_own`, **When** they open `/horas`, **Then** they see
    this week's entries (Monday to Sunday, Mexico City), grouped by day, newest day first, each
    showing the matter's file number, the description, the duration as "1 h 30 min" and its source.
 2. **Given** the range controls ("Esta semana", "Semana anterior", "Este mes", or a from/to pair of
@@ -160,7 +160,7 @@ At the end of the week, an associate checks what they recorded.
    the list **and** from the totals — the timesheet follows `006`'s ethical wall exactly as the
    calendar does (`013`/FR-006).
 5. **Given** a range with no entries, **Then** `016a`'s empty state appears with "Registrar horas"
-   when the person holds `time_entry.log`.
+   when the person holds `time.log`.
 6. **Given** a `BM` or an `SA`, **Then** there is no "Registro de Horas" in their navigation and
    every endpoint refuses them (Decisions 2 and 10).
 
@@ -230,9 +230,9 @@ slice's PR (Decision 3).
 - **FR-003**: Duration is stored as **integer minutes, 1 to 1440**. The work day is a `date` in
   `America/Mexico_City`; for a timer it is the Mexico City date of the instant it started.
 - **FR-004**: New capabilities, all four held by `MP`, `AA`, `PL`, `CM` and by nobody else
-  (Decisions 2, 3, 10): `time_entry.log` (start or stop one's timer; record manual time),
-  `time_entry.read_own` (one's own timesheet and running timer), `time_entry.correct_own` (correct
-  or void one's own recent entries), `time_entry.discard_timer` (discard one's own running timer).
+  (Decisions 2, 3, 10): `time.log` (start or stop one's timer; record manual time),
+  `time.read_own` (one's own timesheet and running timer), `time.correct_own` (correct
+  or void one's own recent entries), `time.discard_timer` (discard one's own running timer).
 - **FR-005**: Every write that names a matter is routed under `/tenant/cases/:caseId/…`, declares an
   `assigned`-scoped capability and `@ScopeTarget('caseId')`, so `006`'s resolver decides reach —
   `MP` (and `SA`, were it ever granted) unrestricted, everybody else only on a matter with a live
@@ -243,7 +243,7 @@ slice's PR (Decision 3).
   single calculation of FR-020). A timer whose elapsed time exceeds 1440 minutes cannot be stopped
   (`409 timer_too_long`); it can be discarded.
 - **FR-008**: A running timer can be **discarded** by its owner at any time, on a flat route that
-  names no matter and declares the `tenant`-scoped `time_entry.discard_timer`, whether or not the
+  names no matter and declares the `tenant`-scoped `time.discard_timer`, whether or not the
   matter is still reachable; discarding voids it. Stopping one
   requires the matter to be reachable (FR-005). The running-timer read returns the matter only when
   it is reachable, and otherwise `case: null` with `caseAvailable: false`.
@@ -296,10 +296,10 @@ slice's PR (Decision 3).
 
 | # | Capability | Scope | MP | AA | PL | CM | BM | SA | PO | Portal |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **48** | **`time_entry.log`** — start or stop one's timer; record manual time | **assigned** (`@ScopeTarget('caseId')`) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **49** | **`time_entry.read_own`** — one's own timesheet, totals and running timer | **tenant** (narrowed to own entries on reachable matters inside the query, FR-009) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **50** | **`time_entry.correct_own`** — correct or void one's own entry within 24 h | **assigned** (`@ScopeTarget('caseId')`, plus own-and-in-window in the service) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **51** | **`time_entry.discard_timer`** — discard one's own running timer | **tenant** (names no matter; the service touches only the caller's own running row, FR-008) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **48** | **`time.log`** — start or stop one's timer; record manual time | **assigned** (`@ScopeTarget('caseId')`) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **49** | **`time.read_own`** — one's own timesheet, totals and running timer | **tenant** (narrowed to own entries on reachable matters inside the query, FR-009) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **50** | **`time.correct_own`** — correct or void one's own entry within 24 h | **assigned** (`@ScopeTarget('caseId')`, plus own-and-in-window in the service) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **51** | **`time.discard_timer`** — discard one's own running timer | **tenant** (names no matter; the service touches only the caller's own running row, FR-008) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 Row 49 is `tenant`, not `assigned` or `self`, for row 29's reason: a resolver returns a boolean, and
 a person with no assignments must receive an empty timesheet, not a refusal. Row 51 exists because
