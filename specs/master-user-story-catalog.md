@@ -598,13 +598,16 @@ mes se deberá mostrar dentro de Expediente." (23 Apr 2026)
 |---|---|---|---|
 | US01-EP14-NOT-CreateCaseNote | AA | Create a note attached to a case | MVP |
 | US02-EP14-NOT-ViewNoteHistoryByMonth | CM | Note history grouped by month within the case | MVP |
-| US03-EP14-NOT-EditOwnNote | AA | Edit own note within a defined window | IT2 |
+| US03-EP14-NOT-EditOwnNote | AA | Edit own note within a defined window | MVP (narrow — own notes, 24 h, void not delete; 008 Decision 3) |
 | US04-EP14-NOT-RestrictNoteVisibility | MP | Limit note visibility by role | IT2 |
 | US05-EP14-NOT-AuditNoteChanges | MP | Note creation and edits in the audit log | MVP |
 
-> [NEEDS CLARIFICATION] Are notes ever client-visible via EP13, or strictly
-> internal work product? This affects privilege and cannot be assumed. Blocks
-> slice 008-notes-and-activity.
+> **Note visibility — see `008-notes-and-activity` Decision 1** (2026-10-09, pending ratification by
+> Jero **and Felipe**, as a privilege decision). Notes are strictly internal work product while EP13
+> is unvalidated; the schema carries a per-note `visibility` flag that admits only `internal` and
+> defaults to it, so any future client visibility is an explicit, per-note, counsel-approved change.
+> `US03` is promoted in its narrow form (008 Decision 3). Owned by `008`: US01, US02, US03 (narrow),
+> US05; with EP02's US11 and US12 (case activity, derived from the audit log — 008 Decision 2).
 
 ---
 
@@ -695,7 +698,9 @@ deliverable.
    still `[PENDING]`. Together these gate slice 011.
 3. US02-EP11 (change email) conflicts with IdP identity semantics.
 4. Offline operation unspecified and unestimated.
-5. Are notes client-visible via EP13? Blocks slice 008.
+5. ~~Are notes client-visible via EP13? Blocks slice 008.~~ Decided by `008-notes-and-activity`
+   Decision 1 (internal only; per-note flag defaulting to internal), **pending ratification by Jero
+   and Felipe**.
 6. Does EP15 US04 overlap EP09 US12 for payment registration? Blocks slice 012.
 7. ~~Time tracking scope conflict. Blocks slice 009.~~ Resolved for the MVP by `009-time-tracking`
    Decisions 1–7 (2026-10-08), **ratified by Jero 2026-10-09**; if the client answers conflict 4
