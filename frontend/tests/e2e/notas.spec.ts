@@ -3,10 +3,10 @@
  *
  * The demo partner writes, corrects and voids a note on a matter, then reads the matter's activity:
  * the three changes are there, as sentences, and the note's text is not (008/FR-014). The billing
- * manager, who holds no case capability, gets the no-access copy without a request.
+ * manager's side is in `notas-billing.spec.ts`: a worker-scoped option such as `demoAs` cannot be set
+ * per describe, so a second person means a second file.
  *
- * **Prerequisites**: backend on 3001, `npm run db:seed:demo`, `E2E_SIGNIN_*` and `E2E_BM_*`.
- * Two sign-ins in all (one per describe) — run alone, `--workers=1`, desktop.
+ * **Prerequisites**: backend on 3001, `npm run db:seed:demo`, `E2E_SIGNIN_*`. One sign-in.
  */
 import { test, expect, demoConfigured, DEMO_SKIP_REASON } from './demo-session';
 
@@ -49,20 +49,5 @@ test.describe('a partner keeps notes on a matter', () => {
     await expect(feed.getByText(/corrigió una nota$/).first()).toBeVisible();
     await expect(feed.getByText(/eliminó una nota$/).first()).toBeVisible();
     await expect(page.getByText(text)).toHaveCount(0);
-  });
-});
-
-test.describe('the billing manager', () => {
-  test.use({ demoAs: 'billing' });
-  test.skip(!demoConfigured('billing'), DEMO_SKIP_REASON);
-
-  test('gets the no-access copy on a notes page, and no notes request is made', async ({ page }) => {
-    const requests: string[] = [];
-    page.on('request', (r) => {
-      if (r.url().includes('/notes')) requests.push(r.url());
-    });
-    await page.goto('/expedientes/00000000-0000-4000-8000-000000000001/notas');
-    await expect(page.getByText('Tu rol no consulta las notas de los expedientes.')).toBeVisible();
-    expect(requests).toEqual([]);
   });
 });
