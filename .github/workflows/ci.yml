@@ -53,10 +53,12 @@ jobs:
       # application rather than merely that a developer's own `.env` happens to work.
       #
       # 007's document suites exercise real S3 behaviour — signing, expiry, cross-tenant
-      # pre-signed URL isolation — against the real AWS bucket, not a mock. The key pair comes
-      # from the repository's Actions secrets and is never written into this file.
-      OBJECT_STORE_REGION: eu-central-1
-      OBJECT_STORE_BUCKET: c-market-storage
+      # pre-signed URL isolation — against a real AWS bucket kept for tests, not a mock. Bucket
+      # and region are repository VARIABLES; the key pair is a pair of SECRETS (an IAM user that
+      # reaches only that bucket). Neither is written into this file.
+      OBJECT_STORE_REGION: ${{ vars.OBJECT_STORE_REGION }}
+      OBJECT_STORE_BUCKET: ${{ vars.OBJECT_STORE_TEST_BUCKET }}
+      OBJECT_STORE_TEST_BUCKET: ${{ vars.OBJECT_STORE_TEST_BUCKET }}
       OBJECT_STORE_ACCESS_KEY_ID: ${{ secrets.OBJECT_STORE_ACCESS_KEY_ID }}
       OBJECT_STORE_SECRET_ACCESS_KEY: ${{ secrets.OBJECT_STORE_SECRET_ACCESS_KEY }}
       EMAIL_PROVIDER_REGION: us-east-1
