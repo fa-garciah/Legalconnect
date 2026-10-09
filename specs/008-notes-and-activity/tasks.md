@@ -51,8 +51,8 @@ description: "Task list for 008-notes-and-activity"
 ## Phase 7: Demo seed, e2e, polish
 
 - [X] T023 [P] Unit test `backend/tests/unit/demo-notes.test.ts`: deterministic, date-free keys, authors only people on the matter (never BM/SA), Spanish text, bounds, a few within 24 h of the seed day. **See it fail.** Then `backend/drizzle/demo/notes.ts`, `seed-demo.ts` (upsert, no audit row), `demo-seed.test.ts` additions.
-- [ ] T024 e2e `frontend/tests/e2e/notas.spec.ts` (demo-session helper): write, correct, void a note; open Actividad and see the three entries with no note text; BM sees no case at all.
-- [ ] T025 Frontend gates; colour literals; `quickstart-results.md`; `registro-specs-mvp.md` and `plan-paralelo-2026-09.md` rows.
+- [X] T024 e2e `frontend/tests/e2e/notas.spec.ts` (demo-session helper): write, correct, void a note; open Actividad and see the three entries with no note text; BM sees no case at all.
+- [X] T025 Frontend gates; colour literals; `quickstart-results.md`; `registro-specs-mvp.md` and `plan-paralelo-2026-09.md` rows.
 
 ## Dependencies
 
