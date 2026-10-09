@@ -23,6 +23,16 @@ import { DEMO_PEOPLE, type DemoFirm } from './firm';
 import { DEMO_SEED, intBetween, mulberry32, pick, shuffle } from './rng';
 
 export interface DemoMatter {
+  /**
+   * The matter's identity, and the ONLY thing every derived id is keyed on: its position in the
+   * generation order (`m1`…`m40`). Date-free by construction — the number of matters per quarter
+   * slot is a fixed list — so a re-seed on another day lands on the same rows.
+   *
+   * `fileNumber` is NOT an identity: it carries the year the matter opened, which moves with the
+   * seed day. Keying ids on it is what made a database re-seeded on different days accumulate a
+   * second generation of matters, documents and events (149 documents where 130 were expected).
+   */
+  readonly slot: string;
   readonly fileNumber: string;
   /** Index into `demoClients(firm)`, resolved to a real id at write time. */
   readonly clientIndex: number;
@@ -75,7 +85,9 @@ function dayInQuarter(next: () => number, start: string, asOf: Date): string {
     0,
     Math.floor((latest.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)),
   );
-  const offset = span === 0 ? 0 : intBetween(next, 0, span);
+  // Drawn even when the span is zero, so the RNG stream never depends on the seed day: a
+  // conditional draw here shifted every later matter whenever a quarter's span happened to be 0.
+  const offset = intBetween(next, 0, span);
   return iso(new Date(from.getTime() + offset * 24 * 60 * 60 * 1000));
 }
 
@@ -246,6 +258,7 @@ export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
       const fileNumber = `EXP-${year}-${String(2000 + sequence).padStart(4, '0')}`;
 
       matters.push({
+        slot: `m${sequence}`,
         fileNumber,
         clientIndex: intBetween(next, 0, clientCount - 1),
         matterTypeName,

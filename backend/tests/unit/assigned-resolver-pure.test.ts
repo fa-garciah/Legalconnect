@@ -2,16 +2,15 @@
  * T020 — 006/FR-013, Decision 2, research.md D1. The resolver's branches that need no
  * database, exercised without one.
  *
- * Three of the four paths through `AssignedScopeResolver.resolve()` never touch Postgres:
- * the `MP`/`SA` short-circuit returns `true` before any query, and two fail-closed guards
- * return `false` before any query. Only the fourth — a scoped archetype with a real target
- * — needs a transaction, and that path belongs to the integration suite.
+ * The fail-closed guards — no principal, no target named, no membership — return `false`
+ * before any query, so they are asserted here without a database. The two paths that query —
+ * MP/SA (does the matter exist in the firm?) and every other archetype (is there a live
+ * assignment?) — need a transaction and belong to the integration suite
+ * (`assigned-scope-resolver.test.ts`, `assigned-scope-isolation.test.ts`).
  *
- * Testing them here rather than only there is deliberate: the whole point of Decision 2's
- * mechanism argument is that the `MP`/`SA` exemption is *three lines inside the resolver*
- * rather than a branch in `decide()`. A test that has to spin up Testcontainers to assert
- * that would obscure how small it is, and the resolver's 100% coverage bar
- * (vitest.config.ts, T004) is cheaper to hold with these three cases covered here.
+ * Amended by `fix-cross-tenant-fk-oracle`: MP/SA used to short-circuit to `true` before any
+ * query and before the target guard. That is what let a write path that forgot its own lookup
+ * reach a foreign-key check that ignores RLS. The exemption is now from assignment only.
  */
 import { describe, expect, it } from 'vitest';
 import { AssignedScopeResolver } from '../../src/modules/case-core/assigned-scope.resolver';
@@ -50,27 +49,26 @@ describe('AssignedScopeResolver — the branches that need no database', () => {
     expect(resolver.kind).toBe('assigned');
   });
 
-  describe('Decision 2 — MP and SA satisfy the resolver unconditionally', () => {
+  describe('Decision 2 — MP and SA are exempt from assignment, never from tenancy', () => {
     // The exemption is implemented HERE, inside the one resolver, and not as a second
     // scope kind or a branch in `decide()`. That is the whole of Decision 2's mechanism
     // argument: `AuthorizationInterceptor` asks one question, not two.
+    //
+    // What the exemption grants — every matter OF THE FIRM, with no assignment row — needs the
+    // database to say which matters are the firm's, so it is asserted against real rows in
+    // `tests/integration/assigned-scope-isolation.test.ts` (own unstaffed matter: true; another
+    // firm's real matter and a made-up one: false). What can be asserted here is the guard.
     for (const archetype of ['MP', 'SA'] as const) {
-      it(`${archetype} resolves true with no assignment row and no query`, async () => {
-        const granted = await resolver.resolve(
-          request({ subject: archetype, principal: principal(archetype) }),
-        );
-        expect(granted).toBe(true);
-      });
-
-      it(`${archetype} resolves true even with no target named at all`, async () => {
-        // Reached before the `targetId` guard, deliberately: a partner's reach does not
-        // depend on which case was named, so the short-circuit must come first. If this
-        // ever regressed to running after the guard, `MP` would be refused on any route
-        // that forgot `@ScopeTarget` — a silent, plausible-looking 404.
+      it(`${archetype} is refused, before any query, when the route named no target`, async () => {
+        // This used to be `true`: the exemption ran before the target guard, so an MP's reach
+        // "did not depend on which case was named" — and the resolver never checked the named
+        // case belonged to the firm. That is the cross-tenant oracle 009 found. A forgotten
+        // `@ScopeTarget` is now a build failure (`scope-target-declared.test.ts`), so failing
+        // closed here costs nothing. No query: `currentTx()` would throw outside a context.
         const granted = await resolver.resolve(
           request({ subject: archetype, principal: principal(archetype), targetId: null }),
         );
-        expect(granted).toBe(true);
+        expect(granted).toBe(false);
       });
     }
 

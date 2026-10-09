@@ -57,6 +57,10 @@ describe('no switch exists to turn MFA off', () => {
       // read via resolveKeyProvider / objectStoreConfigFromEnv, not here, but harmless to allow
       'AUTH_KEY_PROVIDER',
       'AUTH_LOCAL_KEY',
+      // The simulated seed day, for `demo-seed.test.ts`'s across-days idempotency check. It moves
+      // the calendar the data is generated against and nothing else — no credential, factor or
+      // code is derived from it (`firm.ts` derives those from fixed phrases).
+      'DEMO_SEED_AS_OF',
     ]);
     for (const source of sources) {
       if (source.name === 'package.json') continue;

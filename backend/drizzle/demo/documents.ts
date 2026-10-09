@@ -252,7 +252,8 @@ export function demoDocuments(
         Math.floor((asOf.getTime() - opened.getTime()) / (24 * 60 * 60 * 1000)),
       );
       const uploadedOn = iso(
-        new Date(opened.getTime() + (span === 0 ? 0 : intBetween(next, 0, span)) * 24 * 60 * 60 * 1000),
+        // Drawn even when the span is zero — a conditional draw made the stream depend on the day.
+        new Date(opened.getTime() + intBetween(next, 0, span) * 24 * 60 * 60 * 1000),
       );
 
       // A couple of withdrawn documents, so 021's withdrawn list and restore control have a
@@ -274,7 +275,8 @@ export function demoDocuments(
         uploadedOn,
         sizeBytes: body.length,
         body,
-        storageKeyParts: ['document', firm.rfc, matter.fileNumber, String(i)],
+        // Keyed on the matter's date-free slot, never its file number (see DemoMatter.slot).
+        storageKeyParts: ['document', firm.rfc, matter.slot, String(i)],
       });
     }
   }

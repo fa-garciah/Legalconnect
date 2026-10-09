@@ -36,17 +36,31 @@ export class AssignedScopeResolver implements ScopeResolver {
     // be assuming something about a caller it is meant to be deciding about.
     if (!principal) return false;
 
-    // Decision 2 — BEFORE any query, and before the target guard below.
+    // Fail closed. `null` here means the route declared `assigned` scope and no
+    // `@ScopeTarget` — a bug that `tests/contract/scope-target-declared.test.ts` fails the
+    // build for, precisely because at runtime it is indistinguishable from a correct
+    // refusal.
     //
-    // A managing partner who cannot see the firm's own caseload without being individually
-    // assigned to every matter is not a workable product; `SA` needs it for the same
-    // operational reason 004 already grants `SA` tenant-wide reads elsewhere.
+    // **This guard used to run AFTER the MP/SA exemption, and that order was the defect.** The
+    // reasoning was that a partner's reach should not depend on which case was named, so a route
+    // that forgot `@ScopeTarget` would not silently refuse an MP. But "MP/SA → true without
+    // looking" also meant the resolver never checked that the named matter exists IN THIS FIRM.
+    // Every write path then had to look the matter up itself; one that forgot (009's first
+    // draft) reached an INSERT whose foreign-key check ignores RLS, so another firm's real case
+    // id produced a different response than a made-up one — a cross-tenant existence oracle.
+    // The forgotten-`@ScopeTarget` risk the old order guarded against is now a build failure
+    // (`scope-target-declared.test.ts`), so the guard can come first.
+    if (!request.targetId) return false;
+
+    // Decision 2 — a managing partner who cannot see the firm's own caseload without being
+    // individually assigned to every matter is not a workable product; `SA` needs it for the
+    // same operational reason 004 already grants `SA` tenant-wide reads elsewhere.
     //
-    // The order matters. Short-circuiting ahead of the `targetId` guard means a partner's
-    // reach does not depend on which case was named — if this ran after the guard, `MP`
-    // would be refused on any route that forgot `@ScopeTarget`, and that refusal is
-    // byte-identical to a legitimate one (FR-016), so nobody would find out from the
-    // response.
+    // The exemption is from ASSIGNMENT, never from TENANCY: the matter must exist in the
+    // caller's firm, read under RLS on the request's own transaction. Another firm's case and
+    // a case that exists nowhere both match zero rows and both answer `false` — the same 404,
+    // through the same code path, so neither the body nor the timing tells them apart. Every
+    // `assigned` route inherits this; no service has to remember it.
     //
     // **The cost, which spec.md Decision 2 names rather than hides:** this trades away
     // ethical-wall enforcement against the firm's own partners. A screened `MP` can open
@@ -54,13 +68,13 @@ export class AssignedScopeResolver implements ScopeResolver {
     // wall still holds against `AA`, `PL` and `CM` — most of a firm's headcount — and
     // FR-016's opacity means those archetypes learn nothing about the existence of matters
     // they are screened from.
-    if (principal.archetype === 'MP' || principal.archetype === 'SA') return true;
+    if (principal.archetype === 'MP' || principal.archetype === 'SA') {
+      const inFirm = await currentTx().execute<{ ok: boolean }>(sql`
+        SELECT EXISTS (SELECT 1 FROM case_file WHERE id = ${request.targetId}::uuid) AS ok
+      `);
+      return inFirm.rows[0]?.ok === true;
+    }
 
-    // Fail closed. `null` here means the route declared `assigned` scope and no
-    // `@ScopeTarget` — a bug that `tests/contract/scope-target-declared.test.ts` fails the
-    // build for, precisely because at runtime it is indistinguishable from a correct
-    // refusal.
-    if (!request.targetId) return false;
     if (!principal.membershipId) return false;
 
     // No `tenant_id` predicate, and its absence is load-bearing rather than an oversight.

@@ -12,6 +12,13 @@ vi.mock('@/session/active-tenant', () => ({
 import { EventDialog } from '@/app/calendario/EventDialog';
 import { CancelEventDialog } from '@/app/calendario/CancelEventDialog';
 import { json, renderWithClient, route } from '../configuracion/helpers';
+
+/**
+ * These tests type whole forms through `userEvent`, one keystroke at a time. Under load (the backend
+ * suite running on the same machine) that alone outlasted Vitest's 5 s default, and a test cut off
+ * mid-form leaked its half-typed state into the next one ("title: Ve"). Found 2026-10-09.
+ */
+const TYPING_TIMEOUT = 15_000;
 import { HEARING } from './fixtures';
 
 const CASES = {
@@ -70,7 +77,7 @@ describe('EventDialog', () => {
       description: null,
       remindMinutesBefore: 1440,
     });
-  });
+  }, TYPING_TIMEOUT);
 
   it('creates an all-day deadline with dates, not times', async () => {
     const user = userEvent.setup();
@@ -82,7 +89,7 @@ describe('EventDialog', () => {
     await user.click(screen.getByRole('button', { name: /guardar evento/i }));
     await waitFor(() => expect(body('POST')).toMatchObject({ allDay: true, startsOn: '2026-09-30', endsOn: null }));
     expect(body('POST').startsAt).toBeUndefined();
-  });
+  }, TYPING_TIMEOUT);
 
   it('refuses an end before the start before sending', async () => {
     const user = userEvent.setup();
@@ -92,7 +99,7 @@ describe('EventDialog', () => {
     await user.click(screen.getByRole('button', { name: /guardar evento/i }));
     expect(await screen.findByText(/termina antes de empezar/i)).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
-  });
+  }, TYPING_TIMEOUT);
 
   it('an edit sends only the fields that changed', async () => {
     fetchMock.mockImplementation(
@@ -109,7 +116,7 @@ describe('EventDialog', () => {
     await user.type(title, 'Audiencia final');
     await user.click(screen.getByRole('button', { name: /guardar evento/i }));
     await waitFor(() => expect(body('PATCH')).toEqual({ title: 'Audiencia final' }));
-  });
+  }, TYPING_TIMEOUT);
 
   it('a case the caller cannot reach reads in Spanish', async () => {
     fetchMock.mockImplementation(
@@ -124,7 +131,7 @@ describe('EventDialog', () => {
     await user.click(screen.getByRole('button', { name: /guardar evento/i }));
     expect(await screen.findByText(/el expediente elegido ya no está disponible/i)).toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
-  });
+  }, TYPING_TIMEOUT);
 });
 
 describe('CancelEventDialog', () => {

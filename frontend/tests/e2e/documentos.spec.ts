@@ -97,7 +97,9 @@ test.describe('documents of a matter', () => {
     await dialog.getByLabel('Nueva categoría').selectOption({ label: 'Contrato' });
     await dialog.getByRole('button', { name: 'Guardar' }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole('row', { name: new RegExp(FILENAME) }).getByText('Contrato')).toBeVisible();
+    // Exact: the file is itself named "Contrato …", so a substring match found the FILE NAME — passing
+    // before the new category had rendered, and failing on strict mode once it had (two matches).
+    await expect(page.getByRole('row', { name: new RegExp(FILENAME) }).getByText('Contrato', { exact: true })).toBeVisible();
   });
 
   test('withdraw it, find it under "Retirados", restore it', async () => {

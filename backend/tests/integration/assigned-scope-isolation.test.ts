@@ -20,6 +20,7 @@ import { createAuthenticatedApp } from '../helpers/real-app';
 import { connectAs } from '../helpers/db';
 import { uniqueRfc } from '../helpers/rfc';
 import { AssignedScopeResolver } from '../../src/modules/case-core/assigned-scope.resolver';
+import { runInTenantContext } from '../../src/common/tenant/middleware';
 import { makeCaseFirm, nextSuffix, uniqueName, type CaseFirm } from '../helpers/case-core';
 
 describe('the assigned resolver cannot see across tenants', () => {
@@ -79,6 +80,53 @@ describe('the assigned resolver cannot see across tenants', () => {
     // Identical, so the caller cannot tell "another firm's matter" from "no such matter"
     // by comparing what an MP sees against what an AA sees.
     expect(asMp.body).toEqual(asAa.body);
+  });
+
+  it('MP and SA are granted only a matter that exists IN THEIR FIRM — the resolver itself, not a service check', async () => {
+    // The exemption (Decision 2) is about which of the firm's matters a partner reaches — all of
+    // them — never about matters of another firm. Until this test, the resolver answered `true`
+    // for MP/SA without looking at the matter at all, and every write path had to remember to
+    // look it up itself: forget once, and a foreign-key check (which ignores RLS) turns another
+    // firm's real id into a different response than an id that exists nowhere. 009 forgot once.
+    const resolver = new AssignedScopeResolver();
+    const client = await migration.query<{ id: string }>(
+      `INSERT INTO client (tenant_id, kind, legal_name) VALUES ($1, 'organization', $2) RETURNING id`,
+      [firmA.tenantId, uniqueName('Cliente A')],
+    );
+    const { rows } = await migration.query<{ id: string }>(
+      `INSERT INTO case_file (tenant_id, client_id, file_number, case_status_id)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [firmA.tenantId, client.rows[0]!.id, uniqueName('EXP-A'), firmA.statusOpenId],
+    );
+    // Nobody is assigned: an MP/SA `true` here is the exemption, not an assignment row.
+    const caseInA = rows[0]!.id;
+
+    for (const actor of [
+      { ...firmA.mp, archetype: 'MP' as const },
+      { ...firmA.sa, archetype: 'SA' as const },
+    ]) {
+      const principal = {
+        identityId: actor.identityId,
+        membershipId: actor.membershipId,
+        tenantId: firmA.tenantId,
+        archetype: actor.archetype,
+        plan: null,
+      };
+      const ask = (targetId: string) =>
+        runInTenantContext(principal, () =>
+          resolver.resolve({
+            subject: actor.archetype,
+            capability: 'case.read',
+            principal,
+            identityId: actor.identityId,
+            targetTenantId: firmA.tenantId,
+            targetId,
+          }),
+        );
+      expect(await ask(caseInA), `${actor.archetype} on its own firm's unstaffed matter`).toBe(true);
+      expect(await ask(caseInB), `${actor.archetype} on another firm's real matter`).toBe(false);
+      expect(await ask('00000000-0000-4000-8000-0000000000ab'), `${actor.archetype} on no matter`).toBe(false);
+    }
   });
 
   it('the resolver query itself returns zero rows under the wrong tenant', async () => {

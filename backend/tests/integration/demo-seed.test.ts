@@ -36,10 +36,12 @@ const DEMO_RFCS = DEMO_FIRMS.map((f) => f.rfc);
  * written — the state of this machine, where `quay.io` refuses the MinIO image. The database
  * assertions below must hold in both cases; only the object assertions are conditional.
  */
-function runDemoSeed(): { readonly stdout: string; readonly code: number } {
+function runDemoSeed(asOf?: string): { readonly stdout: string; readonly code: number } {
   try {
     const stdout = execFileSync('npx', ['tsx', 'drizzle/seed-demo.ts'], {
       cwd: backendRoot,
+      // A simulated seed day, for the across-days idempotency check below. Unset: today.
+      env: asOf ? { ...process.env, DEMO_SEED_AS_OF: asOf } : process.env,
       encoding: 'utf8',
       shell: process.platform === 'win32',
       timeout: 180_000,
@@ -366,8 +368,7 @@ describe('the demo firm seed', () => {
   });
 
   describe('idempotency (FR-014, SC-003)', () => {
-    it('changes nothing on a second run', async () => {
-      const snapshot = async (): Promise<string> => {
+    const snapshot = async (withBytes = true): Promise<string> => {
         const row = await one<{ fingerprint: string }>(
           `SELECT concat_ws('|',
               (SELECT count(*) FROM tenant WHERE rfc = ANY($1::text[])),
@@ -380,13 +381,14 @@ describe('the demo firm seed', () => {
               (SELECT count(*) FROM case_assignment WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT count(*) FROM document WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
               (SELECT count(*) FROM calendar_event WHERE tenant_id IN (SELECT id FROM tenant WHERE rfc = ANY($1::text[]))),
-              (SELECT coalesce(sum(storage_bytes_used), 0) FROM tenant WHERE rfc = ANY($1::text[]))
+              (SELECT CASE WHEN $2 THEN coalesce(sum(storage_bytes_used), 0) END FROM tenant WHERE rfc = ANY($1::text[]))
             ) AS fingerprint`,
-          [DEMO_RFCS],
+          [DEMO_RFCS, withBytes],
         );
         return row.fingerprint;
-      };
+    };
 
+    it('changes nothing on a second run', async () => {
       const before = await snapshot();
       const second = runDemoSeed();
       const after = await snapshot();
@@ -395,6 +397,28 @@ describe('the demo firm seed', () => {
       expect(second.stdout).toContain(DEMO_PASSWORD);
       expect(second.stdout).toContain(totpSecretFor(DEMO_PEOPLE[0]!.slug));
     }, 240_000);
+
+    it('a re-run on ANOTHER day adds no row — the same counts, the same 130 documents', async () => {
+      // Found 2026-10-08: a database re-seeded on different days held 149 documents where 130 were
+      // expected, because every id was derived from a matter's file number and file numbers carry
+      // the year the matter opened, which moves with the seed day. Ids are now keyed on the matter's
+      // date-free slot, and the date-dependent columns are updated in place.
+      //
+      // Two hundred days later on purpose: a different quarter AND a different year, the case in
+      // which every file number changes. Byte totals are excluded only because a document's bytes
+      // name its matter's file number; the number of rows is what must not move.
+      const before = await snapshot(false);
+      const shifted = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
+      runDemoSeed(shifted);
+      expect(await snapshot(false)).toBe(before);
+      runDemoSeed();
+      expect(await snapshot(false)).toBe(before);
+      const docs = await one<{ n: string }>(
+        `SELECT count(*)::text AS n FROM document WHERE tenant_id = (SELECT id FROM tenant WHERE rfc = $1)`,
+        [DEMO_RFCS[0]],
+      );
+      expect(Number(docs.n)).toBe(130);
+    }, 480_000);
   });
 
   describe('FR-016 — the object store', () => {

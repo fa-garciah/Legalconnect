@@ -21,12 +21,27 @@ export function maxUploadBytes(): number {
 }
 
 /**
+ * Whether a file of `bytes` is over the cap. The ONE statement of the boundary: a file of exactly
+ * `maxUploadBytes()` is accepted, one byte more is refused (021 Decision 4).
+ */
+export function exceedsUploadCap(bytes: number): boolean {
+  return bytes > maxUploadBytes();
+}
+
+/**
  * Multer options whose `limits` is evaluated when Nest constructs the interceptor, so a test (or
  * a deployment) can set the variable before the app is created.
+ *
+ * **`+ 1`, and why.** Multer (through busboy) treats a file as over `fileSize` the moment it
+ * REACHES it, so `fileSize: max` refused a file of exactly `max` bytes — measured 2026-10-09: 1023
+ * bytes accepted, 1024 refused with a 1024-byte cap. Handing multer `max + 1` makes its own refusal
+ * fire at `max + 1` bytes, which is the first size the product means to refuse; it still stops
+ * reading at that point, so an oversized upload is never buffered whole. The controller re-checks
+ * with `exceedsUploadCap`, so the boundary does not depend on a library's off-by-one either way.
  */
 export const uploadOptions = {
   get limits() {
-    return { fileSize: maxUploadBytes(), files: 1 };
+    return { fileSize: maxUploadBytes() + 1, files: 1 };
   },
 };
 

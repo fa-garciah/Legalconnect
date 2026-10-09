@@ -21,11 +21,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
 import { Capability, ScopeTarget } from '../../common/authz/declare';
-import { ValidationFailed } from '../../common/http/errors';
+import { FileTooLarge, ValidationFailed } from '../../common/http/errors';
 import { assertUuid } from '../tenant/rfc';
 import { DocumentsService } from './documents.service';
 import { decodeUploadFilename } from './upload-filename';
-import { UploadTooLargeFilter, uploadOptions } from './upload-limit';
+import { UploadTooLargeFilter, exceedsUploadCap, maxUploadBytes, uploadOptions } from './upload-limit';
 import type { DocumentRow } from './documents.repository';
 
 interface AuditableRequest {
@@ -78,6 +78,8 @@ export class DocumentsController {
   ) {
     const id = assertUuid(caseId, 'case id');
     if (!file) throw new ValidationFailed('A file is required.');
+    // 021 Decision 4: the boundary stated once, independent of multer's own (see upload-limit.ts).
+    if (exceedsUploadCap(file.buffer.byteLength)) throw new FileTooLarge(maxUploadBytes());
     const input = (body ?? {}) as { categoryId?: unknown };
     const categoryId =
       typeof input.categoryId === 'string' && input.categoryId.length > 0

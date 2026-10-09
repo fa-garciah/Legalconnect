@@ -21,6 +21,12 @@ import { DEMO_SEED, intBetween, mulberry32, pick } from './rng';
 export type CalendarEventType = 'hearing' | 'deadline' | 'meeting' | 'other';
 
 export interface DemoCalendarEvent {
+  /**
+   * Date-free identity ("hearing-3"), what the event's id is derived from. The title and day are
+   * not: the day moves with the seed day, and deduplicating on it is what let a re-seed on another
+   * day add a second set of events beside the first.
+   */
+  readonly key: string;
   readonly type: CalendarEventType;
   readonly title: string;
   readonly description: string | null;
@@ -98,10 +104,11 @@ export function demoCalendarEvents(
   const deadlineOffsets = firm.sparse ? [11] : [-24, -9, 2, 7, 14, 22, 35];
   const meetingOffsets = firm.sparse ? [-3] : [-14, -7, 1, 8, 15];
 
-  for (const offset of hearingOffsets) {
+  for (const [index, offset] of hearingOffsets.entries()) {
     const day = shift(asOf, offset);
     const matter = openMatters.length > 0 ? pick(next, openMatters) : null;
     events.push({
+      key: `hearing-${index}`,
       type: 'hearing',
       title: pick(next, HEARINGS),
       description: matter ? `Asunto ${matter.fileNumber}` : null,
@@ -117,10 +124,11 @@ export function demoCalendarEvents(
     });
   }
 
-  for (const offset of deadlineOffsets) {
+  for (const [index, offset] of deadlineOffsets.entries()) {
     const day = shift(asOf, offset);
     const matter = openMatters.length > 0 ? pick(next, openMatters) : null;
     events.push({
+      key: `deadline-${index}`,
       type: 'deadline',
       title: pick(next, DEADLINES),
       description: null,
@@ -140,6 +148,7 @@ export function demoCalendarEvents(
   for (const [index, offset] of meetingOffsets.entries()) {
     const day = shift(asOf, offset);
     events.push({
+      key: `meeting-${index}`,
       type: 'meeting',
       title: pick(next, MEETINGS),
       description: null,
@@ -160,6 +169,7 @@ export function demoCalendarEvents(
   if (!firm.sparse) {
     // One `other`, so all four enum values are reachable from the demo data.
     events.push({
+      key: 'other-0',
       type: 'other',
       title: 'Capacitación interna sobre firma electrónica',
       description: null,

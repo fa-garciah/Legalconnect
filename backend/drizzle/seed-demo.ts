@@ -67,8 +67,21 @@ const PLANS_USED = [
   { code: 'profesional', name: 'Profesional', limits: { users: 25, storageBytes: 100 * 2 ** 30, monthlyCfdi: 250 } },
 ] as const;
 
-/** The day the demo firm is seeded as of. One value, passed everywhere (FR-017). */
-const AS_OF = new Date();
+/**
+ * The day the demo firm is seeded as of. One value, passed everywhere (FR-017).
+ *
+ * `DEMO_SEED_AS_OF` (`YYYY-MM-DD`) simulates another day. It exists for `demo-seed.test.ts`, which
+ * re-seeds as of a later day to prove a re-run on a different day adds no row; a malformed value
+ * is refused rather than silently read as today.
+ */
+const AS_OF = ((): Date => {
+  const raw = process.env.DEMO_SEED_AS_OF;
+  if (!raw) return new Date();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T12:00:00Z`))) {
+    throw new Error(`DEMO_SEED_AS_OF debe ser una fecha AAAA-MM-DD; se recibió "${raw}".`);
+  }
+  return new Date(`${raw}T12:00:00Z`);
+})();
 
 interface WrittenFirm {
   readonly firm: DemoFirm;
@@ -361,8 +374,48 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
   const typeIds = new Map(typeRows.map((r) => [r.name, r.id]));
 
   for (const matter of demoMatters(firm, AS_OF)) {
-    const caseId = deterministicUuid('case', firm.rfc, matter.fileNumber);
-    await migration.query(
+    /*
+     * IDENTITY IS THE SLOT, NOT THE FILE NUMBER (022/FR-014 across days).
+     *
+     * The file number carries the year the matter opened, and the opening day moves with the seed
+     * day — so a re-seed in another quarter or year produced new file numbers, which the old
+     * `ON CONFLICT (file_number)` treated as new matters: a second generation of matters,
+     * documents and events beside the first (149 documents where 130 were expected). The row is
+     * now found by an id derived from the matter's date-free slot and UPDATED in place, file
+     * number included.
+     *
+     * The INSERT below is reached only when that id is not there yet: a fresh database, or one
+     * seeded before this change, whose rows were keyed on file numbers. For the latter it adopts
+     * the existing row by file number rather than adding a duplicate. If a slot's NEW file number
+     * is held by such a legacy row, the UPDATE would violate the unique index; it falls back to
+     * adopting that row too, so an old database never stops the seed.
+     */
+    const caseId = deterministicUuid('case', firm.rfc, matter.slot);
+    const tuple = [
+      caseId,
+      tenantId,
+      clientIds[matter.clientIndex],
+      matter.fileNumber,
+      statusIds.get(matter.statusName),
+      typeIds.get(matter.matterTypeName),
+      matter.openedOn,
+      matter.closedOn,
+      matter.outcome,
+    ];
+    let updated = 0;
+    try {
+      const result = await migration.query(
+        `UPDATE case_file
+            SET client_id = $3, file_number = $4, case_status_id = $5, matter_type_id = $6,
+                opened_on = $7::date, closed_on = $8::date, outcome = $9::case_outcome
+          WHERE id = $1 AND tenant_id = $2`,
+        tuple,
+      );
+      updated = result.rowCount ?? 0;
+    } catch (error) {
+      if ((error as { code?: string }).code !== '23505') throw error;
+    }
+    if (updated === 0) await migration.query(
       /*
        * 015/Decision 9 — `outcome` on every closed matter and on no open one, which is also what
        * `case_file_outcome_requires_closed` enforces. Without it the KPI screen reads "Datos
@@ -392,17 +445,7 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
                        opened_on      = excluded.opened_on,
                        closed_on      = excluded.closed_on,
                        outcome        = excluded.outcome`,
-      [
-        caseId,
-        tenantId,
-        clientIds[matter.clientIndex],
-        matter.fileNumber,
-        statusIds.get(matter.statusName),
-        typeIds.get(matter.matterTypeName),
-        matter.openedOn,
-        matter.closedOn,
-        matter.outcome,
-      ],
+      tuple,
     );
     const { rows } = await migration.query<{ id: string }>(
       `SELECT id FROM case_file WHERE tenant_id = $1 AND file_number = $2`,
@@ -492,13 +535,24 @@ async function seedDocuments(migration: Client, target: WrittenFirm): Promise<re
     const documentId = deterministicUuid(...document.storageKeyParts);
     const storageKey = buildObjectKey(tenantId, caseId, documentId);
 
+    // Upserted on the id, which is keyed on the matter's slot (date-free); the columns that move
+    // with the seed day are refreshed in place, so a re-seed on another day adds no document.
+    // `case_id` and `storage_key` are left alone: the object already lives under that key.
     await migration.query(
       `INSERT INTO document
          (id, tenant_id, case_id, uploaded_by_membership_id, category_id, storage_key,
           original_filename, mime_type, size_bytes, status, uploaded_at, withdrawn_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::document_status, $11::timestamptz,
                CASE WHEN $10 = 'withdrawn' THEN $11::timestamptz ELSE NULL END)
-       ON CONFLICT (storage_key) DO NOTHING`,
+       ON CONFLICT (id) DO UPDATE
+         SET uploaded_by_membership_id = excluded.uploaded_by_membership_id,
+             category_id = excluded.category_id,
+             original_filename = excluded.original_filename,
+             mime_type = excluded.mime_type,
+             size_bytes = excluded.size_bytes,
+             status = excluded.status,
+             uploaded_at = excluded.uploaded_at,
+             withdrawn_at = excluded.withdrawn_at`,
       [
         documentId,
         tenantId,
@@ -537,19 +591,24 @@ async function seedCalendar(migration: Client, target: WrittenFirm): Promise<voi
     if (!membershipId) continue;
     const caseId = event.matterFileNumber ? target.cases.get(event.matterFileNumber) ?? null : null;
 
-    // `calendar_event` has no natural key; the guard is an existence check on the shape that
-    // identifies one to a human — same title, same day, same firm.
+    // `calendar_event` has no natural key, so the id is derived from the event's date-free key
+    // ("hearing-3"). It used to be deduplicated on title + day — and the day moves with the seed
+    // day, so a re-seed on another day added a second set of events. Every generated column is
+    // refreshed on conflict, for the reason `seedClientsAndMatters` gives.
     await migration.query(
       `INSERT INTO calendar_event
-         (tenant_id, case_id, type, title, description, location, all_day,
+         (id, tenant_id, case_id, type, title, description, location, all_day,
           starts_at, ends_at, starts_on, ends_on, remind_minutes_before, created_by_membership_id)
-       SELECT $1, $2, $3::calendar_event_type, $4, $5, $6, $7,
-              $8::timestamptz, $9::timestamptz, $10::date, $11::date, $12, $13
-        WHERE NOT EXISTS (
-          SELECT 1 FROM calendar_event
-           WHERE tenant_id = $1 AND title = $4
-             AND coalesce(starts_on::text, starts_at::text) = coalesce($10::text, $8::text)
-        )`,
+       VALUES ($14, $1, $2, $3::calendar_event_type, $4, $5, $6, $7,
+               $8::timestamptz, $9::timestamptz, $10::date, $11::date, $12, $13)
+       ON CONFLICT (id) DO UPDATE
+         SET case_id = excluded.case_id, type = excluded.type, title = excluded.title,
+             description = excluded.description, location = excluded.location,
+             all_day = excluded.all_day, starts_at = excluded.starts_at, ends_at = excluded.ends_at,
+             starts_on = excluded.starts_on, ends_on = excluded.ends_on,
+             remind_minutes_before = excluded.remind_minutes_before,
+             created_by_membership_id = excluded.created_by_membership_id,
+             status = 'scheduled', cancelled_at = NULL, updated_at = now()`,
       [
         tenantId,
         caseId,
@@ -564,6 +623,7 @@ async function seedCalendar(migration: Client, target: WrittenFirm): Promise<voi
         event.endsOn,
         event.remindMinutesBefore,
         membershipId,
+        deterministicUuid('calendar-event', firm.rfc, event.key),
       ],
     );
   }
