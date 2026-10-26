@@ -1,0 +1,165 @@
+---
+description: "Task list for 024-deployment-pipeline"
+---
+
+# Tasks: Automated Deployment Pipeline from Main
+
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md) · **PR**: [fa-garciah/Legalconnect#16](https://github.com/fa-garciah/Legalconnect/pull/16)
+
+**Tests**: mandatory, strict TDD for every task that changes code — the test is run and **seen to
+fail** before the task under it starts. Configuration and runbook tasks are verified in Phase 7 on
+the real environment instead.
+
+## Format: `[ID] [P?] [Story] Description`
+
+Stories: **US1** deploy on green merge · **US2** red never deploys · **US3** rollback · **US4**
+backups and restore · **US5** platform surface isolated.
+
+**Owner**: tasks marked **[Francisco]** need the technical lead — credentials, AWS/Dokploy access, or
+a decision. Everything else is repository work and does not wait on them.
+
+---
+
+## Phase 0: Already built (commits `070dd8b`…`63ca8f6` on PR 16)
+
+- [x] T001 [US5] Platform surface answers only a loopback TCP peer, 404 otherwise; pinned by
+      `backend/tests/unit/platform-surface-loopback.test.ts` (`0ca12fa`).
+- [x] T002 [US1] `backend/Dockerfile` (API + one-shot migrate) and `frontend/Dockerfile` (standalone,
+      `NEXT_PUBLIC_API_BASE_URL` build arg), both `USER node`; `backend` `npm start` →
+      `dist/src/main.js` (`0ca12fa`).
+- [x] T003 [US1] [US2] `.github/workflows/deploy.yml` — `workflow_run` on green CI, push to `main`
+      only; GHCR `sha-<commit>` + `main`; webhook; health wait; platform-surface smoke (`f14e982`).
+- [x] T004 [US1] `deploy/dokploy/docker-compose.yml` — `migrate` → `backend` (healthy) → `frontend`;
+      owner credentials only in `migrate` (`f14e982`).
+- [x] T005 [US1] `GET /health` beside the router, `tests/unit/health-route.test.ts` (`f14e982`).
+- [x] T006 CI: MinIO dropped for the AWS test bucket from repository variables; undici and
+      grpc-js advisories patched (`070dd8b`, `bd113b5`).
+- [x] T007 Frontend `next` / `eslint-config-next` 16.4.0 → 16.4.3 for GHSA-2464-fhr4-w9xw; typecheck,
+      lint, 779 tests and the production build pass (`63ca8f6`).
+- [x] T008 `plan.md` (`5bbdf15`).
+
+## Phase 1: Unblock CI on `main` (BLOCKS anything being published)
+
+- [ ] T009 **[Francisco]** Repository variables `OBJECT_STORE_REGION`, `OBJECT_STORE_TEST_BUCKET`,
+      `NEXT_PUBLIC_API_BASE_URL`; secrets `OBJECT_STORE_ACCESS_KEY_ID`,
+      `OBJECT_STORE_SECRET_ACCESS_KEY`. Re-run PR 16's CI; `quality` must go green (it fails today on
+      the S3 isolation suites with empty `OBJECT_STORE_*`).
+- [ ] T010 **[Francisco]** Merge PR 16 once every check is green. `deploy.yml` fires only from the
+      default branch, so the first `publish` run happens on that merge.
+- [ ] T011 After T010: confirm the `publish` job pushed both images with both tags, and set the two
+      GHCR packages' visibility explicitly (private).
+
+## Phase 2: Decisions and governance (BLOCKS Phase 6–7, not Phase 3–5)
+
+- [ ] T012 **[Francisco]** Answer spec open questions 1–4 (EC2 region, AWS account ownership,
+      domains, staging) in `spec.md`.
+- [ ] T013 **[Francisco]** Ratify or reject D5–D8, and decide plan D9–D12 (D11 is the choice between
+      accepting a redeploy gap and splitting into Dokploy Applications).
+- [ ] T014 Spec corrections (plan § Findings): US1 scenario 1 → two images and `main` tag; approval
+      checklist's D6 label; inventory `NEXTAUTH_URL` → `APP_PUBLIC_URL`; KMS edge case → boot
+      failure (D12); FR-017 wording per D11.
+- [ ] T015 Constitution amendment draft 1.5.0 → 1.6.0: Stack (`constitution.md:520`), MVP
+      prohibitions (`constitution.md:655`), Data Residency `[PENDING]` (`constitution.md:439`) closed,
+      plus a dated waiver if T012 puts the EC2 outside `mx-central-1`. Draft suits Antigravity once
+      its headless permissions allow it; reviewed against the constitution before commit.
+- [ ] T016 **[Francisco]** Ratify T015.
+
+## Phase 3: The deploy proves the new release is live (US1) — D9
+
+- [ ] T017 Unit test — extend `backend/tests/unit/health-route.test.ts`: with `BUILD_SHA=abc123`
+      the 200 body is exactly `{"status":"ok","version":"abc123"}`; without it `version` is
+      `"unknown"`; the 503 body stays exactly `{"status":"unavailable"}` (no version on failure).
+      **See it fail.**
+- [ ] T018 `backend/src/common/http/health.ts` returns `version` from `process.env.BUILD_SHA`;
+      update the file's "discloses nothing" comment to say why a public commit SHA is not a
+      disclosure. `backend/Dockerfile`: `ARG BUILD_SHA` → `ENV BUILD_SHA` in the runtime stage.
+- [ ] T019 `deploy.yml`: pass `build-args: BUILD_SHA=${{ env.SHA }}` to the backend build; the wait
+      step succeeds only when `/health`'s `version` equals `$SHA`, failing after 10 minutes (SC-001).
+
+## Phase 4: A KMS misconfiguration stops the container booting (US1) — D12
+
+- [ ] T020 Unit test `backend/tests/unit/key-provider-canary.test.ts`: `assertKeyProviderReachable`
+      with a provider whose `wrap` rejects → throws naming the key, not the cause's secrets; whose
+      `unwrap` returns different bytes → throws; that round-trips → resolves; with
+      `AUTH_KEY_PROVIDER=local` outside production → not called. **See it fail.**
+- [ ] T021 `assertKeyProviderReachable` in `backend/src/common/auth/deployment-assertions.ts`:
+      `wrap` then `unwrap` a random 32-byte canary through `resolveKeyProvider()`
+      (`key-provider.ts:187`), compare. Call it in `main.ts` right after `assertKeyProviderIsSafe()`
+      and before `listen()`, so the health check never passes and the old container keeps serving.
+
+## Phase 5: Edge hardening and image lint (US5, SC-010)
+
+- [ ] T022 [P] [US5] Traefik second layer in `deploy/dokploy/docker-compose.yml`: on `backend`,
+      labels for a router ``Host(`${API_HOST}`) && PathPrefix(`/internal`)`` with a priority above
+      Dokploy's generated router, through an `ipallowlist` middleware `sourcerange=127.0.0.1/32`
+      (answers 403). `API_HOST` documented in Phase 6's runbook. Verified in T036, not before — the
+      router names Dokploy generates are not knowable from the repository.
+- [ ] T023 [P] SC-010: `hadolint` job in `.github/workflows/ci.yml` over `backend/Dockerfile` and
+      `frontend/Dockerfile` (pinned `hadolint/hadolint-action` by tag), failure threshold
+      `warning`. Fix whatever it reports in the same task; justify any inline ignore.
+
+## Phase 6: Backups and restore (US4) — D10
+
+- [ ] T024 [US4] `deploy/scripts/restore-check.sh` — given a `.sql.gz`: start a throwaway
+      `postgres:16` container; create the six roles first (plan Finding 4: the `CREATE ROLE` blocks of
+      `drizzle/0000_roles.sql`, `0015_accept_invitation_fn.sql`, `0030_lc_auth_role.sql`, which are
+      idempotent `DO` blocks); `gunzip | psql`; run `node dist/drizzle/migrate.js` from the backend
+      image to set passwords and confirm nothing is pending; run `npm run verify:role` and
+      `npm run test:rls` against it; tear down. Exits non-zero on any step.
+- [ ] T025 [US4] Prove T024 locally: `pg_dump` the compose stack's database after `npm run db:seed:demo`
+      (022's demo firm), gzip, run the script, record the output in `quickstart-results.md`. Run in
+      the Linux container, not Windows (argon2 is blocked by Smart App Control).
+- [ ] T026 [US4] `deploy/runbooks/restore.md` — the manual form of T024 against the production
+      host, including where backups live, how to pick one, and who may run it.
+- [ ] T027 **[Francisco]** [US4] Backup bucket: dedicated, versioned, default SSE-KMS, lifecycle
+      expiry (retention period is the lead's call), IAM user/role with `s3:PutObject` only on it.
+- [ ] T028 **[Francisco]** [US4] Dokploy Database service → Backups: daily schedule to the T027
+      bucket.
+
+## Phase 7: The Dokploy environment (US1, US3) — `quickstart.md`
+
+- [ ] T029 `specs/024-deployment-pipeline/quickstart.md` — the runbook that is the declared form of
+      Dokploy's UI configuration: Database service + volume; Compose service from
+      `deploy/dokploy/docker-compose.yml`; every variable per the spec's inventory, split by
+      container; `IMAGE_TAG`; domains and TLS; GHCR registry credential (PAT `read:packages`, its
+      expiry date and rotation steps); KMS key and IAM policy (`kms:Encrypt`/`kms:Decrypt` on that key
+      only); the webhook URL into secret `DOKPLOY_WEBHOOK_URL`; first firm and admin provisioned
+      through the platform surface from inside the backend container.
+- [ ] T030 **[Francisco]** Execute T029 on the EC2 host (needs T012).
+
+## Phase 8: Acceptance on the real environment (`quickstart-results.md`)
+
+- [ ] T031 [US1] SC-001: merge a visible change; `deploy.yml` reaches the new `version` in < 10 min
+      with no command typed on the server. Record run URL and timings.
+- [ ] T032 [US2] SC-002: a PR merged with a deliberately failing check (then reverted) → no
+      `publish`, no webhook, running `version` unchanged.
+- [ ] T033 [US1] Migration failure: deploy an image whose migration fails (throwaway branch tag via
+      `IMAGE_TAG`) → `migrate` exits non-zero, the old `backend` keeps serving.
+- [ ] T034 [US1] SC-004, SC-006: boot logs clean under `kms`; `docker inspect` of `backend` shows no
+      `DATABASE_URL_MIGRATION` and no `LC_*_PASSWORD`.
+- [ ] T035 [US1] D12 in place: a deliberately wrong `AUTH_KMS_KEY_ID` → container never healthy,
+      previous one keeps serving. Restore the right value.
+- [ ] T036 [US5] SC-003: from outside, `POST /internal/platform/tenants` (with and without forged
+      `X-Forwarded-For`) → 403 from Traefik (T022) — or 404 if the label is not matching, which is a
+      T022 defect to fix, not a pass.
+- [ ] T037 [US1] SC-007: sign in, complete MFA, open a matter's documents, preview one.
+- [ ] T038 [US3] SC-008: `IMAGE_TAG=sha-<previous>` → redeploy → previous `version` live < 3 min;
+      then back to `main`.
+- [ ] T039 [US4] SC-009: download the latest scheduled backup from S3, run T024's script on it.
+
+## Phase 9: Close
+
+- [ ] T040 Spec status → completed only when Phase 2's ratifications are in and T031–T039 are
+      recorded; living specs synced if the slice changed any capability (it should not).
+
+---
+
+## Dependencies
+
+- Phase 1 → T011 and everything in Phase 8.
+- Phase 2 (T012) → T029–T030 → Phase 8.
+- Phases 3, 4, 5, 6 (T024–T026) are repository work: start now, in any order; T017→T018→T019 and
+  T020→T021 are strict TDD chains. T022 and T023 are `[P]`.
+- T027–T028 need T012 (account and region) and feed T039.
+- D9 (Phase 3) and D12 (Phase 4) are proposals: if T013 rejects either, its tasks are struck, not
+  left open.
