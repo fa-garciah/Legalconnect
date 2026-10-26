@@ -66,62 +66,79 @@ a decision. Everything else is repository work and does not wait on them.
 
 ## Phase 3: The deploy proves the new release is live (US1) — D9
 
-- [ ] T017 Unit test — extend `backend/tests/unit/health-route.test.ts`: with `BUILD_SHA=abc123`
+- [x] T017 Unit test — extend `backend/tests/unit/health-route.test.ts`: with `BUILD_SHA=abc123`
       the 200 body is exactly `{"status":"ok","version":"abc123"}`; without it `version` is
       `"unknown"`; the 503 body stays exactly `{"status":"unavailable"}` (no version on failure).
       **See it fail.**
-- [ ] T018 `backend/src/common/http/health.ts` returns `version` from `process.env.BUILD_SHA`;
+- [x] T018 `backend/src/common/http/health.ts` returns `version` from `process.env.BUILD_SHA`;
       update the file's "discloses nothing" comment to say why a public commit SHA is not a
       disclosure. `backend/Dockerfile`: `ARG BUILD_SHA` → `ENV BUILD_SHA` in the runtime stage.
-- [ ] T019 `deploy.yml`: pass `build-args: BUILD_SHA=${{ env.SHA }}` to the backend build; the wait
+- [x] T019 `deploy.yml`: pass `build-args: BUILD_SHA=${{ env.SHA }}` to the backend build; the wait
       step succeeds only when `/health`'s `version` equals `$SHA`, failing after 10 minutes (SC-001).
 
 ## Phase 4: A KMS misconfiguration stops the container booting (US1) — D12
 
-- [ ] T020 Unit test `backend/tests/unit/key-provider-canary.test.ts`: `assertKeyProviderReachable`
+- [x] T020 Unit test `backend/tests/unit/key-provider-canary.test.ts`: `assertKeyProviderReachable`
       with a provider whose `wrap` rejects → throws naming the key, not the cause's secrets; whose
       `unwrap` returns different bytes → throws; that round-trips → resolves; with
       `AUTH_KEY_PROVIDER=local` outside production → not called. **See it fail.**
-- [ ] T021 `assertKeyProviderReachable` in `backend/src/common/auth/deployment-assertions.ts`:
+- [x] T021 `assertKeyProviderReachable` in `backend/src/common/auth/deployment-assertions.ts`:
       `wrap` then `unwrap` a random 32-byte canary through `resolveKeyProvider()`
       (`key-provider.ts:187`), compare. Call it in `main.ts` right after `assertKeyProviderIsSafe()`
       and before `listen()`, so the health check never passes and the old container keeps serving.
 
 ## Phase 5: Edge hardening and image lint (US5, SC-010)
 
-- [ ] T022 [P] [US5] Traefik second layer in `deploy/dokploy/docker-compose.yml`: on `backend`,
+- [x] T022 [P] [US5] Traefik second layer in `deploy/dokploy/docker-compose.yml`: on `backend`,
       labels for a router ``Host(`${API_HOST}`) && PathPrefix(`/internal`)`` with a priority above
       Dokploy's generated router, through an `ipallowlist` middleware `sourcerange=127.0.0.1/32`
-      (answers 403). `API_HOST` documented in Phase 6's runbook. Verified in T036, not before — the
+      (answers 403). `API_HOST` set in Dokploy per T029. Verified in T036, not before — the
       router names Dokploy generates are not knowable from the repository.
-- [ ] T023 [P] SC-010: `hadolint` job in `.github/workflows/ci.yml` over `backend/Dockerfile` and
+      *(Done with `Path(`/internal`) || PathPrefix(`/internal/`)` — `PathPrefix(`/internal`)` also
+      caught `/internalx`. Proven against Traefik v3.6 with a stand-in API: 403 on both entrypoints,
+      forged `X-Forwarded-For` included; other paths pass. Dokploy's real routers: T036.)*
+- [x] T023 [P] SC-010: `hadolint` job in `.github/workflows/ci.yml` over `backend/Dockerfile` and
       `frontend/Dockerfile` (pinned `hadolint/hadolint-action` by tag), failure threshold
       `warning`. Fix whatever it reports in the same task; justify any inline ignore.
+      *(Both Dockerfiles clean under hadolint v2.12.0; nothing to ignore.)*
 
 ## Phase 6: Backups and restore (US4) — D10
 
-- [ ] T024 [US4] `deploy/scripts/restore-check.sh` — given a `.sql.gz`: start a throwaway
+- [x] T024 [US4] `deploy/scripts/restore-check.sh` — given a `.sql.gz`: start a throwaway
       `postgres:16` container; create the six roles first (plan Finding 4: the `CREATE ROLE` blocks of
       `drizzle/0000_roles.sql`, `0015_accept_invitation_fn.sql`, `0030_lc_auth_role.sql`, which are
       idempotent `DO` blocks); `gunzip | psql`; run `node dist/drizzle/migrate.js` from the backend
       image to set passwords and confirm nothing is pending; run `npm run verify:role` and
       `npm run test:rls` against it; tear down. Exits non-zero on any step.
-- [ ] T025 [US4] Prove T024 locally: `pg_dump` the compose stack's database after `npm run db:seed:demo`
+      *(Built wider than written: roles come from every `CREATE ROLE` block in the image's own
+      migrations, not three named files; it accepts custom-format and plain dumps; and it diffs the
+      restored grants/owners/policies/roles against a fresh migration by the same image, because the
+      two suites check grants on two tables only.)*
+- [x] T025 [US4] Prove T024 locally: `pg_dump` the compose stack's database after `npm run db:seed:demo`
       (022's demo firm), gzip, run the script, record the output in `quickstart-results.md`. Run in
       the Linux container, not Windows (argon2 is blocked by Smart App Control).
-- [ ] T026 [US4] `deploy/runbooks/restore.md` — the manual form of T024 against the production
+      *(Custom and plain dumps PASS; a `--no-acl --no-owner` dump — Dokploy's own format — FAILS.
+      Recorded in `quickstart-results.md`.)*
+- [x] T026 [US4] `deploy/runbooks/restore.md` — the manual form of T024 against the production
       host, including where backups live, how to pick one, and who may run it.
 - [ ] T027 **[Francisco]** [US4] Backup bucket: dedicated, versioned, default SSE-KMS, lifecycle
       expiry (retention period is the lead's call), IAM user/role with `s3:PutObject` only on it.
-- [ ] T028 **[Francisco]** [US4] Dokploy Database service → Backups: daily schedule to the T027
-      bucket.
+- [ ] ~~T028 Dokploy Database service → Backups~~ — **struck 2026-10-26**: Dokploy's built-in
+      PostgreSQL backup is `pg_dump -Fc --no-acl --no-owner`, which T025 shows restores into an
+      unusable database (plan D10, revised).
+- [ ] T028a [US4] `deploy/scripts/backup.sh` — `pg_dump -Fc` as the schema owner (ACLs and owners
+      kept) | gzip | `aws s3 cp -` to the T027 bucket with `--sse aws:kms`, key
+      `legalconnect-<UTC timestamp>.dump.gz`; exits non-zero if any stage fails (`pipefail`). Proven
+      locally by feeding its output to `restore-check.sh` (S3 stage stubbed with a local file).
+- [ ] T028b **[Francisco]** [US4] Schedule T028a daily on the host (Dokploy schedule or cron —
+      `quickstart.md` records which) and run `restore-check.sh` on its first upload.
 
 ## Phase 7: The Dokploy environment (US1, US3) — `quickstart.md`
 
 - [ ] T029 `specs/024-deployment-pipeline/quickstart.md` — the runbook that is the declared form of
       Dokploy's UI configuration: Database service + volume; Compose service from
       `deploy/dokploy/docker-compose.yml`; every variable per the spec's inventory, split by
-      container; `IMAGE_TAG`; domains and TLS; GHCR registry credential (PAT `read:packages`, its
+      container, plus `API_HOST` (the API domain, for T022's labels); `IMAGE_TAG`; domains and TLS; GHCR registry credential (PAT `read:packages`, its
       expiry date and rotation steps); KMS key and IAM policy (`kms:Encrypt`/`kms:Decrypt` on that key
       only); the webhook URL into secret `DOKPLOY_WEBHOOK_URL`; first firm and admin provisioned
       through the platform surface from inside the backend container.
@@ -160,6 +177,7 @@ a decision. Everything else is repository work and does not wait on them.
 - Phase 2 (T012) → T029–T030 → Phase 8.
 - Phases 3, 4, 5, 6 (T024–T026) are repository work: start now, in any order; T017→T018→T019 and
   T020→T021 are strict TDD chains. T022 and T023 are `[P]`.
-- T027–T028 need T012 (account and region) and feed T039.
+- T028a is repository work and can start now. T027 and T028b need T012 (account and region) and
+  feed T039.
 - D9 (Phase 3) and D12 (Phase 4) are proposals: if T013 rejects either, its tasks are struck, not
   left open.

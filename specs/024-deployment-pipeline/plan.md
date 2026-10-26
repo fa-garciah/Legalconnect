@@ -157,15 +157,21 @@ compose maps to both `AUTH_URL` and `NEXTAUTH_URL` (`docker-compose.yml:78-82`).
 
 ### Phase D — Backups and restore (US4)
 
-- **D10 (proposed)** — use Dokploy's built-in scheduled backups for its Database service: daily
-  `pg_dump`, gzip, timestamped, to an S3 destination; encryption at rest by the bucket's default
-  SSE-KMS. No backup code of our own to maintain. Bucket: dedicated, versioned, lifecycle-expired,
-  not the documents bucket.
+- **D10 (proposed, revised 2026-10-26)** — ~~use Dokploy's built-in scheduled backups~~. Dokploy's
+  PostgreSQL backup runs `pg_dump -Fc --no-acl --no-owner` (its
+  `packages/server/src/utils/backups/utils.ts`), and a dump without ACLs restores with no error into
+  a database where `lc_app` can read nothing and no `SECURITY DEFINER` function is callable —
+  demonstrated with `restore-check.sh`, see `quickstart-results.md`. Instead: our own
+  `deploy/scripts/backup.sh` — daily `pg_dump -Fc` as the schema owner (ACLs and owners kept), gzip,
+  timestamped, streamed to S3 with SSE-KMS — triggered by a Dokploy schedule or host cron (the
+  runbook says which). Bucket: dedicated, versioned, lifecycle-expired, not the documents bucket.
 - `deploy/runbooks/restore.md` — blank PostgreSQL 16 → roles (Finding 4) → `gunzip | psql` →
   `migrate` for passwords → `npm run verify:role` and `npm run test:rls` against it
   (`backend/package.json:28-29`).
 - `deploy/scripts/restore-check.sh` — the same, scripted against a throwaway container, so SC-009 is
-  a command rather than a reading of the runbook.
+  a command rather than a reading of the runbook. **Built.** Beyond the two suites it diffs the
+  restored database's grants, owners, policies and roles against a fresh migration by the same
+  image, because the suites alone check grants on two tables only.
 
 ### Phase E — Dokploy environment (runbook: `quickstart.md`)
 
