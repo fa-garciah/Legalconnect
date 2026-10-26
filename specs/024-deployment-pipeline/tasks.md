@@ -53,16 +53,24 @@ a decision. Everything else is repository work and does not wait on them.
 
 - [ ] T012 **[Francisco]** Answer spec open questions 1–4 (EC2 region, AWS account ownership,
       domains, staging) in `spec.md`.
-- [ ] T013 **[Francisco]** Ratify or reject D5–D8, and decide plan D9–D12 (D11 is the choice between
-      accepting a redeploy gap and splitting into Dokploy Applications).
-- [ ] T014 Spec corrections (plan § Findings): US1 scenario 1 → two images and `main` tag; approval
+- [ ] T013 **[Francisco]** Ratify or reject D5–D8, D9, D10, D12, D14, and choose D11 (accept a
+      redeploy gap, or split into Dokploy Applications) and D13 (how a real firm's first administrator
+      gets their invitation).
+- [x] T014 Spec corrections (plan § Findings): US1 scenario 1 → two images and `main` tag; approval
       checklist's D6 label; inventory `NEXTAUTH_URL` → `APP_PUBLIC_URL`; KMS edge case → boot
       failure (D12); FR-017 wording per D11.
-- [ ] T015 Constitution amendment draft 1.5.0 → 1.6.0: Stack (`constitution.md:520`), MVP
+      *(Done 2026-10-26, plus US4/FR-013/FR-016 for D9–D10, the inventory's missing rows, and
+      D9–D14 in Decisions. FR-017 only annotated: its wording waits for D11.)*
+- [x] T015 Constitution amendment draft 1.5.0 → 1.6.0: Stack (`constitution.md:520`), MVP
       prohibitions (`constitution.md:655`), Data Residency `[PENDING]` (`constitution.md:439`) closed,
       plus a dated waiver if T012 puts the EC2 outside `mx-central-1`. Draft suits Antigravity once
       its headless permissions allow it; reviewed against the constitution before commit.
-- [ ] T016 **[Francisco]** Ratify T015.
+      *(Drafted 2026-10-26 in `constitution-amendment-draft.md`, directly — Antigravity's headless run
+      could not get permissions. Region-dependent text left in two variants. Beyond the three named
+      lines it also covers the two Dependencies-and-Infrastructure rules this deployment meets only
+      in part, as Technical Debt 12 and 13.)*
+- [ ] T016 **[Francisco]** Ratify T015, and land it in its own PR against
+      `.specify/memory/constitution.md` (Merge Rules).
 
 ## Phase 3: The deploy proves the new release is live (US1) — D9
 
@@ -121,9 +129,12 @@ a decision. Everything else is repository work and does not wait on them.
       Recorded in `quickstart-results.md`.)*
 - [x] T026 [US4] `deploy/runbooks/restore.md` — the manual form of T024 against the production
       host, including where backups live, how to pick one, and who may run it.
-- [ ] T027 **[Francisco]** [US4] Backup bucket: dedicated, versioned, default SSE-KMS, lifecycle
-      expiry (retention period is the lead's call), IAM user/role with `s3:PutObject` only on it, plus
-      `kms:GenerateDataKey` on the backup key — an SSE-KMS upload is refused without it.
+- [x] T027a [US4] Declare the backup bucket in `infra/backups.tf`: own KMS key, versioned, TLS-only,
+      refuses objects under any other key, lifecycle expiry from `backup_retention_days` (no default —
+      the lead's call), writer policy (`s3:PutObject` + `kms:GenerateDataKey`) and reader policy.
+      `terraform validate` and `fmt -check` pass; nothing applied.
+- [ ] T027 **[Francisco]** [US4] `terraform apply` it (`quickstart.md` §1), and attach the writer
+      policy to whatever runs the schedule.
 - [ ] ~~T028 Dokploy Database service → Backups~~ — **struck 2026-10-26**: Dokploy's built-in
       PostgreSQL backup is `pg_dump -Fc --no-acl --no-owner`, which T025 shows restores into an
       unusable database (plan D10, revised).
@@ -134,18 +145,23 @@ a decision. Everything else is repository work and does not wait on them.
       *(Done, safer than written: the dump lands in a private temp dir and is uploaded only after
       `pg_dump` exits 0, so a dump killed mid-`COPY` leaves nothing in the target — tested. S3 proven
       against MinIO with SSE-KMS rather than stubbed; `sha256` in the object metadata.)*
-- [ ] T028b **[Francisco]** [US4] Schedule T028a daily on the host (Dokploy schedule or cron —
-      `quickstart.md` records which) and run `restore-check.sh` on its first upload.
+- [ ] T028b **[Francisco]** [US4] Schedule T028a daily on the host (`quickstart.md` §8: cron) and
+      run `restore-check.sh` on its first upload.
+- [x] T028c `deploy/scripts/audit-maintenance.sh` (D14): as `lc_retention`, keep audit partitions
+      two months ahead and run `retention.sql` from the image. Tested: recreates a missing future
+      partition, drops the one month past 24, idempotent, refused as `lc_app`.
 
 ## Phase 7: The Dokploy environment (US1, US3) — `quickstart.md`
 
-- [ ] T029 `specs/024-deployment-pipeline/quickstart.md` — the runbook that is the declared form of
+- [x] T029 `specs/024-deployment-pipeline/quickstart.md` — the runbook that is the declared form of
       Dokploy's UI configuration: Database service + volume; Compose service from
       `deploy/dokploy/docker-compose.yml`; every variable per the spec's inventory, split by
       container, plus `API_HOST` (the API domain, for T022's labels); `IMAGE_TAG`; domains and TLS; GHCR registry credential (PAT `read:packages`, its
       expiry date and rotation steps); KMS key and IAM policy (`kms:Encrypt`/`kms:Decrypt` on that key
       only); the webhook URL into secret `DOKPLOY_WEBHOOK_URL`; first firm and admin provisioned
       through the platform surface from inside the backend container.
+      *(Written 2026-10-26 with `<REGION>`, `<APP_DOMAIN>`, `<API_DOMAIN>` placeholders. Writing it
+      surfaced D13: the first administrator's invitation link is never returned or sent.)*
 - [ ] T030 **[Francisco]** Execute T029 on the EC2 host (needs T012).
 
 ## Phase 8: Acceptance on the real environment (`quickstart-results.md`)
@@ -163,13 +179,20 @@ a decision. Everything else is repository work and does not wait on them.
 - [ ] T036 [US5] SC-003: from outside, `POST /internal/platform/tenants` (with and without forged
       `X-Forwarded-For`) → 403 from Traefik (T022) — or 404 if the label is not matching, which is a
       T022 defect to fix, not a pass.
-- [ ] T037 [US1] SC-007: sign in, complete MFA, open a matter's documents, preview one.
+- [ ] T037 [US1] SC-007: sign in, complete MFA, open a matter's documents, preview one. **Blocked on
+      T041** for any firm but a demo one.
 - [ ] T038 [US3] SC-008: `IMAGE_TAG=sha-<previous>` → redeploy → previous `version` live < 3 min;
       then back to `main`.
 - [ ] T039 [US4] SC-009: download the latest scheduled backup from S3, run T024's script on it.
 
 ## Phase 9: Close
 
+- [ ] T041 After T013 chooses D13: make a real firm's first administrator reachable. If (a), the
+      seed endpoint returns the reference link once — test-first, a contract test on
+      `seed.controller.ts`; it changes 002/FR-035's response, so its own small PR.
+- [ ] T042 Constitution debt 13 (once ratified): CI's S3 key pair → GitHub OIDC to a role scoped to
+      the test bucket. Needs `object-store.config.ts` to accept the default credential chain, which it
+      does not today (it requires the static pair).
 - [ ] T040 Spec status → completed only when Phase 2's ratifications are in and T031–T039 are
       recorded; living specs synced if the slice changed any capability (it should not).
 
@@ -181,7 +204,7 @@ a decision. Everything else is repository work and does not wait on them.
 - Phase 2 (T012) → T029–T030 → Phase 8.
 - Phases 3, 4, 5, 6 (T024–T026) are repository work: start now, in any order; T017→T018→T019 and
   T020→T021 are strict TDD chains. T022 and T023 are `[P]`.
-- T028a is repository work and can start now. T027 and T028b need T012 (account and region) and
-  feed T039.
+- T027 and T028b need T012 (account and region) and feed T039.
+- T037 needs T041, which needs T013's choice on D13.
 - D9 (Phase 3) and D12 (Phase 4) are proposals: if T013 rejects either, its tasks are struck, not
   left open.

@@ -1,3 +1,7 @@
+# SUPERSEDED FOR THE MVP DEPLOYMENT (024 D1/D2/D14): there is no RDS or ECS to schedule against.
+# The retention run is deploy/scripts/audit-maintenance.sh, daily on the Dokploy host. Kept for the
+# day the stack returns to managed services.
+#
 # Skeleton only, matching main.tf — the AWS region remains a constitution
 # [PENDING] and this module does not commit to one. Not deployable in this slice:
 # nothing here may reach a network before slice 003 supplies session and MFA

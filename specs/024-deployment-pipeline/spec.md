@@ -8,6 +8,8 @@
 > **Citation convention.** Requirements of previous slices are cited as `001/FR-0NN`, `002/FR-0NN`, `003/FR-0NN`, `007/FR-0NN`, `018/FR-0NN`, `021/FR-0NN`, and `022/FR-0NN`. Bare `FR-0NN` refers to this document. Code is cited as `path:line` and was read at the commit this branch starts from.
 >
 > **Authorship & Governance.** Drafted on 2026-10-09 by Antigravity, then reviewed and corrected by Claude against the code (the platform-surface fix, the image layout, the variable inventory and the GHCR owner were wrong or out of date in the draft). Four architectural decisions were taken by the technical lead (Francisco) on 2026-10-09 (D1–D4); the rest are proposed. Nothing in this document is ratified until approved by Francisco.
+>
+> **Corrected 2026-10-26 by Claude (task T014)** against what was built and tested on PR 16: two images rather than three, the `main` tag, the inventory, the KMS edge case, the backup mechanism, and decisions D9–D14 added (see [plan.md](./plan.md) § Findings) — proposed, except D11 and D13, which are choices left open. FR-017 is left as written: its fate is D11, which is the technical lead's call.
 
 ---
 
@@ -56,7 +58,7 @@ A developer opens a pull request against `main`. Peer review is approved. All CI
 
 **Acceptance Scenarios**:
 
-1. **Given** a commit merged to `main`, **When** the CI workflow completes successfully, **Then** a release job builds multi-stage Docker images for `backend`, `frontend`, and `migrate`, tagged with both `sha-<commit>` and `latest`.
+1. **Given** a commit merged to `main`, **When** the CI workflow completes successfully, **Then** a release job builds the multi-stage `backend` image (which also runs the one-shot migration, Decision 5) and the `frontend` image, each tagged with both `sha-<commit>` and `main`.
 2. **Given** newly published images in GHCR, **When** GitHub Actions issues an authenticated POST request to Dokploy's deployment webhook, **Then** Dokploy accepts the trigger and initiates a service update.
 3. **Given** a service update in Dokploy, **When** deployment starts, **Then** the one-shot `migrate` container runs first to completion against the database before any new application container receives traffic.
 4. **Given** successful migration, **When** new `backend` and `frontend` containers pass health checks, **Then** Traefik routes traffic to them and terminates the old containers.
@@ -97,16 +99,16 @@ A release is deployed that passes automated tests but exhibits an unexpected run
 
 ### User Story 4 — Automated PostgreSQL Backups and Verified Restoration (Priority: P2)
 
-PostgreSQL runs as a container managed by Dokploy on the EC2 host (replacing managed AWS RDS per Decision D2). Daily automated backups are compressed, encrypted, and uploaded to AWS S3. A documented and tested restoration script allows recovering the database from an S3 backup snapshot onto a test or recovery instance.
+PostgreSQL runs as a container managed by Dokploy on the EC2 host (replacing managed AWS RDS per Decision D2). Daily automated backups — taken with grants and owners, which is where the isolation lives — are compressed, encrypted, and uploaded to AWS S3. A documented and tested restoration script allows recovering the database from an S3 backup snapshot onto a test or recovery instance.
 
 **Why this priority**: Moving from AWS RDS to self-hosted PostgreSQL transfers the entire burden of data safety, disaster recovery, and point-in-time recovery onto CC. Unbacked data under attorney-client privilege is an unacceptable existential risk.
 
-**Independent Test**: Trigger a scheduled backup job in Dokploy. Verify that a `.sql.gz` dump appears in the designated AWS S3 backup bucket. Download the dump to a clean environment, execute the restore script, and verify table row counts and RLS policy integrity (`npm run test:rls`).
+**Independent Test**: Run `deploy/scripts/backup.sh` (Decision 10). Verify that a `legalconnect-<timestamp>.dump.gz` appears in the designated AWS S3 backup bucket, encrypted with SSE-KMS and carrying its `sha256`. Download it to a clean environment and run `deploy/scripts/restore-check.sh` on it: it restores, matches a fresh migration's grants, owners, policies and roles, and passes `npm run verify:role` and `npm run test:rls`.
 
 **Acceptance Scenarios**:
 
-1. **Given** the containerized PostgreSQL instance, **When** the scheduled backup timer triggers, **Then** a full database dump (`pg_dump`) is executed, timestamped, compressed, and uploaded to the configured S3 backup bucket.
-2. **Given** an S3 backup artifact, **When** restored into an empty PostgreSQL database using the restore runbook, **Then** all schemas, tables, RLS policies, and roles (`lc_app`, `lc_auth`, etc.) are completely restored.
+1. **Given** the containerized PostgreSQL instance, **When** the scheduled backup timer triggers, **Then** a full database dump (`pg_dump -Fc` as the schema owner, grants and owners kept) is executed, timestamped, compressed, and uploaded to the configured S3 backup bucket — and a dump that fails partway uploads nothing.
+2. **Given** an S3 backup artifact, **When** restored into an empty PostgreSQL database using the restore runbook, **Then** all schemas, tables, RLS policies and grants are completely restored. The roles (`lc_app`, `lc_auth`, etc.) belong to the cluster, not the database, so no database dump carries them: the runbook creates them first from the migrations, and the migration job then sets their passwords.
 3. **Given** restored data, **When** `npm run verify:role` runs against it, **Then** all security constraints (non-superuser, no `BYPASSRLS`) pass.
 
 ---
@@ -131,7 +133,7 @@ An external attacker or scanner sends an HTTP request to `https://<api-domain>/i
 
 - **One-shot migration fails**: If `migrate.ts` fails (e.g., syntax error in migration script, lock contention), the container exits with non-zero status. Dokploy MUST NOT proceed with updating the `backend` or `frontend` containers; the deployment is marked failed, and running containers remain untouched.
 - **Postgres not yet accepting connections**: the migration job MUST start only once PostgreSQL is healthy (`depends_on: condition: service_healthy` or Dokploy's equivalent), and a failed connection MUST fail the job rather than be retried indefinitely.
-- **KMS outage or misconfigured IAM credentials**: If the EC2 instance lacks `kms:Decrypt` permission or `AUTH_KMS_KEY_ID` is invalid, `main.ts` fails during first TOTP operation (`key-provider.ts:159`). The health check must fail, preventing traffic routing to the unhealthy container.
+- **KMS outage or misconfigured IAM credentials**: If the EC2 instance lacks `kms:Decrypt` permission or `AUTH_KMS_KEY_ID` is invalid, nothing at boot used to notice — the first TOTP operation would fail, and `/health` (which probes only the database) would stay green. Under Decision 12 the API wraps and unwraps a canary through the key before listening and refuses to start if that fails, so the new container never becomes healthy and the previous one keeps serving. A KMS outage *after* boot still surfaces only on MFA operations; detecting it is a monitoring concern, not this slice's.
 - **CORS preflight rejection on frontend domain change**: If the frontend domain changes and `CORS_ALLOWED_ORIGINS` is not updated in Dokploy, browser requests fail with opaque errors (`main.ts:50-74`). Dokploy configuration must explicitly couple the two variables.
 - **GHCR rate limits or authentication expiration**: GitHub Actions authenticates to GHCR using `GITHUB_TOKEN` with `packages: write`. Dokploy authenticates to GHCR using a long-lived GitHub Personal Access Token (PAT) with `read:packages`. Expiration of this PAT blocks Dokploy image pulling; documentation must include credential rotation procedures.
 - **Concurrent webhook invocations**: If two commits are merged to `main` in quick succession, Dokploy must queue deployments serially rather than executing concurrent migrations that could cause DDL deadlocks.
@@ -154,11 +156,11 @@ An external attacker or scanner sends an HTTP request to `https://<api-domain>/i
 - **FR-010**: Container images MUST be built by GitHub Actions and pushed to GitHub Container Registry (`ghcr.io/fa-garciah/legalconnect-backend` and `ghcr.io/fa-garciah/legalconnect-frontend`, owner taken from the repository `fa-garciah/Legalconnect`) tagged with both `sha-<commit_sha>` and `main`.
 - **FR-011**: GitHub Actions MUST trigger deployment via an authenticated POST request to Dokploy's application webhook URL only after all CI quality gates pass.
 - **FR-012**: The PostgreSQL database MUST run as a container within Dokploy, storing its data on an EC2 persistent volume.
-- **FR-013**: The database container MUST execute automated daily backups to AWS S3, compressed and timestamped.
+- **FR-013**: The database MUST be backed up daily to AWS S3, compressed, timestamped and encrypted with SSE-KMS, **with grants and owners included** (Decision 10: Dokploy's built-in PostgreSQL backup omits both and does not qualify). A backup that fails partway MUST leave nothing in the bucket.
 - **FR-014**: The frontend container image MUST be built using a multi-stage Dockerfile that injects `NEXT_PUBLIC_API_BASE_URL` at build time to support direct browser auth calls.
 - **FR-015**: Both `backend` and `frontend` Docker images MUST run as unprivileged non-root users (`node`).
-- **FR-016**: The backend MUST gain a `/health` endpoint (none exists today: `GET /health` answers 404) that validates database connectivity and returns HTTP 200, used by Dokploy and Traefik for health checks. It MUST disclose nothing about tenants.
-- **FR-017**: Dokploy MUST implement rolling deployment or health-checked container replacement: incoming traffic is routed to the new container only after health checks pass.
+- **FR-016**: The backend MUST gain a `/health` endpoint (none exists today: `GET /health` answers 404) that validates database connectivity and returns HTTP 200, used by Dokploy and Traefik for health checks. It MUST disclose nothing about tenants. Under Decision 9 it reports the commit the image was built from, so the deploy can tell the new release from the old one.
+- **FR-017**: Dokploy MUST implement rolling deployment or health-checked container replacement: incoming traffic is routed to the new container only after health checks pass. *(Not met by the Compose shape as built — a redeploy stops the old API before the new one is healthy. Decision 11, pending.)*
 - **FR-018**: Dokploy MUST maintain previous image tags to allow single-click rollback from the Dokploy UI.
 
 ---
@@ -198,13 +200,19 @@ Every runtime variable declared in `backend/.env.example` and `frontend/.env.exa
 | **`backend`** | `AUTH_LOCKOUT_THRESHOLD` | Configuration. Failed MFA threshold (`5`). | Dokploy Environment |
 | **`backend`** | `AUTH_LOCKOUT_MINUTES` | Configuration. Lockout duration (`15`). | Dokploy Environment |
 | **`backend`** | `AUTH_BACKUP_CODE_COUNT` | Configuration. Backup code count (`10`). | Dokploy Environment |
-| **`frontend`**| `NEXTAUTH_URL` | Configuration. Canonical public HTTPS URL of frontend. | Dokploy Environment |
-| **`frontend`**| `NEXTAUTH_SECRET` | High secret. 32-byte encryption key for session cookies. | Dokploy Environment (Secret) |
-| **`frontend`**| `NEXT_PUBLIC_API_BASE_URL` | Configuration. Public HTTPS origin of backend API. | **GitHub Actions Build-Arg** & Dokploy |
-| **`frontend`**| `PORT` | Configuration. Port Next.js listens on (e.g., `3000`). | Dokploy Environment |
-| **`frontend`**| `NODE_ENV` | Configuration. Set to `production`. | Dokploy Environment |
-| **CI / GHA**  | `GHCR_TOKEN` / `GITHUB_TOKEN` | Secret. Permissions to publish packages to GHCR (`packages: write`).| GitHub Actions Secret |
-| **CI / GHA**  | `DOKPLOY_WEBHOOK_URL` | Secret. Webhook URL to trigger Dokploy deployment. | GitHub Actions Secret |
+| **`frontend`**| `APP_PUBLIC_URL` | Configuration. Canonical public HTTPS URL of the frontend. The compose maps it to both `AUTH_URL` and `NEXTAUTH_URL` (Auth.js v5 reads the first, `.env.example` documents the second) and fixes `AUTH_TRUST_HOST=true` behind the proxy. | Dokploy Environment |
+| **`frontend`**| `NEXTAUTH_SECRET` | High secret. 32-byte encryption key for session cookies; mapped to `AUTH_SECRET` too. | Dokploy Environment (Secret) |
+| **`frontend`**| `NEXT_PUBLIC_API_BASE_URL` | Configuration. Public HTTPS origin of backend API. Inlined into the browser bundle **at build time**, so setting it in Dokploy has no effect. | **GitHub Actions repository variable** → build arg |
+| **`frontend`**| `PORT`, `NODE_ENV` | Fixed in the image (`3000`, `production`). | `frontend/Dockerfile` |
+| **compose**   | `API_HOST` | Configuration. The API's domain, bare (no scheme). Used by the Traefik labels that refuse `/internal/*` at the edge. | Dokploy Environment |
+| **compose**   | `IMAGE_TAG` | Configuration. Which image tag runs: `main` normally, `sha-<commit>` to roll back (US3). | Dokploy Environment |
+| **image**     | `BUILD_SHA` | Not configuration. The commit the backend image was built from, reported by `/health` (Decision 9). | `deploy.yml` build arg |
+| **backup**    | `DATABASE_URL_BACKUP` | High secret. The schema owner's connection; a dump as `lc_app` could not read the grants. | Host schedule's environment (Secret) |
+| **backup**    | `BACKUP_TARGET`, `BACKUP_KMS_KEY_ID` | Configuration. `s3://<bucket>/<prefix>` and the SSE-KMS key. | Host schedule's environment |
+| **backup**    | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | Secret. An identity with `s3:PutObject` on the backup bucket and `kms:GenerateDataKey` on its key — or an instance profile instead. | Host schedule's environment (Secret) |
+| **CI / GHA**  | `GITHUB_TOKEN` | Automatic. Publishes to GHCR (`packages: write`); no PAT needed for the push. | Provided by Actions |
+| **CI / GHA**  | `DOKPLOY_WEBHOOK_URL` | Secret. Webhook URL to trigger Dokploy deployment. Until it exists, a green `main` only publishes images. | GitHub Actions Secret |
+| **Dokploy**   | GHCR pull credential | Secret. A PAT with `read:packages` only; its expiry date goes in `quickstart.md`. | Dokploy Registry settings |
 
 > **Note on "Bella Baxter"**: A dedicated secret management integration codenamed "Bella Baxter" is currently being evaluated separately by Cosmic Chimps. It is out of scope for this slice. For slice 024, runtime secrets live in Dokploy's encrypted environment store and build secrets live in GitHub Actions Secrets.
 
@@ -226,16 +234,15 @@ This slice introduces no end-user product capabilities and modifies no user arch
 
 ### Key Entities
 
-- **CI Pipeline (`.github/workflows/deploy.yml` or extended `ci.yml`)**: GitHub Actions workflow that executes all quality checks, builds Docker images on `main`, pushes to GHCR, and fires the Dokploy webhook.
+- **Deploy workflow (`.github/workflows/deploy.yml`)**: runs only after the `CI` workflow (`ci.yml`) finishes green on a push to `main`; builds the images from the commit CI tested, pushes to GHCR, fires the Dokploy webhook, waits for `/health` to report that commit, and checks from outside that the platform surface is refused.
 - **Docker Images in GHCR**:
   - `ghcr.io/fa-garciah/legalconnect-backend:<tag>`: NestJS production application; the same image runs the one-shot migration (`node dist/drizzle/migrate.js`).
   - `ghcr.io/fa-garciah/legalconnect-frontend:<tag>`: Next.js standalone production server.
 - **Dokploy Project Stack**: Self-hosted PaaS project on the EC2 host containing:
-  - Traefik edge reverse proxy.
-  - PostgreSQL container with persistent volume.
-  - `migrate` one-shot task.
-  - `backend` service container.
-  - `frontend` service container.
+  - Traefik edge reverse proxy (Dokploy's own).
+  - PostgreSQL as a separate Dokploy *Database* service with a persistent volume, on `dokploy-network`.
+  - A *Compose* service from `deploy/dokploy/docker-compose.yml`: the `migrate` one-shot task, then `backend`, then `frontend`.
+- **Backup job**: `deploy/scripts/backup.sh`, run daily on the host; `deploy/scripts/restore-check.sh` proves any backup; `deploy/runbooks/restore.md` is the procedure.
 - **S3 Backup Bucket**: AWS S3 bucket receiving encrypted daily PostgreSQL dumps.
 
 ---
@@ -257,7 +264,7 @@ This slice introduces no end-user product capabilities and modifies no user arch
 
 ## Decisions
 
-Four architectural decisions were taken by the technical lead (Francisco) on 2026-10-09 (D1–D4). Decisions D5–D8 are proposed to resolve implementation details.
+Four architectural decisions were taken by the technical lead (Francisco) on 2026-10-09 (D1–D4). Decisions D5–D8 are proposed to resolve implementation details; D9–D14 were added on 2026-10-26 from reading the built code against this spec (plan.md § Findings); D11 and D13 are choices left to the technical lead, the rest are proposed.
 
 ### Decision 1 — Dokploy on AWS EC2 replacing ECS Fargate
 
@@ -307,6 +314,42 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Proposed, implemented**: `backend/Dockerfile` and `frontend/Dockerfile` use multi-stage builds on `node:22-bookworm-slim` (glibc, so the prebuilt `@node-rs/argon2` binary loads; Alpine would need the musl build), discard devDependencies from the final image, and run as user `node`. Both images built and booted locally on 2026-10-09; with `NODE_ENV=production` and `AUTH_KEY_PROVIDER=local` the backend refuses to start, as designed.  
 **Why**: Minimizes container image attack surface, shrinks image transfer size to GHCR and EC2, and enforces least privilege execution inside containers.  
 **Cost**: Requires maintaining explicit build stages and dependency pruning in Dockerfiles.
+
+### Decision 9 — `/health` reports the build commit (Proposed, implemented)
+
+**Proposed**: The backend image carries `BUILD_SHA` (the commit CI tested); `/health` answers `{"status":"ok","version":"<sha>"}`, and the deploy workflow waits until it reports the commit it built.
+**Why**: The previous release answers `"ok"` too, so a wait for `"ok"` passed the moment it began and SC-001 could not be measured. A commit SHA is public in the repository and says nothing about any firm.
+**Cost**: `/health` now discloses which release is running — to anyone, by design.
+
+### Decision 10 — Our own backup script, not Dokploy's (Proposed, implemented; revised 2026-10-26)
+
+**Proposed**: `deploy/scripts/backup.sh` — `pg_dump -Fc` as the schema owner, gzip, upload to S3 with SSE-KMS only after the dump succeeded — run daily on the host.
+**Why**: Dokploy's built-in PostgreSQL backup runs `pg_dump --no-acl --no-owner`. `restore-check.sh` showed such a dump restoring without error into a database where every grant and every `EXECUTE` on the `SECURITY DEFINER` functions is gone.
+**Cost**: A script and a schedule of our own to keep, instead of a Dokploy checkbox.
+
+### Decision 11 — Accept a short redeploy gap for the MVP, or split the services (Pending — technical lead)
+
+**Options**: (a) keep the Compose service and accept a gap of roughly `start_period` + one probe on every deploy, amending FR-017's wording; (b) one Dokploy *Application* per service (Swarm, `start-first` rolling updates) with the migration as a pre-deploy step.
+**Proposed**: (a). One firm in demo, and (b) moves "migrate before the API" out of the one file that guarantees it today (`depends_on: service_completed_successfully`).
+**Cost of (a)**: FR-017 as written is not met; a few seconds of 502 per deploy.
+
+### Decision 12 — The API proves its KMS key at boot (Proposed, implemented)
+
+**Proposed**: In production and staging, the API wraps and unwraps a random canary through the configured key before listening, and refuses to start if that fails.
+**Why**: A wrong key id or a missing IAM grant otherwise deploys green and fails every MFA enrolment; `/health` deliberately probes only the database.
+**Cost**: One KMS round trip per container start, and a boot that fails during a KMS outage — which is the intended behaviour.
+
+### Decision 13 — How the first administrator of a real firm receives their invitation (Pending — technical lead)
+
+**Problem** (found 2026-10-26 while writing `quickstart.md`): `POST /internal/platform/tenants/:id/seed-administrator` (002/FR-035) generates the invitation token, stores its hash, and returns neither the token nor a link (`seed.service.ts:46-69`); no email provider exists yet. Tenant-issued invitations do return theirs (`invitation.service.ts:94`). So on a deployed environment the first administrator of a firm cannot be reached, and SC-007 cannot be met for anyone but a demo firm — and the demo seed refuses any non-local database by design (022/FR-012).
+**Options**: (a) the seed endpoint returns the reference link once, to its caller — who is, since Decision 6, only someone with a shell inside the backend container; (b) wire transactional email first (slice 002's plan decision, out of this slice's scope); (c) a one-off operator script that issues the seed invitation directly in the database and prints the link.
+**Proposed**: (a) — smallest change, and the caller is already the most privileged operator there is. It changes 002's contract, so it is its own small change with a contract test, not a line slipped into this slice.
+
+### Decision 14 — The audit log's scheduled duties run on the host (Proposed, implemented)
+
+**Proposed**: `deploy/scripts/audit-maintenance.sh`, daily on the host as `lc_retention`: creates the audit partitions for this month and the next two, and runs `backend/drizzle/retention.sql` (001/FR-019) taken from the backend image.
+**Why**: `infra/retention-schedule.tf` scheduled retention with EventBridge against RDS, neither of which exists under D1/D2; and the API creates partitions only at boot (`partition-maintenance.ts`, two months ahead), so a container left running longer than that would reach a month with no partition and every audited action would fail.
+**Cost**: A second host job beside the backup.
 
 ---
 
@@ -368,10 +411,16 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 - [ ] Decision 3 — Deploy flow: CI → GHCR → Dokploy webhook — *Decided by Francisco 2026-10-09*
 - [ ] Decision 4 — AWS S3 retained for document storage — *Decided by Francisco 2026-10-09*
 - [ ] Decision 5 — Ephemeral one-shot migration container — *Proposed, pending ratification by Francisco*
-- [ ] Decision 6 — Traefik perimeter protection for platform surface — *Proposed, pending ratification by Francisco*
+- [ ] Decision 6 — The platform surface checks its caller; the proxy is a second layer — *Proposed, pending ratification by Francisco*
 - [ ] Decision 7 — Frontend image built per environment with public API base URL — *Proposed, pending ratification by Francisco*
 - [ ] Decision 8 — Multi-stage production Dockerfiles with non-root user — *Proposed, pending ratification by Francisco*
+- [ ] Decision 9 — `/health` reports the build commit — *Proposed, pending ratification by Francisco*
+- [ ] Decision 10 — Our own backup script, not Dokploy's — *Proposed, pending ratification by Francisco*
+- [ ] Decision 11 — Redeploy gap vs split services — *Pending a choice by Francisco*
+- [ ] Decision 12 — KMS key proven at boot — *Proposed, pending ratification by Francisco*
+- [ ] Decision 13 — First administrator's invitation on a real environment — *Pending a choice by Francisco*
+- [ ] Decision 14 — Audit partitions and retention as a host job — *Proposed, pending ratification by Francisco*
 - [ ] Resolution of `[NEEDS CLARIFICATION: EC2 region]` and associated Data Residency amendment
 - [ ] Resolution of domain names, AWS account ownership, and staging environment scope
 - [ ] Findings F1–F6 reviewed against the code by Claude on 2026-10-09 (F1 reproduced against the built image), pending Francisco's read
-- [ ] Constitution amendment (Stack, MVP Prohibitions, Data Residency) written and ratified (not yet written)
+- [ ] Constitution amendment (Stack, MVP Prohibitions, Data Residency) written and ratified — *drafted 2026-10-26 in [constitution-amendment-draft.md](./constitution-amendment-draft.md), region still open; not ratified*

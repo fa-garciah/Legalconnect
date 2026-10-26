@@ -119,7 +119,17 @@ What remains is in three kinds:
    `pg_dumpall --globals-only` taken with each backup, minus passwords), then restores, then runs
    `migrate` once to set passwords from the environment (`migrate.ts`'s `ROLE_PASSWORD_ENV`).
 
-**Spec corrections to make alongside** (wording only): US1 scenario 1 names three images and a
+5. **(Added 2026-10-26.) Dokploy's own PostgreSQL backup drops every grant** — see D10, revised;
+   `restore-check.sh` demonstrates it.
+6. **(Added 2026-10-26.) Nothing schedules the audit log's upkeep.** Partitions are created only at
+   API boot, two months ahead (`partition-maintenance.ts`), and retention (001/FR-019) was an
+   EventBridge schedule against RDS (`infra/retention-schedule.tf`). → **D14**:
+   `deploy/scripts/audit-maintenance.sh`, daily on the host as `lc_retention`. Built and tested.
+7. **(Added 2026-10-26.) A real firm's first administrator cannot be reached.** The seed endpoint
+   keeps the invitation token to itself and no email provider exists. → **D13**, a choice for the
+   technical lead; blocks SC-007 for any non-demo firm.
+
+**Spec corrections to make alongside** (wording only; done 2026-10-26, T014): US1 scenario 1 names three images and a
 `latest` tag — it is two images (D5) and `main` (FR-010); the approval checklist still calls D6
 "Traefik perimeter protection"; the inventory's `NEXTAUTH_URL` is supplied as `APP_PUBLIC_URL`, which the
 compose maps to both `AUTH_URL` and `NEXTAUTH_URL` (`docker-compose.yml:78-82`).
