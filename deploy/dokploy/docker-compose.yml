@@ -64,6 +64,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    # 024/FR-001, second layer. The guard already answers /internal/* with 404 to anyone but a
+    # loopback peer; Traefik refuses it at the edge too (403), so a regression in the guard is not
+    # an open door. Dokploy generates the router for the API's domain from its UI; this one matches
+    # the same host plus the path, outranks it by priority, and admits only 127.0.0.1 — which no
+    # request arriving through the proxy is. Both entrypoints, so plain HTTP is no way round it.
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.middlewares.lc-internal-refuse.ipallowlist.sourcerange=127.0.0.1/32
+      - traefik.http.services.lc-internal-refuse.loadbalancer.server.port=3000
+      - traefik.http.routers.lc-internal-refuse-https.rule=Host(`${API_HOST}`) && (Path(`/internal`) || PathPrefix(`/internal/`))
+      - traefik.http.routers.lc-internal-refuse-https.entrypoints=websecure
+      - traefik.http.routers.lc-internal-refuse-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.lc-internal-refuse-https.priority=1000
+      - traefik.http.routers.lc-internal-refuse-https.middlewares=lc-internal-refuse
+      - traefik.http.routers.lc-internal-refuse-https.service=lc-internal-refuse
+      - traefik.http.routers.lc-internal-refuse-http.rule=Host(`${API_HOST}`) && (Path(`/internal`) || PathPrefix(`/internal/`))
+      - traefik.http.routers.lc-internal-refuse-http.entrypoints=web
+      - traefik.http.routers.lc-internal-refuse-http.priority=1000
+      - traefik.http.routers.lc-internal-refuse-http.middlewares=lc-internal-refuse
+      - traefik.http.routers.lc-internal-refuse-http.service=lc-internal-refuse
     networks: [dokploy-network]
 
   frontend:

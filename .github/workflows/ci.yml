@@ -207,6 +207,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # 024/SC-010: the production images are linted like the code that goes into them. Warnings
+  # fail; an inline ignore needs a comment saying why.
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [backend/Dockerfile, frontend/Dockerfile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          failure-threshold: warning
+
   # Principle VI: "dependency vulnerability scanning in CI. No critical CVEs on
   # main." Until 003 this ran only against `backend/`, so Next, React and the
   # ~40 Radix packages the frontend carries were never scanned at all. The
