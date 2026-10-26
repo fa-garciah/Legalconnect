@@ -61,3 +61,21 @@ The third row is why plan D10 changed: Dokploy's built-in PostgreSQL backup cann
 (`audit_event`, `tenant`). They would notice a `--no-acl` dump through `audit_event` alone; they would
 not notice one function's lost `EXECUTE` or one table's lost `SELECT`. That is why the script compares
 the whole security configuration with a fresh migration rather than relying on them alone.
+
+### Backup script (T028a)
+
+`deploy/scripts/backup.sh` against a migrated, demo-seeded PostgreSQL 16 (2 firms, 135 documents):
+
+| Case | Result |
+|---|---|
+| Local target | `legalconnect-20261026T143823Z.dump.gz`, 82 370 bytes; `restore-check.sh` **PASS** (6 role blocks, 49 migrations, fingerprint identical, 39/39) |
+| Wrong password; database that does not exist | exit 1, pg_dump's own error, **nothing written** to the target |
+| `pg_dump` killed mid-`COPY` (4 M-row scratch table, `pg_terminate_backend`) | exit 1 (`PQgetCopyData() failed`), **nothing written** to the target |
+| `DATABASE_URL_BACKUP` unset | exit 1 with the variable named |
+| S3 target (MinIO with its built-in KMS standing in for AWS, `BACKUP_KMS_KEY_ID=lc-backup-key`) | object `daily/legalconnect-20261026T144038Z.dump.gz`: `ServerSideEncryption: aws:kms`, `SSEKMSKeyId: …lc-backup-key`, metadata `sha256` equal to the downloaded file's; downloaded file through `restore-check.sh` **PASS** |
+
+Not yet exercised against real AWS S3/KMS or with an EC2 instance profile: T028b.
+
+The first S3 attempt failed on Windows because the CLI container bind-mounted a Git Bash `/tmp`
+path that Docker Desktop cannot see. The script now streams the finished file to `aws s3 cp -` on
+stdin, which needs no mount on any host.

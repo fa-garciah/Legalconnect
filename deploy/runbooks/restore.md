@@ -19,6 +19,12 @@ read 2026-10-26). Do not rely on it. `restore-check.sh` rejects it — verified 
 Accepted formats, both gzip-compressed: custom (`pg_dump -Fc`) or plain SQL (`pg_dump`), taken as the
 schema owner, with ACLs and owners.
 
+The daily backup is [`deploy/scripts/backup.sh`](../scripts/backup.sh): `pg_dump -Fc` as the schema
+owner, gzip, uploaded to S3 with SSE-KMS and the file's `sha256` in the object metadata, named
+`legalconnect-<UTC yyyymmddThhmmssZ>.dump.gz`. It uploads only after `pg_dump` has exited 0, so a
+backup that failed halfway never appears in the bucket. Compare the downloaded file's `sha256sum`
+with the object's `sha256` metadata before trusting it.
+
 ## Before restoring anything: prove the backup
 
 On any machine with Docker and a checkout of this repository:

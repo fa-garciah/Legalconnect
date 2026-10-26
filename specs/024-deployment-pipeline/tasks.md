@@ -122,14 +122,18 @@ a decision. Everything else is repository work and does not wait on them.
 - [x] T026 [US4] `deploy/runbooks/restore.md` — the manual form of T024 against the production
       host, including where backups live, how to pick one, and who may run it.
 - [ ] T027 **[Francisco]** [US4] Backup bucket: dedicated, versioned, default SSE-KMS, lifecycle
-      expiry (retention period is the lead's call), IAM user/role with `s3:PutObject` only on it.
+      expiry (retention period is the lead's call), IAM user/role with `s3:PutObject` only on it, plus
+      `kms:GenerateDataKey` on the backup key — an SSE-KMS upload is refused without it.
 - [ ] ~~T028 Dokploy Database service → Backups~~ — **struck 2026-10-26**: Dokploy's built-in
       PostgreSQL backup is `pg_dump -Fc --no-acl --no-owner`, which T025 shows restores into an
       unusable database (plan D10, revised).
-- [ ] T028a [US4] `deploy/scripts/backup.sh` — `pg_dump -Fc` as the schema owner (ACLs and owners
+- [x] T028a [US4] `deploy/scripts/backup.sh` — `pg_dump -Fc` as the schema owner (ACLs and owners
       kept) | gzip | `aws s3 cp -` to the T027 bucket with `--sse aws:kms`, key
       `legalconnect-<UTC timestamp>.dump.gz`; exits non-zero if any stage fails (`pipefail`). Proven
       locally by feeding its output to `restore-check.sh` (S3 stage stubbed with a local file).
+      *(Done, safer than written: the dump lands in a private temp dir and is uploaded only after
+      `pg_dump` exits 0, so a dump killed mid-`COPY` leaves nothing in the target — tested. S3 proven
+      against MinIO with SSE-KMS rather than stubbed; `sha256` in the object metadata.)*
 - [ ] T028b **[Francisco]** [US4] Schedule T028a daily on the host (Dokploy schedule or cron —
       `quickstart.md` records which) and run `restore-check.sh` on its first upload.
 
