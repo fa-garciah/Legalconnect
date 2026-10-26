@@ -15,7 +15,11 @@ COPY scripts ./scripts
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
-ENV NODE_ENV=production
+# The commit this image was built from; GET /health reports it so deploy.yml can wait for this
+# release rather than for any healthy container (024 D9).
+ARG BUILD_SHA=unknown
+ENV NODE_ENV=production \
+    BUILD_SHA=${BUILD_SHA}
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force

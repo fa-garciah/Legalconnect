@@ -9,8 +9,13 @@
  * no firm, and must answer the same whoever asks. Putting it beside the router rather than inside
  * it keeps the "every route declares a capability" rule exact instead of adding a fifth exception.
  *
- * It discloses nothing: `{"status":"ok"}` or `{"status":"unavailable"}`, never a version, a tenant
- * count or an error message. The probe is one `SELECT 1` on the application's own connection, the
+ * It discloses nothing about the firms or the infrastructure: `{"status":"ok","version":"<sha>"}` or
+ * `{"status":"unavailable"}`, never a tenant count or an error message. The version is the commit
+ * the image was built from (`BUILD_SHA`, set by deploy.yml); that commit is already public in the
+ * repository, and without it the post-deploy wait cannot tell the new release from the old one,
+ * which answers "ok" just the same (024 D9).
+ *
+ * The probe is one `SELECT 1` on the application's own connection, the
  * dependency a request cannot do without; object storage is not probed, because a slow S3 would
  * take every container out of rotation for a failure that affects only documents.
  */
@@ -48,9 +53,10 @@ export function registerHealthRoute(
   timeoutMs: number = PROBE_TIMEOUT_MS,
 ): void {
   const server = app.getHttpAdapter().getInstance() as HttpServer;
+  const version = process.env.BUILD_SHA || 'unknown';
   server.get('/health', (_request, response) => {
     withTimeout(probe(), timeoutMs).then(
-      () => response.status(200).json({ status: 'ok' }),
+      () => response.status(200).json({ status: 'ok', version }),
       () => response.status(503).json({ status: 'unavailable' }),
     );
   });

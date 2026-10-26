@@ -43,6 +43,9 @@ jobs:
         with:
           context: backend
           push: true
+          # GET /health reports it; the wait below compares against it (024 D9).
+          build-args: |
+            BUILD_SHA=${{ env.SHA }}
           tags: |
             ghcr.io/fa-garciah/legalconnect-backend:sha-${{ env.SHA }}
             ghcr.io/fa-garciah/legalconnect-backend:main
@@ -77,20 +80,25 @@ jobs:
     env:
       DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
       API: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       # Until Dokploy is configured, a green main still publishes images; it just deploys nothing.
       - name: Trigger Dokploy
         if: env.DOKPLOY_WEBHOOK_URL != ''
         run: curl --fail --silent --show-error -X POST "$DOKPLOY_WEBHOOK_URL"
 
-      - name: Wait for the API to report healthy
+      # The old release answers "ok" too, so "healthy" alone proves nothing: wait until the API
+      # reports the commit this run built (024 D9, SC-001).
+      - name: Wait for this release to be live
         if: env.DOKPLOY_WEBHOOK_URL != ''
         run: |
-          for i in $(seq 1 40); do
-            if curl --fail --silent "$API/health" | grep -q '"ok"'; then echo "healthy"; exit 0; fi
+          for _ in $(seq 1 40); do
+            live=$(curl --fail --silent "$API/health" | jq -r 'select(.status == "ok") | .version' || true)
+            if [ "$live" = "$SHA" ]; then echo "live: $SHA"; exit 0; fi
+            echo "waiting: ${live:-no healthy answer}"
             sleep 15
           done
-          echo "::error::$API/health did not report ok within 10 minutes"
+          echo "::error::$API/health did not report $SHA within 10 minutes"
           exit 1
 
       # 024/FR-002, SC-003. The platform surface creates firms and seeds administrators and
