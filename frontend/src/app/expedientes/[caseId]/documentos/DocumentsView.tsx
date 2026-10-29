@@ -8,7 +8,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Upload } from 'lucide-react';
@@ -34,6 +34,15 @@ export interface DocumentsViewProps {
 export function DocumentsView({ caseId, archetype }: DocumentsViewProps): React.JSX.Element {
   const [uploading, setUploading] = useState(false);
   const [previewing, setPreviewing] = useState<DocumentSummary | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  // Below xl the preview sits under the list, out of sight: "Ver" brings it into view, so the
+  // click visibly does something. Side by side, the page stays where it is.
+  const preview = (document: DocumentSummary): void => {
+    setPreviewing(document);
+    const sideBySide = typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 80rem)').matches;
+    if (!sideBySide) previewRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
 
   const caseQuery = useQuery<CaseDetail, FailedResponse | null>({
     queryKey: ['case', caseId],
@@ -67,15 +76,19 @@ export function DocumentsView({ caseId, archetype }: DocumentsViewProps): React.
   const mayRestore = can('document.restore', archetype);
 
   const list = (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    // Side by side from xl only, the list taking 5/8: at lg, half of what the sidebar leaves is too
+    // narrow for the table, which then scrolled sideways and hid the file name.
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,3fr)]">
       <DocumentList
         caseId={caseId}
         archetype={archetype}
         previewingId={previewing?.id ?? null}
-        onPreview={setPreviewing}
+        onPreview={preview}
         onWithdrawn={(id) => setPreviewing((current) => (current?.id === id ? null : current))}
       />
-      <PreviewPane caseId={caseId} document={previewing} mayDownload={mayDownload} />
+      <div ref={previewRef} className="scroll-mt-4">
+        <PreviewPane caseId={caseId} document={previewing} mayDownload={mayDownload} />
+      </div>
     </div>
   );
 
