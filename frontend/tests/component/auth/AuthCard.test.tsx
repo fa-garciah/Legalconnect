@@ -2,17 +2,20 @@
  * The frame every authentication screen sits in. `020-design-language`, FR-010.
  *
  * FR-010 requires the four authentication screens to carry the product's identity — they are
- * the first thing a firm sees — and until now they were a plain card with a sans title on a
- * grey ground. The frame now reads, at a glance, as a legal-and-fiscal system for Mexican
- * firms: a brand panel with a stylised fiscal voucher (RFC, folio fiscal, régimen) beside the
- * form.
+ * the first thing a firm sees. The panel shows a case-file cover (carátula): the file number,
+ * the kind of proceeding and the parties, which is the object the product is built around.
  *
- * Two constraints are asserted rather than trusted:
- *   - the voucher is DECORATION and is hidden from assistive technology, so a screen-reader
- *     user is not read a fake RFC and a fake UUID before the actual form;
- *   - every claim the panel makes in words is one the product already honours. Invoicing and
- *     CFDI stamping are not built (slice 011 does not exist; the PAC is still [PENDING]), so
- *     the copy must not promise them.
+ * It replaced a stylised fiscal voucher on 2026-10-29. The voucher was the largest thing on the
+ * first screen and showed an RFC, a folio fiscal and a total — invoicing that is not built
+ * (slice 011 does not exist; the PAC is still [PENDING]). The `data-claim` check below could not
+ * see it, because decoration carried no `data-claim`: the strongest promise on the page was
+ * exactly the one the test did not read. So the promise check now reads the WHOLE panel.
+ *
+ * Constraints asserted rather than trusted:
+ *   - the cover is DECORATION and is hidden from assistive technology, so a screen-reader user
+ *     is not read a fictitious file number and fictitious parties before the actual form;
+ *   - nothing on the panel, decoration included, promises invoicing or stamping;
+ *   - no eyebrow: no uppercase, letter-spaced label above the headline (craft floor ban).
  */
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -40,24 +43,35 @@ describe('AuthCard', () => {
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeInTheDocument();
   });
 
-  it('shows the fiscal voucher, hidden from assistive technology', () => {
+  it('shows a case-file cover, hidden from assistive technology', () => {
     renderCard();
-    const voucher = screen.getByTestId('auth-fiscal-voucher');
-    expect(voucher).toHaveAttribute('aria-hidden', 'true');
-    expect(voucher.textContent).toMatch(/RFC/);
-    expect(voucher.textContent).toMatch(/Folio fiscal/);
+    const cover = screen.getByTestId('auth-case-cover');
+    expect(cover).toHaveAttribute('aria-hidden', 'true');
+    expect(cover.textContent).toMatch(/EXP-\d{4}-\d{4}/);
+    expect(cover.textContent).toMatch(/Actor/);
+    expect(cover.textContent).toMatch(/Demandado/);
   });
 
-  it('claims only what the product already does — no invoicing or stamping promises', () => {
+  it('promises no invoicing or stamping anywhere on the panel, decoration included', () => {
     renderCard();
     const panel = screen.getByTestId('auth-brand-panel');
-    // Text a reader is actually told, excluding the decorative voucher.
-    const claims = [...panel.querySelectorAll('[data-claim]')].map((n) => n.textContent ?? '');
-    expect(claims.length).toBeGreaterThan(0);
-    for (const claim of claims) {
-      // Word-bounded: an unbounded, case-insensitive `pac` matches inside "des-PAC-hos",
-      // which is how the first version of this assertion failed a sentence making no claim.
-      expect(claim).not.toMatch(/\b(timbr\w*|factur\w*|CFDI|PAC)\b/i);
+    expect(panel.querySelectorAll('[data-claim]').length).toBeGreaterThan(0);
+    // Word-bounded: an unbounded, case-insensitive `pac` matches inside "des-PAC-hos", which is
+    // how the first version of this assertion failed a sentence making no claim.
+    expect(panel.textContent).not.toMatch(
+      /\b(timbr\w*|factur\w*|CFDI|PAC|fiscal\w*|ERP)\b/i,
+    );
+  });
+
+  it('carries no eyebrow — no uppercase, letter-spaced label anywhere in the frame', () => {
+    const { container } = render(
+      <AuthCard title="Ingresar" description="d">
+        <span />
+      </AuthCard>,
+    );
+    for (const node of container.querySelectorAll('*')) {
+      const className = typeof node.className === 'string' ? node.className : '';
+      expect(className).not.toMatch(/\buppercase\b/);
     }
   });
 
