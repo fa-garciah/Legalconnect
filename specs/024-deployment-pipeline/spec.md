@@ -351,6 +351,13 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Why**: `infra/retention-schedule.tf` scheduled retention with EventBridge against RDS, neither of which exists under D1/D2; and the API creates partitions only at boot (`partition-maintenance.ts`, two months ahead), so a container left running longer than that would reach a month with no partition and every audited action would fail.
 **Cost**: A second host job beside the backup.
 
+### Decision 15 — CI reads its secrets from Bella Baxter, keyless (Taken by Francisco 2026-10-29; first step: CI only)
+
+**Taken**: Secrets move to Bella Baxter, Cosmic Chimps' secret-management gateway, self-hosted, with Bella's own OpenBao as the store. First step: CI only. The `quality` job exchanges its GitHub OIDC token for a short-lived Bella key (`cosmic-chimps/bella-baxter-setup-action`, trust domain bound to this repository) and reads the test bucket's credentials from the Bella project `legalconnect-ci`, environment `test`. Runtime containers follow later, one Bella API key per service (decided, not yet built).
+**Why**: GitHub stops holding long-lived credentials (the constitution's "no long-lived credentials in CI"; amendment draft, debt 13) without first changing how the application reads S3 credentials (T042's obstacle).
+**Transition**: while the repository variable `BELLA_BAXTER_URL` is unset, the same CI step reads the GitHub variables and secrets as before, so CI does not depend on Bella until Bella is ready.
+**Cost**: CI depends on a self-hosted service that must be reachable from GitHub over public HTTPS with a publicly trusted certificate, and that seals on every host restart until two of three unseal keys are entered. The setup action exists only in preview tags (`v0.1.1-preview.109` pinned).
+
 ---
 
 ## Constitution Amendments Required
@@ -420,6 +427,7 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 - [ ] Decision 12 — KMS key proven at boot — *Proposed, pending ratification by Francisco*
 - [ ] Decision 13 — First administrator's invitation on a real environment — *Pending a choice by Francisco*
 - [ ] Decision 14 — Audit partitions and retention as a host job — *Proposed, pending ratification by Francisco*
+- [x] Decision 15 — CI secrets from Bella Baxter, keyless — *Taken by Francisco 2026-10-29 (instance self-hosted, Bella's OpenBao, one API key per service later, CI first)*
 - [ ] Resolution of `[NEEDS CLARIFICATION: EC2 region]` and associated Data Residency amendment
 - [ ] Resolution of domain names, AWS account ownership, and staging environment scope
 - [ ] Findings F1–F6 reviewed against the code by Claude on 2026-10-09 (F1 reproduced against the built image), pending Francisco's read

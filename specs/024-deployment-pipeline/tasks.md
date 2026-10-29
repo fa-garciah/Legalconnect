@@ -193,6 +193,29 @@ a decision. Everything else is repository work and does not wait on them.
 - [ ] T042 Constitution debt 13 (once ratified): CI's S3 key pair → GitHub OIDC to a role scoped to
       the test bucket. Needs `object-store.config.ts` to accept the default credential chain, which it
       does not today (it requires the static pair).
+
+### D15 — CI secrets from Bella Baxter
+
+- [x] T043 `ci.yml`: the `quality` job loads the five `OBJECT_STORE_*` values in one step, from
+      Bella (setup action, OIDC, `legalconnect-ci`/`test`) when `vars.BELLA_BAXTER_URL` is set, else
+      from the GitHub variables and secrets; reads four keys without sourcing the file, masks them,
+      fails naming what is missing. `id-token: write` on that job only. actionlint clean; the step's
+      shell tested against a fake `bella` (quoted values, a `$(…)` value left unexecuted, fallback,
+      missing keys).
+- [ ] T044 **[Francisco]** A reachable Bella instance: CC's existing one, or self-hosted on its own
+      host (the bundle needs ports 443/8444/9443, which collide with Dokploy's Traefik), public DNS
+      and a publicly trusted certificate so GitHub's runners can call it.
+- [ ] T045 **[Francisco]** In Bella: project `legalconnect-ci`, environment `test`, the four secrets
+      `OBJECT_STORE_REGION`, `OBJECT_STORE_TEST_BUCKET`, `OBJECT_STORE_ACCESS_KEY_ID`,
+      `OBJECT_STORE_SECRET_ACCESS_KEY`; a trust domain on that environment with issuer
+      `https://token.actions.githubusercontent.com`, claim rule `repository` Equals
+      `fa-garciah/Legalconnect`, audience `bella-baxter`, role `Consumer`.
+- [ ] T046 **[Francisco]** Repository variables `BELLA_BAXTER_URL` (the API origin, not the
+      console) and `BELLA_BAXTER_TENANT`; then a CI run must log `object store: Bella Baxter
+      (legalconnect-ci / test)` and pass the S3 suites.
+- [ ] T047 After T046 is green: delete the GitHub secrets `OBJECT_STORE_ACCESS_KEY_ID` and
+      `OBJECT_STORE_SECRET_ACCESS_KEY` (and the two variables), and remove the fallback branch from
+      the step. Then T042 is done by D15 instead.
 - [ ] T040 Spec status → completed only when Phase 2's ratifications are in and T031–T039 are
       recorded; living specs synced if the slice changed any capability (it should not).
 
