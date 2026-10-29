@@ -6,6 +6,7 @@ import { Shell } from "../shell/Shell";
 import { NAVIGATION_ITEMS } from "../shell/navigation-items";
 import { getPrincipal } from "../session/principal";
 import { readActiveTenantServer } from "../session/active-tenant.server";
+import { safeDestination } from "../session/destination";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -97,7 +98,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    * sign-in with nothing left to bounce them.
    */
   if (!unchromed && !principal.authenticated) {
-    redirect("/api/sesion/expirada");
+    // The page the session died on rides along, so signing in again resumes it (2026-10-29).
+    const destino = safeDestination(pathname);
+    redirect(destino ? `/api/sesion/expirada?destino=${encodeURIComponent(destino)}` : "/api/sesion/expirada");
   }
 
   if (unchromed) {

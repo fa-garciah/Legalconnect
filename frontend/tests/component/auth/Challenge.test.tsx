@@ -14,10 +14,11 @@ import { ChallengeForm } from '@/app/(auth)/verificar/ChallengeForm';
 const push = vi.fn();
 const refresh = vi.fn();
 const signIn = vi.fn();
+let search = 'reto=opaque-challenge-token';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
-  useSearchParams: () => new URLSearchParams('reto=opaque-challenge-token'),
+  useSearchParams: () => new URLSearchParams(search),
 }));
 vi.mock('next-auth/react', () => ({ signIn: (...args: unknown[]) => signIn(...args) }));
 
@@ -26,6 +27,34 @@ describe('ChallengeForm (T051)', () => {
     push.mockReset();
     refresh.mockReset();
     signIn.mockReset();
+    search = 'reto=opaque-challenge-token';
+  });
+
+  it('focuses the code field, so the code can be typed straight away', () => {
+    render(<ChallengeForm />);
+    expect(screen.getByRole('textbox')).toHaveFocus();
+  });
+
+  it('resumes where the person was going when sign-in carried a destino', async () => {
+    search = 'reto=opaque-challenge-token&destino=%2Fclientes';
+    signIn.mockResolvedValue({ error: undefined });
+    render(<ChallengeForm />);
+
+    await userEvent.type(screen.getByRole('textbox'), '492013');
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/clientes'));
+  });
+
+  it('ignores a destino that leaves the product — no open redirect', async () => {
+    search = 'reto=opaque-challenge-token&destino=%2F%2Fevil.example';
+    signIn.mockResolvedValue({ error: undefined });
+    render(<ChallengeForm />);
+
+    await userEvent.type(screen.getByRole('textbox'), '492013');
+    await userEvent.click(screen.getByRole('button', { name: 'Verificar' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/'));
   });
 
   it('is in Spanish (FR-049, SC-026)', () => {

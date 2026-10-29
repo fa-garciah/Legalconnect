@@ -26,7 +26,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3
 /** The one message. Never varied by cause. */
 const REFUSED = 'No fue posible completar el acceso. Revisa tus datos e inténtalo de nuevo.';
 
-export function SignInForm(): React.JSX.Element {
+export function SignInForm({
+  destino = null,
+}: {
+  /** Where the person was going, already checked by `safeDestination` on the page. */
+  destino?: string | null;
+} = {}): React.JSX.Element {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +62,9 @@ export function SignInForm(): React.JSX.Element {
       // localStorage, sessionStorage and IndexedDB, and this token is short-lived
       // and single-use so a history entry outlives its usefulness by design.
       const destination = body.next === 'enrollment' ? '/enrolar' : '/verificar';
-      router.push(`${destination}?reto=${encodeURIComponent(body.challengeToken)}`);
+      // `destino` rides along so the last step can resume where the person was going.
+      const resume = destino ? `&destino=${encodeURIComponent(destino)}` : '';
+      router.push(`${destination}?reto=${encodeURIComponent(body.challengeToken)}${resume}`);
     } catch {
       setError(REFUSED);
     } finally {
