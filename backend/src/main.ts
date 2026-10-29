@@ -4,8 +4,12 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { assertApplicationRoleIsSafe } from './common/db/client';
-import { assertKeyProviderIsSafe } from './common/auth/deployment-assertions';
+import {
+  assertKeyProviderIsSafe,
+  assertKeyProviderReachable,
+} from './common/auth/deployment-assertions';
 import { ensureUpcomingPartitions } from './modules/audit/partition-maintenance';
+import { registerHealthRoute } from './common/http/health';
 
 function loadEnvFile(path: string): void {
   if (!existsSync(path)) return;
@@ -35,6 +39,8 @@ async function bootstrap(): Promise<void> {
   // working second factors, which is precisely what SC-008 says must be impossible.
   // An assertion, not a warning, and deliberately with no override flag.
   assertKeyProviderIsSafe();
+  // 024 D12. That the provider is KMS is not that the key works: prove it before listening.
+  await assertKeyProviderReachable();
 
   // Best-effort. A month with no partition waiting causes inserts into it to fail
   // later; it does not mean isolation is broken now, so unlike the role check above
@@ -99,6 +105,9 @@ async function bootstrap(): Promise<void> {
         'Set it to the frontend origin, or leave it unset deliberately for a server-to-server deployment.',
     );
   }
+
+  // 024/FR-016. Beside the router rather than in it — see health.ts.
+  registerHealthRoute(app);
 
   const port = Number(process.env.PORT ?? 3000);
 

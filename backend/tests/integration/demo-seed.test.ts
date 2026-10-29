@@ -37,7 +37,7 @@ const DEMO_RFCS = DEMO_FIRMS.map((f) => f.rfc);
 /**
  * Runs the command. A non-zero exit is TOLERATED and inspected rather than thrown, because
  * FR-016 makes "the object store was unreachable" a non-zero exit with every row still
- * written — the state of this machine, where `quay.io` refuses the MinIO image. The database
+ * written — the state of any machine with no reachable bucket configured. The database
  * assertions below must hold in both cases; only the object assertions are conditional.
  */
 function runDemoSeed(asOf?: string): { readonly stdout: string; readonly code: number } {
@@ -545,8 +545,7 @@ describe('the demo firm seed', () => {
       if (firstRun.code === 0) {
         expect(firstRun.stdout).not.toContain('sin bytes');
       } else {
-        // The state of this machine on 2026-09-25: quay.io refuses the MinIO image, so the
-        // store is unreachable. Rows are written, the failure is named, the exit is non-zero.
+        // No reachable bucket: rows are written, the failure is named, the exit is non-zero.
         expect(firstRun.stdout).toContain('sin bytes');
         expect(firstRun.code).toBe(1);
       }

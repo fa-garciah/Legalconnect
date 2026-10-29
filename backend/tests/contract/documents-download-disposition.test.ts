@@ -2,8 +2,8 @@
  * 021 T005 (Decision 4). A downloaded document keeps its original name.
  *
  * The signed URL asks the object store to answer with `Content-Disposition`: `attachment` and the
- * original filename for download, `inline` for preview. Asserted against the real MinIO the suite
- * runs with, not only on the URL — the header is what the browser acts on.
+ * original filename for download, `inline` for preview. Asserted against the real S3 test bucket
+ * the suite runs with, not only on the URL — the header is what the browser acts on.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';

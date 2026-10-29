@@ -9,6 +9,10 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # id-token: the GitHub OIDC token Bella Baxter exchanges for a short-lived key (024 D15).
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: backend
@@ -51,12 +55,11 @@ jobs:
       # Every key `.env.example` declares must be set here — `check:env` below asserts
       # exactly that, so CI proves the documented set is sufficient to run the
       # application rather than merely that a developer's own `.env` happens to work.
-      OBJECT_STORE_ENDPOINT: http://localhost:9000
-      OBJECT_STORE_REGION: us-east-1
-      OBJECT_STORE_BUCKET: legalconnect-documents-ci
-      OBJECT_STORE_ACCESS_KEY_ID: lc_minio_ci
-      OBJECT_STORE_SECRET_ACCESS_KEY: lc_minio_ci_password
-      OBJECT_STORE_FORCE_PATH_STYLE: 'true'
+      #
+      # 007's document suites exercise real S3 behaviour — signing, expiry, cross-tenant
+      # pre-signed URL isolation — against a real AWS bucket kept for tests, not a mock. The
+      # five OBJECT_STORE_* values are NOT set here: the "Object-store test credentials" step
+      # below loads them, from Bella Baxter or from GitHub (024 D15).
       EMAIL_PROVIDER_REGION: us-east-1
       EMAIL_SENDER_ADDRESS: no-reply@legalconnect.mx
       INVITATION_MAX_FAILED_ATTEMPTS: '10'
@@ -89,34 +92,63 @@ jobs:
 
       - run: npm ci
 
-      # 007-document-management, research.md D6. The document suites exercise real
-      # S3-API behaviour — signing, expiry, cross-tenant pre-signed URL isolation —
-      # against MinIO rather than a mock, so CI needs the same service local dev runs.
-      #
-      # A STEP, NOT A `services:` CONTAINER, and pinned on quay.io — both forced, not chosen.
-      # `minio/minio` no longer exists on Docker Hub: from the merge of 005 onward every
-      # run died at "Initialize containers" with "pull access denied", before checkout, so
-      # main was red and not one backend test ran. The old `edge-cicd` tag existed only
-      # because it starts `server /data` by default; the standard image needs that argument,
-      # and GitHub's `services:` block cannot pass one. It also no longer ships `curl`, so
-      # health is polled from the runner instead of from inside the container.
-      - name: Start the object store
-        run: |
-          docker run -d --name lc-minio -p 9000:9000             -e MINIO_ROOT_USER=lc_minio_ci -e MINIO_ROOT_PASSWORD=lc_minio_ci_password             quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:9000/minio/health/live && exit 0
-            sleep 2
-          done
-          docker logs lc-minio
-          exit 1
+      # 024 D15 — the test bucket's credentials. With the repository variable
+      # BELLA_BAXTER_URL set, Bella Baxter hands them over through GitHub OIDC: the job
+      # proves it is this repository and gets a short-lived key, so GitHub stores nothing
+      # long-lived (constitution draft, debt 13). Unset, the step reads the GitHub variables
+      # and secrets as before, so CI keeps working while the move is in progress.
+      - name: Bella Baxter CLI (keyless)
+        if: vars.BELLA_BAXTER_URL != ''
+        uses: cosmic-chimps/bella-baxter-setup-action@v0.1.1-preview.109
+        with:
+          bella-url: ${{ vars.BELLA_BAXTER_URL }}
+          oidc: 'true'
+          tenant: ${{ vars.BELLA_BAXTER_TENANT }}
+          project: legalconnect-ci
+          environment: test
 
-      # Creates the bucket the application expects. MinIO comes up HEALTHY with no bucket
-      # in it, and every upload then fails with a 500 that looks like application code.
-      # Uses the `mc` shipped inside the MinIO image rather than downloading a binary.
-      - name: Create the object-store bucket
+      # Reads exactly four keys, never sources the file: a value is data, and a `$(…)` in one
+      # must not run. Masked before anything could print them; fails naming what is missing
+      # rather than letting the S3 suites fail later for no visible reason.
+      - name: Object-store test credentials
+        env:
+          FROM_BELLA: ${{ vars.BELLA_BAXTER_URL != '' }}
+          GH_REGION: ${{ vars.OBJECT_STORE_REGION }}
+          GH_BUCKET: ${{ vars.OBJECT_STORE_TEST_BUCKET }}
+          GH_KEY_ID: ${{ secrets.OBJECT_STORE_ACCESS_KEY_ID }}
+          GH_SECRET: ${{ secrets.OBJECT_STORE_SECRET_ACCESS_KEY }}
         run: |
-          docker exec lc-minio mc alias set ci http://localhost:9000 lc_minio_ci lc_minio_ci_password
-          docker exec lc-minio mc mb --ignore-existing ci/legalconnect-documents-ci
+          if [ "$FROM_BELLA" = "true" ]; then
+            dir=$(mktemp -d)
+            (cd "$dir" && bella pull -p legalconnect-ci -e test >/dev/null)
+            val() { sed -n "s/^$1=//p" "$dir/.env" | head -n 1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"; }
+            region=$(val OBJECT_STORE_REGION); bucket=$(val OBJECT_STORE_TEST_BUCKET)
+            key_id=$(val OBJECT_STORE_ACCESS_KEY_ID); secret=$(val OBJECT_STORE_SECRET_ACCESS_KEY)
+            rm -rf "$dir"
+            source_name="Bella Baxter (legalconnect-ci / test)"
+          else
+            region=$GH_REGION; bucket=$GH_BUCKET; key_id=$GH_KEY_ID; secret=$GH_SECRET
+            source_name="GitHub variables and secrets"
+          fi
+          [ -n "$key_id" ] && echo "::add-mask::$key_id"
+          [ -n "$secret" ] && echo "::add-mask::$secret"
+          missing=""
+          [ -n "$region" ] || missing="$missing OBJECT_STORE_REGION"
+          [ -n "$bucket" ] || missing="$missing OBJECT_STORE_TEST_BUCKET"
+          [ -n "$key_id" ] || missing="$missing OBJECT_STORE_ACCESS_KEY_ID"
+          [ -n "$secret" ] || missing="$missing OBJECT_STORE_SECRET_ACCESS_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing from $source_name:$missing"
+            exit 1
+          fi
+          {
+            echo "OBJECT_STORE_REGION=$region"
+            echo "OBJECT_STORE_BUCKET=$bucket"
+            echo "OBJECT_STORE_TEST_BUCKET=$bucket"
+            echo "OBJECT_STORE_ACCESS_KEY_ID=$key_id"
+            echo "OBJECT_STORE_SECRET_ACCESS_KEY=$secret"
+          } >> "$GITHUB_ENV"
+          echo "object store: $source_name"
 
       # Leads the quality gates because a drifted environment makes every gate below it
       # fail for reasons that have nothing to do with the code — three separate incidents
@@ -231,6 +263,21 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 024/SC-010: the production images are linted like the code that goes into them. Warnings
+  # fail; an inline ignore needs a comment saying why.
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [backend/Dockerfile, frontend/Dockerfile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          failure-threshold: warning
 
   # Principle VI: "dependency vulnerability scanning in CI. No critical CVEs on
   # main." Until 003 this ran only against `backend/`, so Next, React and the

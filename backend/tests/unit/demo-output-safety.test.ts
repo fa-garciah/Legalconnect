@@ -60,9 +60,14 @@ describe('what the table must never contain (FR-020, Principle VI)', () => {
   });
 
   it('carries no database role password from .env', () => {
-    for (const secret of ['lc_migration_dev', 'lc_app_dev', 'lc_auth_dev', 'lc_minio_dev_password']) {
+    for (const secret of ['lc_migration_dev', 'lc_app_dev', 'lc_auth_dev']) {
       expect(everything).not.toContain(secret);
     }
+  });
+
+  it('carries no object-store secret key', () => {
+    const secret = process.env.OBJECT_STORE_SECRET_ACCESS_KEY;
+    if (secret) expect(everything).not.toContain(secret);
   });
 
   it('carries no AUTH_LOCAL_KEY material', () => {

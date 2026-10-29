@@ -1,8 +1,8 @@
 /**
  * T006, T009a, T009b — contract for `GET /tenant/documents`. 023/FR-001 … FR-005, FR-016.
  *
- * WHAT MAKES THIS TESTABLE WITHOUT MINIO, which matters on a machine where the image cannot
- * be pulled: the firm-wide list never touches the object store. It reads metadata. So the
+ * WHAT MAKES THIS TESTABLE WITHOUT THE OBJECT STORE, which matters on a machine with no
+ * test bucket configured: the firm-wide list never touches the object store. It reads metadata. So the
  * fixtures here insert `document` rows directly on the migration connection — the standing
  * `drizzle/seed.ts` already has for fixture setup — rather than uploading through the API.
  * Preview and download, which DO reach the store, are `021`'s and are not re-tested here.

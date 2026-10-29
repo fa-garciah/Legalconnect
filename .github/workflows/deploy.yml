@@ -1,0 +1,114 @@
+name: Deploy
+
+# 024-deployment-pipeline (D3). Runs only after the CI workflow finished GREEN on a push to main:
+# nothing that failed a gate is ever built into an image, let alone deployed (US2, SC-002).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+# One deployment at a time; a newer green main waits for the one in flight rather than racing its
+# migrations (spec edge case "concurrent webhook invocations").
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # The commit CI actually tested — not whatever main points at by the time this runs.
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # One image runs both the API and the one-shot migration job (024 D5).
+      - name: Backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          # GET /health reports it; the wait below compares against it (024 D9).
+          build-args: |
+            BUILD_SHA=${{ env.SHA }}
+          tags: |
+            ghcr.io/fa-garciah/legalconnect-backend:sha-${{ env.SHA }}
+            ghcr.io/fa-garciah/legalconnect-backend:main
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      # NEXT_PUBLIC_API_BASE_URL is inlined into the browser bundle at build time (024 D7), so it
+      # is a repository VARIABLE read here, not a runtime setting in Dokploy.
+      - name: Check the frontend's API origin is configured
+        run: |
+          if [ -z "${{ vars.NEXT_PUBLIC_API_BASE_URL }}" ]; then
+            echo "::error::Set the repository variable NEXT_PUBLIC_API_BASE_URL (e.g. https://api.example.mx)."
+            exit 1
+          fi
+
+      - name: Frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          tags: |
+            ghcr.io/fa-garciah/legalconnect-frontend:sha-${{ env.SHA }}
+            ghcr.io/fa-garciah/legalconnect-frontend:main
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+      API: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      # Until Dokploy is configured, a green main still publishes images; it just deploys nothing.
+      - name: Trigger Dokploy
+        if: env.DOKPLOY_WEBHOOK_URL != ''
+        run: curl --fail --silent --show-error -X POST "$DOKPLOY_WEBHOOK_URL"
+
+      # The old release answers "ok" too, so "healthy" alone proves nothing: wait until the API
+      # reports the commit this run built (024 D9, SC-001).
+      - name: Wait for this release to be live
+        if: env.DOKPLOY_WEBHOOK_URL != ''
+        run: |
+          for _ in $(seq 1 40); do
+            live=$(curl --fail --silent "$API/health" | jq -r 'select(.status == "ok") | .version' || true)
+            if [ "$live" = "$SHA" ]; then echo "live: $SHA"; exit 0; fi
+            echo "waiting: ${live:-no healthy answer}"
+            sleep 15
+          done
+          echo "::error::$API/health did not report $SHA within 10 minutes"
+          exit 1
+
+      # 024/FR-002, SC-003. The platform surface creates firms and seeds administrators and
+      # authenticates nobody; from the internet it must not answer, whatever the proxy does.
+      - name: The platform surface is unreachable from outside
+        if: env.DOKPLOY_WEBHOOK_URL != ''
+        run: |
+          code=$(curl --silent --output /dev/null --write-out '%{http_code}' -X POST "$API/internal/platform/tenants" \
+            -H 'content-type: application/json' -H 'x-forwarded-for: 127.0.0.1' -d '{}')
+          echo "POST /internal/platform/tenants -> $code"
+          # Only a refusal passes: the guard's 404 or a proxy's 403. A reachable surface answers an
+          # empty body with 400 (validation), so "not 2xx" alone would let it through.
+          case "$code" in 403|404) ;; *) echo "::error::the platform surface answered from the internet ($code)"; exit 1;; esac

@@ -40,8 +40,7 @@ they accounted for **23 failures that were not code defects**:
 cd backend
 npm install                                                    # 007 declared @aws-sdk/* without an install
 sed -n '50,62p' .env.example >> .env                           # 007's OBJECT_STORE_* block
-docker exec legalconnect-minio-dev mc alias set local   http://localhost:9000 lc_minio_dev lc_minio_dev_password
-docker exec legalconnect-minio-dev mc mb local/legalconnect-documents-dev   # the bucket
+npm run check:storage                                          # OBJECT_STORE_* reaches the S3 bucket
 ```
 
 Plus four keys that were in `.env.example` and absent from `.env`:
@@ -56,9 +55,8 @@ Plus four keys that were in `.env.example` and absent from `.env`:
   swallowed. **Every** test that boots `AppModule` failed — 004's
   `capability-declared-everywhere.test.ts` as readily as 006's — which reads as a
   repo-wide breakage rather than one missing config block.
-- **The missing MinIO bucket** cost 18 failures across 007's five document suites. The
-  compose file starts MinIO but never creates `legalconnect-documents-dev`, so every
-  upload returned `500`.
+- **The missing S3 bucket** cost 18 failures across 007's five document suites. The
+  bucket `legalconnect-documents-dev` did not exist, so every upload returned `500`.
 - **The missing `INVITATION_ISSUANCE_RATE_PER_HOUR`** cost 5 failures in 002's invitation
   suites. Its absence means `invitation.service.ts`'s default of 50/tenant/hour applies,
   and the full suite exceeds it on a second run within the hour. 017 documented this same
@@ -71,8 +69,8 @@ cause produces a *different and false* answer —
 no `emitDecoratorMetadata` support, which `vitest.config.ts` already warns about in its own
 comments. Diagnose Nest DI problems under SWC (a vitest file), never under `tsx`.
 
-**Recommended follow-ups, none of them 006's to make**: add a `mc mb` step to
-`docker-compose.yml` or a `db:up`-style script; have `objectStoreConfig()` fail lazily on
+**Recommended follow-ups, none of them 006's to make**: check that the
+configured S3 bucket exists before the suite runs; have `objectStoreConfig()` fail lazily on
 first use rather than at module construction; and treat `.env.example` drift as something
 CI checks, since three of these four were the same failure mode.
 

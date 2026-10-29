@@ -2,8 +2,8 @@
 
 **Feature**: `009-time-tracking` | **Validated**: 2026-10-08 | by the implementer (Claude, Opus 5.5)
 **Environment**: Windows 11, Docker Desktop 29.4.3, PostgreSQL 16 (`legalconnect-db`, host port
-5455 per the local, uncommitted `docker-compose.override.yml`), MinIO from the locally cached
-`minio/minio:latest` image (the override disables the pinned quay.io image, which returns 401).
+5455 per the local, uncommitted `docker-compose.override.yml`), and a local S3-compatible object
+store for documents.
 
 ## Automated gates
 
@@ -114,8 +114,7 @@ the machine otherwise idle.
 ## Local environment changes (not committed)
 
 - `backend/.env`: appended `DOCUMENT_MAX_UPLOAD_BYTES=26214400`, the exact line `check:env` printed.
-- A MinIO container `lc-minio-009` from the cached `minio/minio:latest`, with the
-  `legalconnect-documents-dev` bucket.
+- A local object-store container with the bucket the documents suites expect.
 
 ## Rebase onto `fix-cross-tenant-fk-oracle` — 2026-10-09
 

@@ -128,9 +128,9 @@ behaviour change — recorded in the spec's Out of Scope as debt rather than smu
 - **`BM` and the nav flag.** Flipping `available: true` without narrowing `requiredArchetypes`
   would hand a billing manager a link to a page that refuses them. The two edits are one task, and
   `navigation-items.test.ts` asserts the archetype list.
-- **MinIO unavailable here.** Preview and download cannot be exercised end to end on this machine
-  (`quay.io` refuses the image). They are `021`'s, shipped and tested where a store exists; this
-  slice asserts that it *calls* them with the right case id, not that MinIO answers.
+- **Object store unreachable here.** Preview and download cannot be exercised end to end on this machine
+  (its container image cannot be pulled). They are `021`'s, shipped and tested where a store exists; this
+  slice asserts that it *calls* them with the right case id, not that the object store answers.
 - **`e2e` needs a signed-in browser.** `022` makes that possible for the first time. Where an e2e
   spec cannot run here, it is recorded in `quickstart-results.md` rather than written to pass
   vacuously.
