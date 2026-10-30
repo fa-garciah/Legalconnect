@@ -117,7 +117,9 @@ function CaseForm({
   const clientQuery = useQueries({
     queries: [
       {
-        queryKey: ['clients', clientSearch.trim(), 'all'] as const,
+        // `'picker'`: one page of ACTIVE clients, an ordinary query. It used to share
+        // `['clients', '', 'all']` with the directory's infinite query and crashed it.
+        queryKey: ['clients', 'picker', clientSearch.trim()] as const,
         queryFn: () => listClients({ q: clientSearch.trim() || undefined, status: 'active', limit: 20 }),
         retry: false,
       },
