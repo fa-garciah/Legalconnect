@@ -128,7 +128,10 @@ export function ClientDirectory({ archetype }: ClientDirectoryProps): React.JSX.
     string | undefined
   >({
     // The filters are part of the key, which is what makes changing one reset the cursor.
-    queryKey: ['clients', q.trim(), status],
+    // `'directory'` keeps this infinite query apart from the case form's client picker, an
+    // ordinary query: sharing `['clients', '', 'all']` crashed this screen after the picker
+    // had run (2026-10-29). Both stay under `['clients']`, so one invalidation refreshes both.
+    queryKey: ['clients', 'directory', q.trim(), status],
     queryFn: ({ pageParam }) =>
       listClients({
         q: q.trim() || undefined,

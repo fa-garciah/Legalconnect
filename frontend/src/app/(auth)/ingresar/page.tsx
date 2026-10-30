@@ -12,6 +12,7 @@
  */
 import type { Metadata } from 'next';
 import { CheckCircle2, Clock } from 'lucide-react';
+import { safeDestination } from '@/session/destination';
 import { AuthCard } from '../AuthCard';
 import { SignInForm } from './SignInForm';
 
@@ -31,7 +32,7 @@ function Notice({ icon: Icon, children }: { icon: typeof Clock; children: React.
 export default async function IngresarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sesion?: string; invitacion?: string }>;
+  searchParams: Promise<{ sesion?: string; invitacion?: string; destino?: string }>;
 }): Promise<React.JSX.Element> {
   const params = await searchParams;
 
@@ -50,7 +51,7 @@ export default async function IngresarPage({
       description="Accede con tu correo del despacho."
       notice={notice}
     >
-      <SignInForm />
+      <SignInForm destino={safeDestination(params.destino)} />
     </AuthCard>
   );
 }

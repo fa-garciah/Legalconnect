@@ -230,6 +230,31 @@ describe('FirmDocuments', () => {
       });
     });
 
+    it('opens the preview where the person is, in a side panel named after the file', async () => {
+      // Found by the 2026-10-29 critique: the pane used to mount below the whole list, ~1700 px
+      // under the fold, so "Ver" looked like it did nothing.
+      const user = userEvent.setup();
+      fetchMock.mockImplementation((url: string) => {
+        const path = String(url).replace(/^\/api\/lc/, '').split('?')[0];
+        if (path === '/tenant/documents') return Promise.resolve(json(listing([DOC_A, DOC_B], 2)));
+        if (path === '/tenant/document-categories') return Promise.resolve(json(CATEGORIES));
+        if (path === '/tenant/cases') return Promise.resolve(json(CASES));
+        return Promise.resolve(json({ previewUrl: 'https://bucket.s3.amazonaws.com/x', renderAs: 'pdf', expiresAt: '2030-01-01T00:00:00Z' }));
+      });
+      renderWithClient(<FirmDocuments archetype="MP" />);
+
+      const cardB = await screen.findByTestId('document-card-doc-b');
+      const ver = within(cardB).getByRole('button', { name: /ver/i });
+      await user.click(ver);
+
+      const panel = await screen.findByRole('dialog', { name: 'dictamen-pericial.pdf' });
+      expect(within(panel).getByText('EXP-2026-2002')).toBeInTheDocument();
+
+      await user.click(within(panel).getByRole('button', { name: 'Cerrar' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(ver).toHaveFocus();
+    });
+
     it('downloads using THAT row\'s case id', async () => {
       const user = userEvent.setup();
       let downloadedUrl = '';

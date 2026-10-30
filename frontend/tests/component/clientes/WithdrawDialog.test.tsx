@@ -141,13 +141,13 @@ describe('withdrawing asks first', () => {
     const { client } = renderWithClient(
       <WithdrawDialog open action="withdraw" client={ACTIVE} onClose={vi.fn()} onDone={vi.fn()} />,
     );
-    client.setQueryData(['clients', '', 'all'], { pages: [], pageParams: [] });
+    client.setQueryData(['clients', 'directory', '', 'all'], { pages: [], pageParams: [] });
     await screen.findByRole('alertdialog');
 
     await userEvent.click(screen.getByRole('button', { name: /retirar/i }));
 
     await waitFor(() => {
-      expect(client.getQueryState(['clients', '', 'all'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState(['clients', 'directory', '', 'all'])?.isInvalidated).toBe(true);
     });
   });
 });
@@ -212,14 +212,14 @@ describe('the record moved under the caller', () => {
     const { client } = renderWithClient(
       <WithdrawDialog open action="withdraw" client={ACTIVE} onClose={vi.fn()} onDone={vi.fn()} />,
     );
-    client.setQueryData(['clients', '', 'all'], { pages: [], pageParams: [] });
+    client.setQueryData(['clients', 'directory', '', 'all'], { pages: [], pageParams: [] });
     await screen.findByRole('alertdialog');
 
     await userEvent.click(screen.getByRole('button', { name: /retirar/i }));
 
     await screen.findByTestId('error-state');
     await waitFor(() => {
-      expect(client.getQueryState(['clients', '', 'all'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState(['clients', 'directory', '', 'all'])?.isInvalidated).toBe(true);
     });
   });
 
@@ -229,11 +229,11 @@ describe('the record moved under the caller', () => {
     const { client } = renderWithClient(
       <WithdrawDialog open action="restore" client={WITHDRAWN} onClose={vi.fn()} onDone={vi.fn()} />,
     );
-    client.setQueryData(['clients', '', 'all'], { pages: [], pageParams: [] });
+    client.setQueryData(['clients', 'directory', '', 'all'], { pages: [], pageParams: [] });
 
     await screen.findByTestId('error-state');
     await waitFor(() => {
-      expect(client.getQueryState(['clients', '', 'all'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState(['clients', 'directory', '', 'all'])?.isInvalidated).toBe(true);
     });
   });
 
