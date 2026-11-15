@@ -17,39 +17,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { LucideIcon } from 'lucide-react';
-import {
-  BarChart3,
-  Briefcase,
-  Calendar,
-  Clock,
-  CreditCard,
-  Database,
-  FileText,
-  Home,
-  Settings,
-  Users,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { filterNavigationItems, type NavigationIconName, type NavigationItem } from './navigation-items';
+import { NAVIGATION_ICONS as ICONS } from './navigation-icons';
+import { filterNavigationItems, type NavigationItem } from './navigation-items';
 import type { Archetype } from '../session/types';
-
-/**
- * Name to component, resolved here because this is a Client Component and the registry
- * that names them is read on the server. See `NavigationIconName`.
- */
-const ICONS: Readonly<Record<NavigationIconName, LucideIcon>> = {
-  home: Home,
-  briefcase: Briefcase,
-  users: Users,
-  'file-text': FileText,
-  calendar: Calendar,
-  'bar-chart': BarChart3,
-  database: Database,
-  clock: Clock,
-  'credit-card': CreditCard,
-  settings: Settings,
-};
 
 export interface NavigationMenuProps {
   readonly items: readonly NavigationItem[];

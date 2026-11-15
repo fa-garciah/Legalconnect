@@ -1,6 +1,10 @@
 /**
  * The product's left rail: brand, navigation, and who you are signed in as.
  *
+ * ON THE TOP-NAVIGATION BRANCH THIS IS THE NARROW-SCREEN DRAWER ONLY. From `lg` up the
+ * navigation lives in `Header`/`TopNavigation`; `Shell` no longer mounts this as a fixed rail.
+ * It is kept whole rather than rewritten so going back to the rail is a change to `Shell` alone.
+ *
  * Three parts, and the third is the one that is easy to leave out. A person working in
  * several firms needs to know which identity the screen is acting as before they act, not
  * after — and the tenant they are acting *in* is named in the top bar for the same reason
@@ -20,33 +24,19 @@
 'use client';
 
 import { LogOut } from 'lucide-react';
+import { BrandMark } from './BrandMark';
 import { NavigationMenu } from './NavigationMenu';
 import { signOutAction } from '../session/sign-out';
 import type { NavigationItem } from './navigation-items';
 import type { ActiveMembership } from '../session/types';
 import { ARCHETYPE_LABEL } from './archetype-labels';
+import { initialsOf } from './initials';
 
-/**
- * Initials for the avatar. Two at most; one when there is only one word.
- *
- * TAKES `string | undefined` BECAUSE THE VALUE COMES OFF THE NETWORK. `016a` typed this
- * `string` and was right to, against the checked-in fixture it was built on. `003` replaced
- * that fixture with a live call to `GET /identity/memberships`, whose contract returns
- * `{ membershipId, tenantId, archetype }` and NO `tenantName` — so the shell's
- * `displayName` is `undefined` at runtime while TypeScript still believes it is a string.
- * The first authenticated render crashed here with "Cannot read properties of undefined".
- *
- * The gap itself is now closed — `002`'s contract was amended to return `tenantName`
- * (migration 0043) — but the guard stays: this value still crosses a network boundary, and a
- * missing name must degrade to a placeholder, never take the whole shell down.
+/*
+ * `initialsOf` moved to `initials.ts` when the top bar became its second reader. Re-exported
+ * so this module's existing importers and tests are untouched.
  */
-export function initialsOf(name: string | undefined): string {
-  const words = (name ?? '').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '·';
-  const first = words[0]![0] ?? '';
-  const last = words.length > 1 ? (words[words.length - 1]![0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
+export { initialsOf };
 
 export interface SidebarProps {
   readonly items: readonly NavigationItem[];
@@ -67,8 +57,8 @@ export function Sidebar({
   return (
     <div data-testid="shell-sidebar" className="flex h-full flex-col bg-rail">
       <div className="flex h-16 shrink-0 items-center gap-2 border-b px-6">
-        {/* The mark. A token, never a literal — contracts/design-system.md §3.4. */}
-        <span aria-hidden className="h-8 w-8 shrink-0 rounded-md bg-primary" />
+        {/* The mark (`BrandMark`). Tokens, never literals — contracts/design-system.md §3.4. */}
+        <BrandMark />
         <span className="truncate font-display text-xl font-semibold text-primary">LegalConnect MX</span>
       </div>
 

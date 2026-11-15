@@ -217,6 +217,17 @@
   --radius-xl: calc(var(--radius) + 6px);
 
   /*
+   * The width the top-navigation shell lays its content out in, as `max-w-shell`.
+   *
+   * With the left rail gone the content region spans the whole window, and an unbounded
+   * table on a 2560px monitor reads as worse, not better: the eye loses the row between
+   * the first column and the last. 100rem (1600px) is wide enough that a laptop or a 1080p
+   * screen never meets the limit, and the top bar uses the same value so its edges line up
+   * with the content's.
+   */
+  --container-shell: 100rem;
+
+  /*
    * The two families (FR-002). `--font-sans` is what every component inherits; a heading
    * that wants the serif asks for `font-display`, never for a family name.
    */
