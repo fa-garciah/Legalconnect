@@ -23,9 +23,17 @@ test.describe('shell render', () => {
   test('the shell renders with header, menu and content on the root route', async ({ page }) => {
     await signIn(page);
 
+    /*
+     * `/` has no screen of its own: since 2026-10-29 it redirects to the first section the
+     * person's role can open (`app/page.tsx`, `shell/landing.ts`). This test used to look for the
+     * placeholder's `page-content`, which only renders when there is nowhere to redirect to, so it
+     * failed for every demo person. What it means to check is that `/` lands inside the shell with
+     * a page in the content region.
+     */
     await page.goto('/');
+    await expect(page).not.toHaveURL(/\/$/);
     await expect(page.getByTestId('shell-header')).toBeVisible();
     await expect(page.getByRole('navigation')).toBeVisible();
-    await expect(page.getByTestId('page-content')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeVisible();
   });
 });

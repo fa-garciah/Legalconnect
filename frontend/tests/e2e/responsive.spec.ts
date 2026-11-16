@@ -56,9 +56,12 @@ async function pageScrollsSideways(page: Page): Promise<boolean> {
 
 test.describe('the shell is usable at every configured viewport', () => {
   test('the header is visible and the navigation menu is reachable', async ({ page }) => {
+    // `/` redirects to the person's first section (`app/page.tsx`), so the content region holds
+    // that section's page rather than the placeholder's `page-content`.
     await page.goto('/');
+    await expect(page).not.toHaveURL(/\/$/);
     await expect(page.getByTestId('shell-header')).toBeVisible();
-    await expect(page.getByTestId('page-content')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeVisible();
 
     // The rail on a wide screen, the drawer on a narrow one — and on both, the navigation
     // must actually be reachable rather than merely present in the DOM.
