@@ -9,9 +9,16 @@ export interface TenantSwitcherProps {
   readonly memberships: readonly ActiveMembership[];
   readonly activeTenantId: string;
   readonly onSwitch: (tenantId: string) => void;
+  /** Replaces the default look. The top bar lays this over the firm's name (see `Header`). */
+  readonly className?: string;
 }
 
-export function TenantSwitcher({ memberships, activeTenantId, onSwitch }: TenantSwitcherProps): React.JSX.Element | null {
+export function TenantSwitcher({
+  memberships,
+  activeTenantId,
+  onSwitch,
+  className = 'rounded border px-2 py-1',
+}: TenantSwitcherProps): React.JSX.Element | null {
   // FR-010: an identity holding exactly one live membership never sees a switch it
   // couldn't use.
   if (memberships.length <= 1) return null;
@@ -22,7 +29,7 @@ export function TenantSwitcher({ memberships, activeTenantId, onSwitch }: Tenant
       aria-label="Cambiar de firma activa"
       value={activeTenantId}
       onChange={(event) => onSwitch(event.target.value)}
-      className="rounded border px-2 py-1"
+      className={className}
     >
       {memberships.map((membership) => (
         <option key={membership.tenantId} value={membership.tenantId}>

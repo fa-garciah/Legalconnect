@@ -23,6 +23,7 @@
  * icons and the rule, where 3:1 is the requirement.
  */
 import type { ReactNode } from 'react';
+import { BrandMark } from '@/shell/BrandMark';
 
 /**
  * Claims the panel makes in words. Each one is true of the product today. Kept to three short
@@ -34,14 +35,7 @@ const CLAIMS = ['RFC con formato SAT', 'Bitácora inmutable', 'Verificación en 
 function Wordmark({ inverted = false }: { inverted?: boolean }): React.JSX.Element {
   return (
     <div className="flex items-center gap-3">
-      <span
-        aria-hidden
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          inverted ? 'bg-primary-foreground' : 'bg-primary'
-        }`}
-      >
-        <span className="h-3.5 w-3.5 rounded-full bg-accent-warm" />
-      </span>
+      <BrandMark size="lg" inverted={inverted} />
       <span
         className={`font-display text-2xl font-semibold tracking-tight ${
           inverted ? 'text-primary-foreground' : 'text-primary'

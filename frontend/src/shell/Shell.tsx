@@ -1,5 +1,5 @@
 /**
- * T027/T028 — mounts `Header` and `NavigationMenu` around the content region (FR-001,
+ * T027/T028 — mounts `Header` (which carries the navigation) above the content region (FR-001,
  * FR-006), and renders FR-007's no-active-tenant directive instead of an empty menu
  * when no tenant context is active. A Client Component: the tenant switch (US2)
  * needs to update the active tenant without a full page reload.
@@ -126,23 +126,25 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
     );
   }
 
-  // The person the rail names. Until `003` ships authentication there is no account to
+  // The person the drawer names. Until `003` ships authentication there is no account to
   // read a name from, so the active firm's own name stands in — which is at least true.
   const displayName = activeMembership.tenantName;
 
   return (
-    <div className="min-h-screen bg-secondary/40">
+    <div className="flex min-h-screen flex-col bg-secondary/40">
       {/*
-       * The rail. Fixed and always present from `lg` up; below that it is the drawer
-       * further down, opened from the header's menu button.
+       * THE TOP-NAVIGATION PROPOSAL. From `lg` up the navigation is the bar itself — brand,
+       * sections and account controls in one row — and there is no left rail, so the content
+       * region below spans the window.
+       *
+       * Below `lg` a row of sections does not fit, so the bar keeps the brand and the active
+       * firm and the sections collapse into this drawer, opened from the bar's menu button. The
+       * drawer is the former rail (`Sidebar`), unchanged: brand, the full list, who you are
+       * signed in as, and the sign-out control.
        */}
-      <div className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r lg:block">
-        <Sidebar items={items} activeMembership={activeMembership} displayName={displayName} />
-      </div>
-
       <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
         <SheetContent side="left" className="w-[280px] p-0">
-          {/* Radix requires an accessible name on a dialog; the rail's own brand is visual. */}
+          {/* Radix requires an accessible name on a dialog; the drawer's own brand is visual. */}
           <SheetTitle className="sr-only">Navegación</SheetTitle>
           <Sidebar
             items={items}
@@ -154,13 +156,13 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-h-screen flex-col lg:pl-72">
-        <Header
-          activeMembership={activeMembership}
-          memberships={principal.memberships}
-          onSwitchTenant={handleSwitchTenant}
-          onOpenNavigation={() => setNavigationOpen(true)}
-        />
+      <Header
+        activeMembership={activeMembership}
+        memberships={principal.memberships}
+        onSwitchTenant={handleSwitchTenant}
+        items={items}
+        onOpenNavigation={() => setNavigationOpen(true)}
+      />
         {/*
          * `min-w-0` added by 018/T055, and it is load-bearing rather than defensive.
          *
@@ -173,9 +175,12 @@ export function Shell({ principal, initialActiveTenant, items, children }: Shell
          * content in a 412px window).
          *
          * `tests/e2e/responsive.spec.ts` covers it at both viewports.
+         *
+         * `max-w-shell` (globals.css) caps the region at 1600px and centres it: full width on
+         * a laptop, and not a 2500px-wide table on an ultrawide monitor. The top bar uses the
+         * same cap and the same gutters, so the two line up.
          */}
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
-      </div>
+      <main className="mx-auto w-full max-w-shell min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }

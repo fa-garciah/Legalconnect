@@ -173,12 +173,25 @@ test.describe('the client directory against a running backend', () => {
     }
 
     /*
+     * Top-navigation layout: on a wide screen the unbuilt sections sit under the bar's "Más"
+     * control rather than in the row, and its list is rendered in a portal — outside the
+     * `nav` element — so that is where to look for them. The drawer still lists them inline.
+     */
+    let unbuiltScope = nav;
+    const more = rail.getByTestId('nav-more');
+    if (await more.isVisible()) {
+      await more.click();
+      unbuiltScope = page.getByTestId('nav-more-list');
+      await expect(unbuiltScope).toBeVisible();
+    }
+
+    /*
      * `conectores` — a section that genuinely has no route yet.
      *
      * This test has had to move twice, each time for the best possible reason: it used
      * `expedientes` until `019` built that screen, then `documentos` until `021`/`023` did.
      */
-    const unbuilt = nav.getByTestId('nav-item-conectores');
+    const unbuilt = unbuiltScope.getByTestId('nav-item-conectores');
     await expect(unbuilt).toBeVisible();
     await expect(unbuilt).toHaveAttribute('data-unavailable', 'true');
     // Not an anchor, so there is nothing to click through to and nothing to tab onto.
