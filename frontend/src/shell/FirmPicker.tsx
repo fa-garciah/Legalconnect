@@ -17,6 +17,7 @@
 'use client';
 
 import { Building2, ChevronRight } from 'lucide-react';
+import { BrandMark } from './BrandMark';
 import { ARCHETYPE_LABEL } from './archetype-labels';
 import { signOutAction } from '../session/sign-out';
 import type { ActiveMembership } from '../session/types';
@@ -36,7 +37,7 @@ export function FirmPicker({ memberships, onChoose }: FirmPickerProps): React.JS
     >
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-2">
-          <span aria-hidden className="h-8 w-8 shrink-0 rounded-md bg-primary" />
+          <BrandMark />
           <span className="font-display text-xl font-semibold text-primary">LegalConnect MX</span>
         </div>
 
