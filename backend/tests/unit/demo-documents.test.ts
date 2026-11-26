@@ -206,3 +206,53 @@ describe('every document would survive the real upload path (FR-009)', () => {
     }
   });
 });
+
+describe('documents read like a firm\'s own, not like fixtures', () => {
+  const pdfs = documents.filter((d) => d.mimeType === 'application/pdf');
+  const scans = documents.filter((d) => d.mimeType === 'image/png');
+
+  it('PDFs name their court, their numbers and the signing lawyer, and never say "demo"', () => {
+    for (const document of pdfs) {
+      const text = document.body.toString('latin1');
+      const matter = matters.find((m) => m.fileNumber === document.matterFileNumber)!;
+      expect(text).toContain(`Expediente: ${matter.venueCaseReference}`);
+      expect(text).toMatch(/PROTESTO LO NECESARIO|firma el C. Juez|firman de conformidad|DOY FE/);
+      expect(text.toLowerCase()).not.toContain('demostraci');
+      expect(document.sizeBytes).toBeGreaterThan(2000);
+    }
+  });
+
+  it('PDFs keep an xref whose offsets point at their objects', () => {
+    for (const document of pdfs.slice(0, 10)) {
+      const text = document.body.toString('latin1');
+      const startxref = Number(/startxref\s+(\d+)/.exec(text)?.[1]);
+      expect(text.slice(startxref, startxref + 4)).toBe('xref');
+      const offsets = [...text.matchAll(/^(\d{10}) 00000 n\s*$/gm)].map((m) => Number(m[1]));
+      for (const [index, offset] of offsets.entries()) {
+        expect(text.slice(offset).startsWith(`${index + 1} 0 obj`)).toBe(true);
+      }
+    }
+  });
+
+  it('scans are page-sized images, not colour swatches', () => {
+    for (const document of scans) {
+      expect(document.body.readUInt32BE(16)).toBeGreaterThanOrEqual(600);
+      expect(document.sizeBytes).toBeGreaterThan(10_000);
+    }
+  });
+
+  it('filenames carry a date, not a counter', () => {
+    for (const document of documents) {
+      expect(document.originalFilename).toMatch(/ \d{2}-\d{2}-\d{4}\.(pdf|png)$/);
+    }
+  });
+});
+
+describe('every matter is before a court', () => {
+  it('has a venue and the court\'s own number for it', () => {
+    for (const matter of matters) {
+      expect(matter.venueName.length).toBeGreaterThan(10);
+      expect(matter.venueCaseReference).toMatch(/^\d{3,4}\/\d{4}$/);
+    }
+  });
+});

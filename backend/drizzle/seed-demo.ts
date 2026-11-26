@@ -46,7 +46,7 @@ import {
   type DemoFirm,
 } from './demo/firm';
 import { demoClients } from './demo/clients';
-import { demoMatters } from './demo/matters';
+import { demoMatters, DEMO_VENUES } from './demo/matters';
 import { demoDocuments } from './demo/documents';
 import { demoCalendarEvents } from './demo/calendar';
 import { demoTimeEntries, demoTimeEntryKeySpace } from './demo/time-entries';
@@ -377,6 +377,21 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
   );
   const typeIds = new Map(typeRows.map((r) => [r.name, r.id]));
 
+  // The firm's courts. `venue` ships empty (006 research D7): a firm's courts are its own, so
+  // the demo firm registers the ones its matters are before, as a real firm would.
+  for (const name of DEMO_VENUES) {
+    await migration.query(
+      `INSERT INTO venue (tenant_id, name) VALUES ($1, $2)
+       ON CONFLICT (tenant_id, (lower(trim(name)))) WHERE status = 'active' DO NOTHING`,
+      [tenantId, name],
+    );
+  }
+  const { rows: venueRows } = await migration.query<{ id: string; name: string }>(
+    `SELECT id, name FROM venue WHERE tenant_id = $1 AND status = 'active'`,
+    [tenantId],
+  );
+  const venueIds = new Map(venueRows.map((r) => [r.name, r.id]));
+
   for (const matter of demoMatters(firm, AS_OF)) {
     /*
      * IDENTITY IS THE SLOT, NOT THE FILE NUMBER (022/FR-014 across days).
@@ -405,13 +420,16 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
       matter.openedOn,
       matter.closedOn,
       matter.outcome,
+      venueIds.get(matter.venueName) ?? null,
+      matter.venueCaseReference,
     ];
     let updated = 0;
     try {
       const result = await migration.query(
         `UPDATE case_file
             SET client_id = $3, file_number = $4, case_status_id = $5, matter_type_id = $6,
-                opened_on = $7::date, closed_on = $8::date, outcome = $9::case_outcome
+                opened_on = $7::date, closed_on = $8::date, outcome = $9::case_outcome,
+                venue_id = $10, venue_case_reference = $11
           WHERE id = $1 AND tenant_id = $2`,
         tuple,
       );
@@ -440,15 +458,17 @@ async function seedClientsAndMatters(migration: Client, target: WrittenFirm): Pr
        */
       `INSERT INTO case_file
          (id, tenant_id, client_id, file_number, case_status_id, matter_type_id, opened_on,
-          closed_on, outcome)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8::date, $9::case_outcome)
+          closed_on, outcome, venue_id, venue_case_reference)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8::date, $9::case_outcome, $10, $11)
        ON CONFLICT (tenant_id, (lower(trim(file_number))))
          DO UPDATE SET client_id      = excluded.client_id,
                        case_status_id = excluded.case_status_id,
                        matter_type_id = excluded.matter_type_id,
                        opened_on      = excluded.opened_on,
                        closed_on      = excluded.closed_on,
-                       outcome        = excluded.outcome`,
+                       outcome        = excluded.outcome,
+                       venue_id       = excluded.venue_id,
+                       venue_case_reference = excluded.venue_case_reference`,
       tuple,
     );
     const { rows } = await migration.query<{ id: string }>(

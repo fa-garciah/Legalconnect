@@ -53,6 +53,49 @@ export interface DemoMatter {
   readonly outcome: 'favorable' | 'desfavorable' | 'convenio' | 'sin_resolucion' | null;
   readonly leadSlug: string | null;
   readonly collaboratorSlugs: readonly string[];
+  /**
+   * The court the matter is before, and the court's own number for it ("1487/2026").
+   *
+   * Every list screen shows a Juzgado column, and a firm whose forty matters all read "—" there
+   * looks like a fixture rather than a practice. DERIVED FROM THE SLOT, not drawn from the RNG,
+   * for the same reason as `outcomeFor`: one more draw would move every later matter.
+   */
+  readonly venueName: string;
+  readonly venueCaseReference: string;
+}
+
+/**
+ * The courts a Mexico City litigation firm actually files in, by matter type, written the way
+ * a firm abbreviates them in its own lists (the full name would wrap every row of the table).
+ */
+export const DEMO_VENUES_BY_TYPE: Readonly<Record<string, readonly string[]>> = {
+  Mercantil: [
+    'Juzgado 12° Civil de Proceso Escrito, CDMX',
+    'Juzgado 3° de Distrito en Materia Civil, CDMX',
+    'Juzgado 5° Civil de Proceso Oral, CDMX',
+  ],
+  Civil: ['Juzgado 25° Civil de Proceso Escrito, CDMX', 'Juzgado 4° Civil de Tlalnepantla, Edomex'],
+  Laboral: ['Tribunal Laboral de la CDMX, Sala 5', 'Tribunal Laboral Federal, CDMX'],
+  Familiar: ['Juzgado 18° de lo Familiar, CDMX'],
+  Amparo: ['Juzgado 7° de Distrito en Materia Administrativa, CDMX'],
+  Penal: ['Juzgado de Control, Reclusorio Norte, CDMX'],
+};
+
+export const DEMO_VENUES: readonly string[] = [...new Set(Object.values(DEMO_VENUES_BY_TYPE).flat())];
+
+function venueFor(
+  firmRfc: string,
+  slot: string,
+  matterTypeName: string,
+  openedOn: string,
+): { venueName: string; venueCaseReference: string } {
+  const venues = DEMO_VENUES_BY_TYPE[matterTypeName] ?? DEMO_VENUES;
+  const digest = createHash('sha256').update(`demo-venue-${firmRfc}-${slot}`).digest();
+  const number = 100 + (digest.readUInt16BE(1) % 2800);
+  return {
+    venueName: venues[(digest[0] as number) % venues.length] as string,
+    venueCaseReference: `${number}/${openedOn.slice(0, 4)}`,
+  };
 }
 
 const iso = (date: Date): string => date.toISOString().slice(0, 10);
@@ -268,6 +311,7 @@ export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
         outcome: closedOn === null ? null : outcomeFor(fileNumber, matterTypeName),
         leadSlug,
         collaboratorSlugs,
+        ...venueFor(firm.rfc, `m${sequence}`, matterTypeName, openedOn),
       });
     }
   }
