@@ -8,8 +8,8 @@ description: "Task list for 022-demo-firm-seed"
 
 **Tests**: mandatory, strict TDD — every test task is run and **seen to fail** before the task
 under it starts. The generators and the guard are pure functions, so most of this suite runs in
-`test:unit` with no database, which is what makes the slice testable on a machine where Docker
-cannot pull MinIO.
+`test:unit` with no database, which is what makes the slice testable on a machine the object
+store is unreachable.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -139,14 +139,14 @@ that open · **US4** the guard.
       the command, `tenant.storage_bytes_used` equals `SUM(size_bytes)` over **all** that tenant's
       document rows, withdrawn included (FR-010); and a second run leaves it unchanged.
       **See it fail.**
-- [ ] T025 **NOT DONE — needs MinIO, which cannot be pulled on this machine.** Deliberately not written rather than written-and-skipped, so no suite implies coverage that is absent. Integration test `backend/tests/integration/demo-seed-objects.test.ts` *(needs MinIO)*:
+- [ ] T025 **NOT DONE — needs the object store, which is unreachable on this machine.** Deliberately not written rather than written-and-skipped, so no suite implies coverage that is absent. Integration test `backend/tests/integration/demo-seed-objects.test.ts` *(needs the object store)*:
       every seeded document's key resolves to an object whose byte length equals `size_bytes`;
-      a second run writes no new object. **See it fail.** If MinIO is unavailable, this test is
+      a second run writes no new object. **See it fail.** If the object store is unreachable, this test is
       **skipped explicitly, never deleted**, and the skip is recorded in `quickstart-results.md`.
 - [x] T026 Wire documents into `seed-demo.ts`, including the FR-016 degraded path: rows always
       written, unreachable-store reported per document, exit code non-zero.
 - [ ] T027 **NOT DONE as a separate file.** FR-016 was verified by running the command in exactly that state and is asserted in `demo-seed.test.ts`'s "FR-016" block, which covers both the reachable and unreachable cases. A dedicated closed-port test would duplicate it; recorded in quickstart-results.md: with
-      `OBJECT_STORE_ENDPOINT` pointed at a closed port, every row is still written, each missing
+      the object store unreachable, every row is still written, each missing
       object is named on stderr, and the exit status is non-zero (FR-016). **See it fail.**
 
 ## Phase 6: Calendar (US2)

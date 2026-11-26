@@ -67,7 +67,10 @@ export interface NavigationItem {
 const INTERNAL: readonly Archetype[] = ['MP', 'AA', 'PL', 'CM', 'BM', 'SA'];
 
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
-  { id: 'dashboard', label: 'Dashboard Principal', href: '/', icon: 'home', available: true },
+  // `/` has no home screen of its own until EP01 builds one, and redirects to the first section
+  // the person can open (`landing.ts`). So the entry is marked "Pronto" like the other unbuilt
+  // ones, rather than a link that silently lands somewhere else (2026-10-29).
+  { id: 'dashboard', label: 'Inicio', href: '/', icon: 'home', available: false },
   {
     id: 'expedientes',
     label: 'Expedientes',

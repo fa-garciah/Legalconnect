@@ -1,9 +1,9 @@
 /**
  * T010 — research.md D6. The only file in this codebase permitted to import
- * `@aws-sdk/*` (verified by T049). Local dev points this at MinIO
- * (docker-compose.yml's `minio` service); production points the identical client at
- * real S3 in `mx-central-1` (plan.md Constraints) — no code path here changes between
- * the two, only the four `OBJECT_STORE_*` environment values.
+ * `@aws-sdk/*` (verified by T049). Every environment talks to real AWS S3 — development
+ * and the test suite each with their own bucket, production with its bucket in
+ * `mx-central-1` (plan.md Constraints). No code path here changes between them, only the
+ * `OBJECT_STORE_*` environment values.
  */
 import { Injectable } from '@nestjs/common';
 import {
@@ -19,12 +19,10 @@ import type { ObjectStorePort, PresignedUrl, PutObjectInput } from './object-sto
 const PRESIGNED_URL_TTL_SECONDS = 300;
 
 export interface S3ObjectStoreConfig {
-  readonly endpoint?: string;
   readonly region: string;
   readonly bucket: string;
   readonly accessKeyId: string;
   readonly secretAccessKey: string;
-  readonly forcePathStyle?: boolean;
 }
 
 /**
@@ -66,8 +64,7 @@ export class S3ObjectStore implements ObjectStorePort {
   /**
    * Memoised: the client is built once, on the first call that needs it.
    *
-   * **The bucket's own region wins over `OBJECT_STORE_REGION`** on real AWS (no custom
-   * endpoint). Found pointing the app at a real bucket: the configured region was `us-east-1`,
+   * **The bucket's own region wins over `OBJECT_STORE_REGION`.** Found pointing the app at a real bucket: the configured region was `us-east-1`,
    * the bucket lived in `eu-central-1`, and every request failed with `PermanentRedirect`. The
    * SDK's `followRegionRedirects` would rescue ordinary requests but not a PRESIGNED URL, which
    * is signed locally with whatever region the client has — so the preview and download links
@@ -86,9 +83,7 @@ export class S3ObjectStore implements ObjectStorePort {
 
   private build(config: S3ObjectStoreConfig, region: string): S3Client {
     return new S3Client({
-      endpoint: config.endpoint,
       region,
-      forcePathStyle: config.forcePathStyle,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
     });
   }
@@ -96,11 +91,6 @@ export class S3ObjectStore implements ObjectStorePort {
   private async resolve(): Promise<{ readonly client: S3Client; readonly bucket: string }> {
     const config = this.configure();
     const client = this.build(config, config.region);
-    if (config.endpoint) {
-      // MinIO or another S3-compatible service: regions are nominal, nothing to discover.
-      this.resolved = { client, bucket: config.bucket };
-      return this.resolved;
-    }
     const actual = await bucketRegion(client, config.bucket);
     const region = actual && actual !== config.region ? actual : config.region;
     if (region !== config.region) {

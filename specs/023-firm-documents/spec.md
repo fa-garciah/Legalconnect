@@ -420,7 +420,7 @@ forgets it. Both are fine for a toggle with two states.
   no behaviour to them.
 - `022`'s demo firm is the data these screens are judged against: 130 documents across 40 matters,
   with matters the `AA`s are deliberately not on.
-- MinIO remains unavailable on this machine, so preview and download cannot be exercised
+- The object store remains unreachable on this machine, so preview and download cannot be exercised
   end-to-end here (they are `021`'s, already shipped and tested where a store exists).
 - `GET /tenant/cases` is suitable as the matter selector's source at demo scale (45 matters, one
   page).

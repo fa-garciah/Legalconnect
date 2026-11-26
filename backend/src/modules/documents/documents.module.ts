@@ -16,11 +16,11 @@ import { DocumentCategoryService } from './categories/document-category.service'
 import { DocumentCategoryRepository } from './categories/document-category.repository';
 
 /**
- * T011 read the four `OBJECT_STORE_*` values here (research.md D6). `022`/T008 moved that
+ * T011 read the `OBJECT_STORE_*` values here (research.md D6). `022`/T008 moved that
  * function to `common/storage/object-store/object-store.config.ts` so the demo seed reads
  * the same configuration the application does, rather than a second copy that could drift.
- * Local dev points these at MinIO (docker-compose.yml); production points the same client
- * at real S3 in `mx-central-1` — no code change, only these values.
+ * Development and production both point the same client at real AWS S3, each at its own
+ * bucket (production's in `mx-central-1`) — no code change, only these values.
  */
 @Module({
   // 023 — `FirmDocumentsController` is separate rather than a second path on

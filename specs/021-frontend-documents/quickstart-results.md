@@ -11,7 +11,7 @@
 | Frontend `npm test` | ✅ 70 files, 603 tests |
 | Frontend `typecheck`, `lint`, `build` | ✅ `/expedientes/[caseId]/documentos` built |
 | Colour literals in new files | ✅ 0 |
-| `tests/e2e/documentos.spec.ts` (desktop, live backend + MinIO) | ✅ 7/7 in 9.7 s |
+| `tests/e2e/documentos.spec.ts` (desktop, live backend + S3) | ✅ 7/7 in 9.7 s |
 
 ## Scenarios
 
@@ -19,7 +19,7 @@
 |---|---|
 | Case panel → documents page | ✅ e2e |
 | Upload a PDF with an accented name; listed under that name | ✅ e2e |
-| PDF previews inline; MinIO serves `inline`, `application/pdf`, no `X-Frame-Options` | ✅ e2e |
+| PDF previews inline; the object store serves `inline`, `application/pdf`, no `X-Frame-Options` | ✅ e2e |
 | Download saves as "Contrato Señor Pérez ….pdf" | ✅ e2e (`download.suggestedFilename()`) |
 | Change category; withdraw (confirmed); restore from "Retirados" | ✅ e2e |
 | No signed URL in browser storage | ✅ e2e |

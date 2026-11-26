@@ -126,7 +126,7 @@ list · **US4** upload having chosen a matter.
 
 - [x] T027 Backend gates (full `npm test` and the coverage run: see quickstart-results.md — not completed here): `typecheck`, `lint`, `test`, and with a database `test:rls`,
       `test:isolation`, `verify:role`, `test:auth-coverage`, `npm test -- --coverage`. Record the
-      MinIO-dependent failures as `022` established them — pre-existing and environmental — and
+      object-store-dependent failures as `022` established them — pre-existing and environmental — and
       **never** claim a suite that did not run.
 - [x] T028 Frontend gates: `typecheck`, `lint`, `npm test`, `npm run build`.
 - [x] T029 e2e `frontend/tests/e2e/firm-documents.spec.ts` — sign in as `022`'s `MP`, open
