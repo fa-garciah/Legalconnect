@@ -216,7 +216,7 @@ describe('documents read like a firm\'s own, not like fixtures', () => {
       const text = document.body.toString('latin1');
       const matter = matters.find((m) => m.fileNumber === document.matterFileNumber)!;
       expect(text).toContain(`Expediente: ${matter.venueCaseReference}`);
-      expect(text).toContain('PROTESTO LO NECESARIO');
+      expect(text).toMatch(/PROTESTO LO NECESARIO|firma el C. Juez|firman de conformidad|DOY FE/);
       expect(text.toLowerCase()).not.toContain('demostraci');
       expect(document.sizeBytes).toBeGreaterThan(2000);
     }

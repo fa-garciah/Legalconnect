@@ -65,26 +65,20 @@ export interface DemoMatter {
 }
 
 /**
- * The courts a Mexico City litigation firm actually files in, by matter type. Invented
- * numbering, real court kinds: a name a lawyer reads without stopping.
+ * The courts a Mexico City litigation firm actually files in, by matter type, written the way
+ * a firm abbreviates them in its own lists (the full name would wrap every row of the table).
  */
 export const DEMO_VENUES_BY_TYPE: Readonly<Record<string, readonly string[]>> = {
   Mercantil: [
-    'Juzgado Décimo Segundo de lo Civil de Proceso Escrito de la Ciudad de México',
-    'Juzgado Tercero de Distrito en Materia Civil en la Ciudad de México',
-    'Juzgado Quinto de lo Civil de Proceso Oral de la Ciudad de México',
+    'Juzgado 12° Civil de Proceso Escrito, CDMX',
+    'Juzgado 3° de Distrito en Materia Civil, CDMX',
+    'Juzgado 5° Civil de Proceso Oral, CDMX',
   ],
-  Civil: [
-    'Juzgado Vigésimo Quinto de lo Civil de Proceso Escrito de la Ciudad de México',
-    'Juzgado Cuarto Civil de Primera Instancia de Tlalnepantla, Estado de México',
-  ],
-  Laboral: [
-    'Tribunal Laboral de la Ciudad de México, Sala Quinta',
-    'Tribunal Laboral Federal de Asuntos Individuales en la Ciudad de México',
-  ],
-  Familiar: ['Juzgado Décimo Octavo de lo Familiar de la Ciudad de México'],
-  Amparo: ['Juzgado Séptimo de Distrito en Materia Administrativa en la Ciudad de México'],
-  Penal: ['Juzgado de Control del Sistema Procesal Penal Acusatorio de la Ciudad de México'],
+  Civil: ['Juzgado 25° Civil de Proceso Escrito, CDMX', 'Juzgado 4° Civil de Tlalnepantla, Edomex'],
+  Laboral: ['Tribunal Laboral de la CDMX, Sala 5', 'Tribunal Laboral Federal, CDMX'],
+  Familiar: ['Juzgado 18° de lo Familiar, CDMX'],
+  Amparo: ['Juzgado 7° de Distrito en Materia Administrativa, CDMX'],
+  Penal: ['Juzgado de Control, Reclusorio Norte, CDMX'],
 };
 
 export const DEMO_VENUES: readonly string[] = [...new Set(Object.values(DEMO_VENUES_BY_TYPE).flat())];

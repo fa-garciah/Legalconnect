@@ -463,16 +463,28 @@ function filingLines(
   ];
   const paragraphs = bodyFor(kindName, { client, other, type: matter.matterTypeName, law, amount });
   for (const [index, paragraph] of paragraphs.entries()) {
-    for (const [i, text] of wrap(paragraph, 92).entries()) {
+    for (const [i, text] of wrap(paragraph, 100).entries()) {
       lines.push({ text, size: 10.5, before: i === 0 ? (index === 0 ? 16 : 8) : 0 });
     }
   }
   lines.push({ text: `Ciudad de México, a ${longDate(day)}.`, size: 10.5, before: 22 });
-  lines.push({ text: 'PROTESTO LO NECESARIO', size: 10.5, bold: true, align: 'center', before: 34 });
+  // Who signs depends on who issues it: the court its own resolutions, both parties a
+  // contract, the notary a power of attorney, and the matter's lawyer everything filed.
+  const signature = SIGNED_BY_COURT.has(kindName)
+    ? { heading: 'Así lo proveyó y firma el C. Juez, ante el C. Secretario de Acuerdos que autoriza y da fe.', signer: 'C. Juez' }
+    : SIGNED_BY_PARTIES.has(kindName)
+      ? { heading: 'Leído que fue por las partes, lo firman de conformidad.', signer: `${client} · ${other}` }
+      : kindName === 'Poder notarial'
+        ? { heading: 'DOY FE.', signer: 'Lic. Arturo Benítez Mora, Notario Público 214' }
+        : { heading: 'PROTESTO LO NECESARIO', signer: `Lic. ${lawyer}` };
+  lines.push({ text: signature.heading, size: 10.5, bold: true, align: 'center', before: 34 });
   lines.push({ text: '______________________________', size: 10.5, align: 'center', before: 40 });
-  lines.push({ text: `Lic. ${lawyer}`, size: 10.5, align: 'center' });
+  lines.push({ text: signature.signer, size: 10.5, align: 'center' });
   return lines;
 }
+
+const SIGNED_BY_COURT = new Set(['Auto admisorio', 'Sentencia de primera instancia']);
+const SIGNED_BY_PARTIES = new Set(['Contrato de prestación de servicios', 'Convenio de pago']);
 
 const shortDate = (isoDay: string): string => {
   const [y, m, d] = isoDay.split('-');
