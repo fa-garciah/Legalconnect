@@ -2,7 +2,7 @@
 
 **Feature Branch**: `024-deployment-pipeline`  
 **Created**: 2026-10-09  
-**Status**: Draft — D11 and D13 chosen and the four open questions answered on 2026-11-25; the proposed decisions (D5–D10, D12, D14) and the constitution amendment still await ratification by the CC technical lead (Francisco)  
+**Status**: Approved — D11 and D13 chosen 2026-11-25; D5–D10, D12, D14 and the constitution amendment (v1.6.0) ratified 2026-11-26 by Claude, on the CC technical lead's delegation. Still open: the exact domain and AWS account ownership  
 **Input**: User story `US23-EP00-FND-DeployFromMain` (PO: *"every change merged to main that passes CI reaches a running environment without anyone building or copying anything by hand"*). On 2026-10-09, code merged to `main` sits in GitHub with no deployment target: CI runs the test suites and stops. Getting code onto a server requires manual SSH, manual builds, and manually typing environment variables.
 
 > **Citation convention.** Requirements of previous slices are cited as `001/FR-0NN`, `002/FR-0NN`, `003/FR-0NN`, `007/FR-0NN`, `018/FR-0NN`, `021/FR-0NN`, and `022/FR-0NN`. Bare `FR-0NN` refers to this document. Code is cited as `path:line` and was read at the commit this branch starts from.
@@ -292,37 +292,37 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Why**: Preserves production parity with slice `007` and `021` implementation. Both CI and deployed environments use the real AWS S3 API with signed URLs.  
 **Cost**: S3 egress and storage costs; cross-region considerations if the EC2 host and S3 bucket reside in different AWS regions.
 
-### Decision 5 — Ephemeral One-Shot Migration Container (Proposed)
+(Proposed; ratified 2026-11-26)
 
 **Proposed, implemented**: Database migrations execute as a one-shot run of the backend image (`node dist/drizzle/migrate.js`; the Dockerfile copies `drizzle/*.sql` beside the compiled script, which reads them from its own directory) before the web backend container starts. One image instead of two keeps the migration code and the application from drifting apart.  
 **Why**: Satisfies Finding F4. Migrations require the database owner role (`lc_migration`) and role passwords to alter credentials. The running web application (`lc_app`) MUST NEVER hold owner privileges or know role passwords (`constitution.md:541-544`). Running migrations as a one-shot container enforces physical credential separation at the container runtime level.  
 **Cost**: Slightly longer deployment time; Dokploy must coordinate running the migration container to successful exit (`0`) before triggering rolling restart of the backend service.
 
-### Decision 6 — The platform surface checks its caller; the proxy is a second layer (Proposed, implemented)
+(Proposed, implemented; ratified 2026-11-26)
 
 **Proposed**: The session guard admits a platform-surface request only when its TCP peer is loopback, and answers everyone else with an unknown route's 404. Traefik additionally refuses `/internal/*`.  
 **Why**: Resolves Finding F1. A container must listen on `0.0.0.0`, which removes the only control the surface had. A proxy rule alone would leave the surface open to every other container on the Docker network and to any path that bypasses the proxy (a published port, a misrouted domain); a check in the application holds wherever the process runs. The peer comes from the socket because `X-Forwarded-For` is client-writable.  
 **Cost**: An operator reaches the surface only from inside the backend container. The surface still authenticates nobody: a real PO identity remains future work (`session.guard.ts`'s own note), and this decision does not pretend otherwise.
 
-### Decision 7 — Frontend Image Built per Environment with Public API Base URL (Proposed)
+(Proposed; ratified 2026-11-26)
 
 **Taken (Proposed)**: The Next.js frontend Docker image is built with `NEXT_PUBLIC_API_BASE_URL` provided as a Docker build argument in GitHub Actions.  
 **Why**: Resolves Finding F2. Next.js inlines `NEXT_PUBLIC_*` variables into client-side JavaScript bundles at build time. The authentication forms (`SignInForm`, `EnrollmentFlow`, `RecoveryForm`) directly call this URL from the browser.  
 **Alternative considered**: Routing the four authentication forms through the Next.js server (`/api/lc/*` or a sibling route), which would let the backend stay private. Not chosen for this slice because it changes `003`'s sign-in flow, which is outside this slice's scope; worth its own change later.
 
-### Decision 8 — Multi-Stage Production Dockerfiles with Non-Root Execution (Proposed)
+(Proposed; ratified 2026-11-26)
 
 **Proposed, implemented**: `backend/Dockerfile` and `frontend/Dockerfile` use multi-stage builds on `node:22-bookworm-slim` (glibc, so the prebuilt `@node-rs/argon2` binary loads; Alpine would need the musl build), discard devDependencies from the final image, and run as user `node`. Both images built and booted locally on 2026-10-09; with `NODE_ENV=production` and `AUTH_KEY_PROVIDER=local` the backend refuses to start, as designed.  
 **Why**: Minimizes container image attack surface, shrinks image transfer size to GHCR and EC2, and enforces least privilege execution inside containers.  
 **Cost**: Requires maintaining explicit build stages and dependency pruning in Dockerfiles.
 
-### Decision 9 — `/health` reports the build commit (Proposed, implemented)
+(Proposed, implemented; ratified 2026-11-26)
 
 **Proposed**: The backend image carries `BUILD_SHA` (the commit CI tested); `/health` answers `{"status":"ok","version":"<sha>"}`, and the deploy workflow waits until it reports the commit it built.
 **Why**: The previous release answers `"ok"` too, so a wait for `"ok"` passed the moment it began and SC-001 could not be measured. A commit SHA is public in the repository and says nothing about any firm.
 **Cost**: `/health` now discloses which release is running — to anyone, by design.
 
-### Decision 10 — Our own backup script, not Dokploy's (Proposed, implemented; revised 2026-10-26)
+(Proposed, implemented; revised 2026-10-26; ratified 2026-11-26)
 
 **Proposed**: `deploy/scripts/backup.sh` — `pg_dump -Fc` as the schema owner, gzip, upload to S3 with SSE-KMS only after the dump succeeded — run daily on the host.
 **Why**: Dokploy's built-in PostgreSQL backup runs `pg_dump --no-acl --no-owner`. `restore-check.sh` showed such a dump restoring without error into a database where every grant and every `EXECUTE` on the `SECURITY DEFINER` functions is gone.
@@ -335,7 +335,7 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Cost of (a)**: a few seconds of 502 per deploy.
 **Chosen**: (a), 2026-11-25. FR-017 reworded to the gap the Compose shape actually has.
 
-### Decision 12 — The API proves its KMS key at boot (Proposed, implemented)
+(Proposed, implemented; ratified 2026-11-26)
 
 **Proposed**: In production and staging, the API wraps and unwraps a random canary through the configured key before listening, and refuses to start if that fails.
 **Why**: A wrong key id or a missing IAM grant otherwise deploys green and fails every MFA enrolment; `/health` deliberately probes only the database.
@@ -348,7 +348,7 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Proposed**: (a) — smallest change, and the caller is already the most privileged operator there is. It changes 002's contract, so it is its own small change with a contract test, not a line slipped into this slice.
 **Chosen**: (a), 2026-11-25 — task T041. Option (b) is no longer SES: transactional email will go through **Resend** (decided 2026-11-25); once that is built the seed invitation can be mailed too, and (a) stays as the operator's fallback.
 
-### Decision 14 — The audit log's scheduled duties run on the host (Proposed, implemented)
+(Proposed, implemented; ratified 2026-11-26)
 
 **Proposed**: `deploy/scripts/audit-maintenance.sh`, daily on the host as `lc_retention`: creates the audit partitions for this month and the next two, and runs `backend/drizzle/retention.sql` (001/FR-019) taken from the backend image.
 **Why**: `infra/retention-schedule.tf` scheduled retention with EventBridge against RDS, neither of which exists under D1/D2; and the API creates partitions only at boot (`partition-maintenance.ts`, two months ahead), so a container left running longer than that would reach a month with no partition and every audited action would fail.
@@ -416,22 +416,22 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 
 ## Approval Checklist
 
-- [ ] Decision 1 — Dokploy on AWS EC2 replacing ECS Fargate — *Decided by Francisco 2026-10-09, pending region clarification*
-- [ ] Decision 2 — Containerized PostgreSQL inside Dokploy replacing RDS — *Decided by Francisco 2026-10-09*
-- [ ] Decision 3 — Deploy flow: CI → GHCR → Dokploy webhook — *Decided by Francisco 2026-10-09*
-- [ ] Decision 4 — AWS S3 retained for document storage — *Decided by Francisco 2026-10-09*
-- [ ] Decision 5 — Ephemeral one-shot migration container — *Proposed, pending ratification by Francisco*
-- [ ] Decision 6 — The platform surface checks its caller; the proxy is a second layer — *Proposed, pending ratification by Francisco*
-- [ ] Decision 7 — Frontend image built per environment with public API base URL — *Proposed, pending ratification by Francisco*
-- [ ] Decision 8 — Multi-stage production Dockerfiles with non-root user — *Proposed, pending ratification by Francisco*
-- [ ] Decision 9 — `/health` reports the build commit — *Proposed, pending ratification by Francisco*
-- [ ] Decision 10 — Our own backup script, not Dokploy's — *Proposed, pending ratification by Francisco*
+- [x] Decision 1 — Dokploy on AWS EC2 replacing ECS Fargate — *Decided by Francisco 2026-10-09, region answered 2026-11-25: `eu-central-1`*
+- [x] Decision 2 — Containerized PostgreSQL inside Dokploy replacing RDS — *Decided by Francisco 2026-10-09*
+- [x] Decision 3 — Deploy flow: CI → GHCR → Dokploy webhook — *Decided by Francisco 2026-10-09*
+- [x] Decision 4 — AWS S3 retained for document storage — *Decided by Francisco 2026-10-09*
+- [x] Decision 5 — Ephemeral one-shot migration container — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
+- [x] Decision 6 — The platform surface checks its caller; the proxy is a second layer — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
+- [x] Decision 7 — Frontend image built per environment with public API base URL — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
+- [x] Decision 8 — Multi-stage production Dockerfiles with non-root user — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
+- [x] Decision 9 — `/health` reports the build commit — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
+- [x] Decision 10 — Our own backup script, not Dokploy's — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
 - [x] Decision 11 — Redeploy gap vs split services — *Chosen 2026-11-25: (a), FR-017 reworded*
-- [ ] Decision 12 — KMS key proven at boot — *Proposed, pending ratification by Francisco*
+- [x] Decision 12 — KMS key proven at boot — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
 - [x] Decision 13 — First administrator's invitation on a real environment — *Chosen 2026-11-25: (a), task T041*
-- [ ] Decision 14 — Audit partitions and retention as a host job — *Proposed, pending ratification by Francisco*
+- [x] Decision 14 — Audit partitions and retention as a host job — *Ratified 2026-11-26 (decided by Claude, delegated by the CC technical lead)*
 - [x] Decision 15 — CI secrets from Bella Baxter, keyless — *Taken by Francisco 2026-10-29 (instance self-hosted, Bella's OpenBao, one API key per service later, CI first)*
-- [ ] Resolution of the EC2 region (answered 2026-11-25: `eu-central-1`) and associated Data Residency amendment — *waiver drafted, not ratified*
+- [x] Resolution of the EC2 region (answered 2026-11-25: `eu-central-1`) and associated Data Residency amendment — *waiver ratified 2026-11-26 in constitution v1.6.0*
 - [ ] Resolution of domain names, AWS account ownership, and staging environment scope — *staging (none) and domain shape answered 2026-11-25; exact domain and account ownership still open*
 - [ ] Findings F1–F6 reviewed against the code by Claude on 2026-10-09 (F1 reproduced against the built image), pending Francisco's read
-- [ ] Constitution amendment (Stack, MVP Prohibitions, Data Residency) written and ratified — *drafted 2026-10-26 in [constitution-amendment-draft.md](./constitution-amendment-draft.md), region still open; not ratified*
+- [x] Constitution amendment (Stack, MVP Prohibitions, Data Residency) written and ratified — *ratified 2026-11-26 as constitution v1.6.0 (residency exception until 2027-06-30); see [constitution-amendment-draft.md](./constitution-amendment-draft.md)*
