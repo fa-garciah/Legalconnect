@@ -1,55 +1,27 @@
 <!--
-SYNC IMPACT REPORT — 2026-09-04
+SYNC IMPACT REPORT — 2026-11-26
 ================================
-Version change: 1.4.1 → 1.5.0  (MINOR)
+Version change: 1.5.0 → 1.6.0  (MINOR)
 
-Bump rationale: materially expanded guidance plus new sections. No Core Principle
-(I–VI) is removed, renamed or redefined — the identity provider is a Security
-Constraint and a Technology Constraint, not a principle. Principle II is
-*reinforced*: identity now lives under the same RLS as everything else. The
-amendment request named the base as v1.4.0; the document was actually at v1.4.1
-(the NestJS entitlement-interceptor correction), so this amendment is 1.4.1 →
-1.5.0. No content of 1.4.1 is lost.
+Bump rationale: the deployment target is set for the MVP. No Core Principle
+(I–VI) is removed, renamed or redefined. Technology Constraints and Security
+Constraints change; one [PENDING] closes; technical debt is added. Prepared in
+specs/024-deployment-pipeline/constitution-amendment-draft.md (task T015) and
+ratified 2026-11-26 by Claude on the CC technical lead's delegation.
 
 Modified sections (no titles renamed):
-  - Security Constraints › Authentication — provider decision replaced; Cognito
-    retained as "Superseded 2026-09-04"; mandatory MFA restated as a code
-    obligation with no disable path; backup code custody reformulated from
-    "named exception" to positive design obligation, requirements intact.
-  - Security Constraints › Sessions — Cognito GlobalSignOut/RevokeToken and the
-    "no API to list sessions" note removed. Product-owned sessions unchanged.
-  - Security Constraints › Data Residency — Cognito user pools removed from the
-    verified-services list; mx-central-1 infrastructure decision explicitly
-    unchanged.
-  - Technology Constraints › Stack — `Auth:` line rewritten.
-  - Development Workflow › Testing discipline — blocking coverage list extended
-    with MFA enforcement and TOTP secret encryption/decryption/verification.
-  - Recognised Technical Debt — items 1, 2, 8 amended.
-  - Governance — pending count 1 → 2.
-
-Added sections:
-  - Security Constraints › Authentication › "Custody of TOTP secrets".
-  - Technology Constraints › "Self-hosted identity — derived from Principle II
-    and the Authentication section" (replaces the "Amazon Cognito" section).
-  - Recognised Technical Debt item 10 — WebAuthn/passkeys are a build.
-  - Recognised Technical Debt item 11 — TOTP secret custody.
-  - "Consequences of the v1.5.0 Amendment" table.
-  - Data Residency › new [PENDING] on the scope of the AWS account blockage.
-
-Removed sections:
-  - Technology Constraints › "Amazon Cognito" (replaced, not deleted outright —
-    the decision itself is preserved as Superseded under Authentication).
-  - Recognised Technical Debt, prior item 10 (unconfirmed Cognito passkey
-    availability in mx-central-1) — struck as moot with the provider retired.
+  - Technology Constraints › Stack — Cloud, Images and Email lines; note on
+    Dokploy and containerised PostgreSQL.
+  - Explicit MVP Prohibitions — Kubernetes line.
+  - Security Constraints › Data Residency — [PENDING] on the AWS account blockage
+    closed; dated residency exception for eu-central-1; backups must restore.
+  - Security Constraints › Dependencies and Infrastructure — where secrets live.
+  - Recognised Technical Debt — items 12 and 13 added.
+  - Governance — pending count 2 → 1.
 
 Follow-up TODOs / deferred items:
-  - [PENDING] Scope of the AWS account blockage (Data Residency). Recorded rather
-    than assumed, per the amendment request's own instruction. Owner: whoever
-    holds the AWS account relationship at CC.
   - [PENDING] PAC selection — pre-existing, untouched.
-  - specs/002-identity-membership/spec.md still names Cognito in Dependencies and
-    Out-of-Scope. Deliberately NOT corrected here: a PR is scoped to one slice
-    directory (Merge Rules). See the Consequences table.
+  - See "Consequences of the v1.6.0 Amendment" for the text left stale elsewhere.
   - No RATIFICATION_DATE change: 2026-08-14 preserved.
 -->
 
@@ -436,20 +408,22 @@ RDS rather than at a provider. Cognito user pools were previously listed among t
 services verified here; that line is removed with the provider, not because
 regional availability changed.
 
-**[PENDING] — the scope of the AWS account blockage is not confirmed.** The
-identity amendment was written against a blockage described as preventing user
-pool provisioning and passkey verification, and this section assumes it is scoped
-to Cognito. If the blockage is in fact **account-wide**, then the paragraph above
-names a region this project also cannot provision today, and the item in question
-is the deployment target rather than the identity provider — a materially
-different problem with a different remedy. This is recorded as a pending rather
-than assumed in either direction, because only whoever holds the AWS relationship
-can distinguish the two cases. **Owner:** whoever holds the AWS account
-relationship at CC. **Resolution:** confirm in writing whether the blockage is
-scoped to Cognito provisioning or covers the account. If account-wide, this
-section is amended and the Walking Skeleton's deployment assumption is reopened;
-the identity decision above stands either way, since it is the case that no longer
-depends on the account.
+**Closed 2026-11-26: the AWS account blockage was not account-wide.** As of
+2026-10-09 the account serves S3 (CI's test bucket) and an EC2 host running
+Dokploy. The identity decision of v1.5.0 stands, as this section anticipated it
+would either way.
+
+**Temporary residency exception, 2026-11-25 to 2027-06-30.** The MVP environment
+runs in `eu-central-1` (Frankfurt), outside Mexico, because the EC2 host and the
+document bucket CC already operates are there and no `mx-central-1` capacity has
+been provisioned for LegalConnect yet. During this window case files, documents,
+identity records and the audit log of every firm on that environment reside in
+`eu-central-1`, and their backups with them. The region paragraphs above remain
+the target. Consequences: (1) no firm's production data goes in until each firm's
+privacy notice declares the transfer under LFPDPPP; (2) no commercial material may
+claim residency in Mexico for this environment; (3) the window ends with a
+migration to `mx-central-1`, or with a further amendment — it does not lapse
+silently. **Owner:** CC technical lead.
 
 **One documented exception, and it must appear in the privacy notice.** Amazon SES
 is **not available** in mx-central-1. Transactional email — invitation delivery
@@ -475,12 +449,21 @@ Constraints that continue to apply:
   capacity (data processor), given that cloud is billed as a pass-through to the
   firm.
 - Backups reside in the same jurisdiction as the primary data.
+- A backup counts only if it restores. Database backups are taken with grants and
+  owners (the isolation of Principle II lives in them), uploaded only once
+  complete, and a backup format is trusted only after a restore of it has passed
+  the slice-024 check (`deploy/scripts/restore-check.sh`). Dokploy's built-in
+  PostgreSQL backup omits grants and owners and does not satisfy this rule.
 
 ### Dependencies and Infrastructure
 
 - Dependency vulnerability scanning in CI. No critical CVEs on `main`.
 - No long-lived credentials in CI; short-lived roles only.
-- Infrastructure declared as code. No manual changes in production.
+- Infrastructure declared as code. No manual changes in production. (Dokploy's own
+  configuration is the exception recorded as Technical Debt item 12.)
+- Secrets live in a managed secret store — today Dokploy's environment store for
+  the running services, and Bella Baxter or GitHub Actions secrets for CI (slice
+  024, D15); never in the repository, never in logs.
 
 ---
 
@@ -517,19 +500,28 @@ principle** requires a formal amendment to this constitution.
 ### Stack
 
 ```
-Cloud:      AWS mx-central-1 — ECS Fargate + RDS PostgreSQL + S3 + KMS + SQS
+Cloud:      AWS eu-central-1 — EC2 running Dokploy (Docker + Traefik) + PostgreSQL 16 in a
+             container + S3 + KMS (SQS when a queue is first needed)
+Images:     GitHub Container Registry, built only by CI from a commit that passed every gate
 DB:         PostgreSQL with enforced Row-Level Security
              (shared schema, tenant_id on every table)
 Backend:    NestJS (TypeScript) + Drizzle ORM
 Frontend:   Next.js (React), responsive web
 Auth:       Self-hosted — NextAuth (Auth.js) Credentials provider + otplib TOTP;
              identity and sessions in this product's own PostgreSQL
-Email:      Transactional provider outside mx-central-1 — [decided in slice 002 plan]
+Email:      Resend (transactional; outside Mexico, declared in the privacy notice)
 CFDI:       PAC with multi-issuer support — [PENDING]
 Queues:     SQS + worker inside the same deployment
 IaC:        Terraform or CDK (per the infrastructure team's practice)
 CI:         GitHub Actions
 ```
+
+> **Dokploy and containerised PostgreSQL — decided 2026-10-09 (slice 024, D1/D2).** Chosen over ECS
+> Fargate + RDS for the MVP to cut operational and AWS cost while one host suffices. What this gives
+> up, stated so it is not forgotten: Multi-AZ failover, AWS-managed point-in-time recovery, and
+> managed minor upgrades. Backups, restore, disk and host patching become CC's responsibility. The
+> backup obligations under Data Residency exist because of this decision. Revisit before the first
+> paying firm whose contract assumes managed-database recovery guarantees.
 
 ### PostgreSQL with RLS — derived from Principle II
 
@@ -652,7 +644,7 @@ dynamic modules.
 
 Each of these costs more than it contributes within the committed timeline:
 
-- ❌ Kubernetes — ECS Fargate is used instead.
+- ❌ Kubernetes, ECS — a single Dokploy host on EC2 is used instead for the MVP.
 - ❌ Microservices — modular monolith, single deployment.
 - ❌ OpenSearch / Elasticsearch — Postgres full-text search covers
   US05-EP04-DOC.
@@ -890,9 +882,24 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
     _Review trigger:_ the first environment that restores a production backup, and
     any change to where the application key is held.
 
-Item 12 (the 004 archetype matrix did not exist yet — only SA was ever granted
+12. **Dokploy configuration is a runbook, not code.** Recorded 2026-11-26.
+    `specs/024-deployment-pipeline/quickstart.md` is its declared form; drift
+    between it and Dokploy's UI is not detected.
+    _Remedy:_ Dokploy's API or an export checked into `deploy/`.
+    _Review trigger:_ the first staging environment.
+
+13. **Two long-lived credentials in CI.** Recorded 2026-11-26. The S3 test key
+    pair (repository secrets until Bella Baxter serves it keyless, slice 024 D15)
+    and the Dokploy webhook URL, which is a bearer credential with no short-lived
+    form. The webhook is restricted to `main`'s deploy job, rotated on any
+    suspected exposure, and its rotation date is recorded in `quickstart.md`.
+    _Review trigger:_ Bella Baxter reachable from GitHub, at which point the key
+    pair leaves GitHub.
+
+The earlier item 12 (the 004 archetype matrix did not exist yet — only SA was ever granted
 anything, and `plan.entitlements` was written and read by nothing) is **struck**:
 slice 004 shipped the full matrix, the entitlement mechanism, and the scope port.
+The number was reused in v1.6.0.
 
 ---
 
@@ -910,14 +917,27 @@ schedule pressure in the project.
   budget or client request. A violation can only be resolved by amending the
   constitution, never by ignoring it in a PR.
 - Every `[PENDING]` in this document must be closed before the end of Fase 0.
-  Entering Fase 1 with open pendings is a governance violation. **Two remain: PAC
-  selection, and the scope of the AWS account blockage** (Data Residency, opened
-  2026-09-04). The identity amendment closed no pending and opened one — it
-  replaced a decision that was already closed, and the pending it added records a
-  fact about the blockage that motivated it rather than a choice still to be made.
+  Entering Fase 1 with open pendings is a governance violation. **One remains:
+  PAC selection.** The AWS account blockage pending was closed by v1.6.0 (it was
+  not account-wide).
 - Relaxing a principle de facto — without an amendment — invalidates the
   authority of the entire document. If a principle cannot be met, it is amended
   or removed; it is not ignored.
+
+---
+
+## Consequences of the v1.6.0 Amendment
+
+What the 2026-11-26 deployment amendment leaves stale elsewhere. Corrected in
+their own PRs, per Merge Rules.
+
+| Artifact | What is now stale | Blocks? |
+|---|---|---|
+| `infra/README.md` | Still says region and Cognito "decided in v1.4.0" and lists RDS | No — text only |
+| `infra/main.tf` | Header still calls the region a constitution `[PENDING]` | No — its variable has no default either way |
+| `specs/registro-specs-mvp.md` | Deployment row | No |
+| Privacy notice | Must declare the transfer to `eu-central-1` (and Resend's processing) before any firm's data goes in | **Yes**, for onboarding a real firm — not for the demo |
+| `specs/002-identity-membership/plan.md` | Email provider candidate still SES `us-east-1` | No — text only |
 
 ---
 
@@ -947,10 +967,18 @@ predicate rule; every slice already merged.
 
 ---
 
-**Version:** 1.5.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-09-04
+**Version:** 1.6.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-11-26
 
 ### Amendment History
 
+- **1.6.0** — **Deployment target set: Dokploy on EC2 with containerised
+  PostgreSQL**, replacing ECS Fargate + RDS for the MVP (slice 024, D1/D2), with
+  what is given up named. **`[PENDING]` on the AWS account blockage closed**: not
+  account-wide. Data Residency: dated exception for `eu-central-1` until
+  2027-06-30. Email: Resend. Backups must restore: grants and owners kept,
+  verified by restore. Technical Debt 12 (Dokploy configuration as a runbook) and
+  13 (two long-lived CI credentials). Ratified 2026-11-26 by Claude on the CC
+  technical lead's delegation.
 - **1.5.0** — **Identity provider replaced: Amazon Cognito → self-hosted NextAuth
   (Auth.js) Credentials provider + `otplib` TOTP, on this product's own
   PostgreSQL.** The Cognito decision is marked **Superseded 2026-09-04** and
