@@ -6,8 +6,9 @@ written justification, approval by a CC technical lead, and a semantic version b
 Rules the amendment itself lands in its own PR against `.specify/memory/constitution.md`, not in
 slice 024's PR; this file is where it is prepared.
 
-**One input is still missing**: the EC2 region (spec open question 1). Section 3 is written in two
-variants; delete the one that does not apply.
+**Region answered 2026-11-25: `eu-central-1`** (spec open question 1). Section 3 now carries only
+variant 3b, filled in; variant 3a was removed. **Still the lead's to fill at ratification**: the
+exception's end date, in 3b.
 
 ---
 
@@ -36,7 +37,7 @@ Cloud:      AWS mx-central-1 — ECS Fargate + RDS PostgreSQL + S3 + KMS + SQS
 Proposed:
 
 ```
-Cloud:      AWS <region> — EC2 running Dokploy (Docker + Traefik) + PostgreSQL 16 in a
+Cloud:      AWS eu-central-1 — EC2 running Dokploy (Docker + Traefik) + PostgreSQL 16 in a
              container + S3 + KMS (SQS when a queue is first needed)
 Images:     GitHub Container Registry, built only by CI from a commit that passed every gate
 ```
@@ -64,17 +65,13 @@ Proposed: `❌ Kubernetes, ECS — a single Dokploy host on EC2 is used instead 
 > (CI's test bucket) and an EC2 host running Dokploy. The identity decision of v1.5.0 stands, as that
 > section anticipated it would either way.
 
-Then **one** of:
+Then add (variant 3b — the EC2 host is in `eu-central-1`, outside Mexico):
 
-**3a — if the EC2 host is in `mx-central-1`.** No other change to the section: the region decision
-holds, and the list of services verified there gains EC2.
-
-**3b — if the EC2 host is in `<region>`, outside Mexico.** Add:
-
-> **Temporary residency exception, `<date>` to `<end date>`.** The MVP environment runs in
-> `<region>`, outside Mexico, because `<reason>`. During this window case files, documents, identity
-> records and the audit log of every firm on that environment reside in `<region>`, and their
-> backups with them. Consequences: (1) no firm's production data goes in until each firm's privacy
+> **Temporary residency exception, 2026-11-25 to `<end date — set at ratification>`.** The MVP
+> environment runs in `eu-central-1` (Frankfurt), outside Mexico, because the EC2 host and the
+> document bucket CC already operates are there and no `mx-central-1` capacity has been provisioned
+> for LegalConnect yet. During this window case files, documents, identity records and the audit log
+> of every firm on that environment reside in `eu-central-1`, and their backups with them. Consequences: (1) no firm's production data goes in until each firm's privacy
 > notice declares the transfer under LFPDPPP; (2) no commercial material may claim residency in
 > Mexico for this environment; (3) the window ends with a migration to `mx-central-1`, or with a
 > further amendment — it does not lapse silently. **Owner:** CC technical lead.
@@ -115,6 +112,11 @@ is a bearer credential. Proposed: keep the rule and add:
 
 ## 6. Secrets
 
+**Email.** The Stack line `Email: Transactional provider outside mx-central-1 — [decided in slice
+002 plan]` becomes `Email: Resend (transactional; outside Mexico, declared in the privacy notice)` —
+decided 2026-11-25, replacing the SES-in-us-east-1 candidate. Technical Debt item 9 (email leaves the
+region whatever the provider) is unchanged.
+
 v1.5.0's Data Residency text names Secrets Manager among the infrastructure in use. For the MVP,
 runtime secrets live in Dokploy's encrypted environment store and build-time ones in GitHub Actions
 secrets (spec 024, Bella Baxter out of scope). Proposed wording: "Secrets live in a managed secret
@@ -129,8 +131,8 @@ selection."**
 
 > **1.6.0** — **Deployment target set: Dokploy on EC2 with containerised PostgreSQL**, replacing ECS
 > Fargate + RDS for the MVP (slice 024, D1/D2), with what is given up named. **`[PENDING]` on the AWS
-> account blockage closed**: not account-wide. Data Residency: `<3a: unchanged>` / `<3b: dated
-> exception for <region>>`. Backups must restore: grants and owners kept, verified by restore.
+> account blockage closed**: not account-wide. Data Residency: dated exception for `eu-central-1`.
+> Email: Resend. Backups must restore: grants and owners kept, verified by restore.
 > Technical Debt 12 (Dokploy configuration as a runbook) and 13 (two long-lived CI credentials).
 
 ## Consequences (for the amendment PR's own table)
@@ -140,4 +142,5 @@ selection."**
 | `infra/README.md` | Still says region and Cognito "decided in v1.4.0" and lists RDS | No — text only |
 | `infra/main.tf` | Header still calls the region a constitution `[PENDING]` | No — its variable has no default either way |
 | `specs/registro-specs-mvp.md` | Deployment row | No |
-| Privacy notice | Only under 3b: must declare the transfer before any firm's data goes in | **Yes, under 3b**, for onboarding a real firm |
+| Privacy notice | Must declare the transfer to `eu-central-1` (and Resend's processing) before any firm's data goes in | **Yes**, for onboarding a real firm — not for the demo |
+| `specs/002-identity-membership/plan.md` | Email provider candidate still SES `us-east-1` | No — text only |

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `024-deployment-pipeline`  
 **Created**: 2026-10-09  
-**Status**: Draft — decisions pending ratification by the CC technical lead (Francisco)  
+**Status**: Draft — D11 and D13 chosen and the four open questions answered on 2026-11-25; the proposed decisions (D5–D10, D12, D14) and the constitution amendment still await ratification by the CC technical lead (Francisco)  
 **Input**: User story `US23-EP00-FND-DeployFromMain` (PO: *"every change merged to main that passes CI reaches a running environment without anyone building or copying anything by hand"*). On 2026-10-09, code merged to `main` sits in GitHub with no deployment target: CI runs the test suites and stops. Getting code onto a server requires manual SSH, manual builds, and manually typing environment variables.
 
 > **Citation convention.** Requirements of previous slices are cited as `001/FR-0NN`, `002/FR-0NN`, `003/FR-0NN`, `007/FR-0NN`, `018/FR-0NN`, `021/FR-0NN`, and `022/FR-0NN`. Bare `FR-0NN` refers to this document. Code is cited as `path:line` and was read at the commit this branch starts from.
@@ -160,7 +160,7 @@ An external attacker or scanner sends an HTTP request to `https://<api-domain>/i
 - **FR-014**: The frontend container image MUST be built using a multi-stage Dockerfile that injects `NEXT_PUBLIC_API_BASE_URL` at build time to support direct browser auth calls.
 - **FR-015**: Both `backend` and `frontend` Docker images MUST run as unprivileged non-root users (`node`).
 - **FR-016**: The backend MUST gain a `/health` endpoint (none exists today: `GET /health` answers 404) that validates database connectivity and returns HTTP 200, used by Dokploy and Traefik for health checks. It MUST disclose nothing about tenants. Under Decision 9 it reports the commit the image was built from, so the deploy can tell the new release from the old one.
-- **FR-017**: Dokploy MUST implement rolling deployment or health-checked container replacement: incoming traffic is routed to the new container only after health checks pass. *(Not met by the Compose shape as built — a redeploy stops the old API before the new one is healthy. Decision 11, pending.)*
+- **FR-017**: A redeploy MAY interrupt the API for at most the new container's health-check start period plus one probe (≈ 35 s with the compose file's `start_period: 20s`, `interval: 15s`). A release whose API never becomes healthy MUST fail the deploy workflow's wait step, so the operator learns of it from CI rather than from users. Zero-downtime rolling replacement is out of scope for the MVP. *(Reworded 2026-11-25 per Decision 11 (a).)*
 - **FR-018**: Dokploy MUST maintain previous image tags to allow single-click rollback from the Dokploy UI.
 
 ---
@@ -193,7 +193,8 @@ Every runtime variable declared in `backend/.env.example` and `frontend/.env.exa
 | **`backend`** | `OBJECT_STORE_ACCESS_KEY_ID` | Secret. AWS Access Key for S3 document storage. | Dokploy Environment (Secret) |
 | **`backend`** | `OBJECT_STORE_SECRET_ACCESS_KEY` | High secret. AWS Secret Key for S3 document storage. | Dokploy Environment (Secret) |
 | **`backend`** | `DOCUMENT_MAX_UPLOAD_BYTES` | Configuration. Maximum upload size in bytes (`26214400`). | Dokploy Environment |
-| **`backend`** | `EMAIL_PROVIDER_REGION` | Configuration. Transactional email region (`us-east-1`). | Dokploy Environment |
+| **`backend`** | `EMAIL_PROVIDER_REGION` | Configuration. Was the SES region; obsolete under Resend and read by no code. Leave unset. | Dokploy Environment |
+| **`backend`** | `RESEND_API_KEY` | Secret. Resend API key — reserved; read by nothing until email sending is built. | Dokploy Environment (Secret) |
 | **`backend`** | `EMAIL_SENDER_ADDRESS` | Configuration. Sender email (`no-reply@legalconnect.mx`). | Dokploy Environment |
 | **`backend`** | `INVITATION_MAX_FAILED_ATTEMPTS`| Configuration. Threshold (`10`). | Dokploy Environment |
 | **`backend`** | `INVITATION_ISSUANCE_RATE_PER_HOUR`| Configuration. Hourly cap (`200`). | Dokploy Environment |
@@ -271,7 +272,7 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Taken (by Francisco 2026-10-09)**: The application stack runs under Dokploy (self-hosted PaaS, Docker + Traefik) on an existing AWS EC2 instance, replacing "ECS Fargate" in the constitution's Technology Constraints Stack (`constitution.md:520`).  
 **Why**: Avoids ECS task definition complexity, enables unified management of reverse proxy routing, environment variables, and Docker containers in a lightweight single-node PaaS, reducing operational overhead during MVP development.  
 **Cost**: High-availability multi-zone orchestration provided natively by ECS Fargate is relinquished; instance health, Docker daemon uptime, and host OS patching become self-managed responsibilities.  
-**`[NEEDS CLARIFICATION: EC2 region]`**: The existing EC2 instance's AWS region is **not yet known**. If the instance is in any region other than `mx-central-1`, **Constitution Principle VI and Security Constraints (Data Residency) are violated**. A specific constitutional amendment will be required if the instance cannot be located in `mx-central-1`.
+**Region — answered 2026-11-25: `eu-central-1` (Frankfurt)**, the same region as the document bucket. This is outside `mx-central-1`, so Data Residency needs the dated waiver in [constitution-amendment-draft.md](./constitution-amendment-draft.md) before any real firm's data lands on it; a demo firm's data does not. The KMS keys and the backup bucket are created in `eu-central-1` too, so backups share the primary data's jurisdiction (constitution, Data Residency).
 
 ### Decision 2 — Containerized PostgreSQL inside Dokploy replacing RDS
 
@@ -327,11 +328,12 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Why**: Dokploy's built-in PostgreSQL backup runs `pg_dump --no-acl --no-owner`. `restore-check.sh` showed such a dump restoring without error into a database where every grant and every `EXECUTE` on the `SECURITY DEFINER` functions is gone.
 **Cost**: A script and a schedule of our own to keep, instead of a Dokploy checkbox.
 
-### Decision 11 — Accept a short redeploy gap for the MVP, or split the services (Pending — technical lead)
+### Decision 11 — Accept a short redeploy gap for the MVP, or split the services (Chosen 2026-11-25: (a))
 
 **Options**: (a) keep the Compose service and accept a gap of roughly `start_period` + one probe on every deploy, amending FR-017's wording; (b) one Dokploy *Application* per service (Swarm, `start-first` rolling updates) with the migration as a pre-deploy step.
 **Proposed**: (a). One firm in demo, and (b) moves "migrate before the API" out of the one file that guarantees it today (`depends_on: service_completed_successfully`).
-**Cost of (a)**: FR-017 as written is not met; a few seconds of 502 per deploy.
+**Cost of (a)**: a few seconds of 502 per deploy.
+**Chosen**: (a), 2026-11-25. FR-017 reworded to the gap the Compose shape actually has.
 
 ### Decision 12 — The API proves its KMS key at boot (Proposed, implemented)
 
@@ -339,11 +341,12 @@ Four architectural decisions were taken by the technical lead (Francisco) on 202
 **Why**: A wrong key id or a missing IAM grant otherwise deploys green and fails every MFA enrolment; `/health` deliberately probes only the database.
 **Cost**: One KMS round trip per container start, and a boot that fails during a KMS outage — which is the intended behaviour.
 
-### Decision 13 — How the first administrator of a real firm receives their invitation (Pending — technical lead)
+### Decision 13 — How the first administrator of a real firm receives their invitation (Chosen 2026-11-25: (a))
 
 **Problem** (found 2026-10-26 while writing `quickstart.md`): `POST /internal/platform/tenants/:id/seed-administrator` (002/FR-035) generates the invitation token, stores its hash, and returns neither the token nor a link (`seed.service.ts:46-69`); no email provider exists yet. Tenant-issued invitations do return theirs (`invitation.service.ts:94`). So on a deployed environment the first administrator of a firm cannot be reached, and SC-007 cannot be met for anyone but a demo firm — and the demo seed refuses any non-local database by design (022/FR-012).
 **Options**: (a) the seed endpoint returns the reference link once, to its caller — who is, since Decision 6, only someone with a shell inside the backend container; (b) wire transactional email first (slice 002's plan decision, out of this slice's scope); (c) a one-off operator script that issues the seed invitation directly in the database and prints the link.
 **Proposed**: (a) — smallest change, and the caller is already the most privileged operator there is. It changes 002's contract, so it is its own small change with a contract test, not a line slipped into this slice.
+**Chosen**: (a), 2026-11-25 — task T041. Option (b) is no longer SES: transactional email will go through **Resend** (decided 2026-11-25); once that is built the seed invitation can be mailed too, and (a) stays as the operator's fallback.
 
 ### Decision 14 — The audit log's scheduled duties run on the host (Proposed, implemented)
 
@@ -369,7 +372,7 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
      `Cloud: AWS mx-central-1 — ECS Fargate + RDS PostgreSQL + S3 + KMS + SQS`
    - *Amended line*:  
      `Cloud: AWS EC2 (Dokploy PaaS: Docker + Traefik) + containerized PostgreSQL + S3 + KMS + SQS`  
-     *(Pending EC2 region confirmation per `[NEEDS CLARIFICATION: EC2 region]`)*.
+     *(Region answered 2026-11-25: `eu-central-1`; see the amendment draft's waiver.)*
 2. **Explicit MVP Prohibitions (`constitution.md:651-665`)**:
    - *Current line*:  
      `❌ Kubernetes — ECS Fargate is used instead.`
@@ -378,15 +381,15 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 3. **Security Constraints › Data Residency (`constitution.md:424-453`)**:
    - *Current state*: Records `[PENDING] — the scope of the AWS account blockage is not confirmed` (`constitution.md:439`).
    - *Resolution*: Close the pending item. The AWS account is usable for S3 (`c-market-storage` in `eu-central-1`) and EC2 as of 2026-10-09.
-   - *Regional Residency Clarification*: The S3 bucket is currently in `eu-central-1`. The EC2 instance region must be confirmed. If the EC2 instance is not in `mx-central-1`, an explicit data residency waiver/amendment must be ratified, noting that primary data and document storage reside outside Mexico during MVP.
+   - *Regional Residency Clarification*: The S3 bucket and the EC2 instance are both in `eu-central-1` (answered 2026-11-25). An explicit, dated data residency waiver must be ratified, noting that primary data and document storage reside outside Mexico during the MVP.
 
 ---
 
 ## Out of Scope
 
-- **Multi-Environment Staging Pipeline**: Orchestrating distinct staging and production Dokploy environments on separate EC2 instances or subdomains (deferred pending clarification).
+- **Multi-Environment Staging Pipeline**: Answered 2026-11-25: `main` deploys to a single production environment; no staging in the MVP.
 - **"Bella Baxter" Secret Management**: Dedicated enterprise secrets integration currently in evaluation.
-- **Transactional Email Provider (SES)**: Production transactional email provisioning remains governed by slice `002`'s plan; CI and local development use mocks/placeholders.
+- **Transactional Email Provider (Resend)**: Resend replaces SES (decided 2026-11-25). Building the sending is its own change against slice `002`; this slice only reserves its secret in the inventory.
 - **High-Availability Clustering**: Multi-node Docker Swarm or Kubernetes clustering; single-node Dokploy on EC2 is the accepted MVP architecture.
 - **WAF / DDoS Mitigation**: Cloudflare or AWS WAF deployment in front of Traefik.
 
@@ -404,10 +407,10 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 
 ## Open questions ([NEEDS CLARIFICATION] items)
 
-1. **`[NEEDS CLARIFICATION: EC2 region]`**: What AWS region does the existing EC2 host reside in? If it is NOT `mx-central-1`, Constitution Principle VI and Security Constraints (Data Residency) are violated. An explicit amendment must document the region and justify the temporary deviation.
+1. **EC2 region — answered 2026-11-25: `eu-central-1`.** Outside `mx-central-1`: the amendment's dated waiver documents and bounds the deviation.
 2. **`[NEEDS CLARIFICATION: AWS Account Ownership]`**: Does the AWS account hosting the EC2 instance also own the S3 bucket (`c-market-storage` in `eu-central-1`), or are they separate accounts? If separate, cross-account IAM role delegation or static IAM user credentials must be configured.
-3. **`[NEEDS CLARIFICATION: Domain Names]`**: What are the canonical public domain names for the frontend and backend API (e.g., `app.legalconnect.mx` and `api.legalconnect.mx`, or an IP/nip.io temporary domain)?
-4. **`[NEEDS CLARIFICATION: Staging Environment]`**: Does this deployment pipeline target a single production environment, or should `main` deploy to a staging environment first, with production triggered by version tags?
+3. **Domain names — shape answered 2026-11-25**: two subdomains on the one Compose service, separate from C-Market's — `app.legalconnect.<domain>` → `frontend:3000` and `api.legalconnect.<domain>` → `backend:3000`; A records (or one `*.legalconnect` wildcard) to the EC2's Elastic IP. **Still open: the exact `<domain>`.**
+4. **Staging — answered 2026-11-25**: a single production environment; every green merge to `main` deploys there.
 
 ---
 
@@ -423,12 +426,12 @@ Adopting Dokploy, containerized PostgreSQL, and acknowledging the AWS account st
 - [ ] Decision 8 — Multi-stage production Dockerfiles with non-root user — *Proposed, pending ratification by Francisco*
 - [ ] Decision 9 — `/health` reports the build commit — *Proposed, pending ratification by Francisco*
 - [ ] Decision 10 — Our own backup script, not Dokploy's — *Proposed, pending ratification by Francisco*
-- [ ] Decision 11 — Redeploy gap vs split services — *Pending a choice by Francisco*
+- [x] Decision 11 — Redeploy gap vs split services — *Chosen 2026-11-25: (a), FR-017 reworded*
 - [ ] Decision 12 — KMS key proven at boot — *Proposed, pending ratification by Francisco*
-- [ ] Decision 13 — First administrator's invitation on a real environment — *Pending a choice by Francisco*
+- [x] Decision 13 — First administrator's invitation on a real environment — *Chosen 2026-11-25: (a), task T041*
 - [ ] Decision 14 — Audit partitions and retention as a host job — *Proposed, pending ratification by Francisco*
 - [x] Decision 15 — CI secrets from Bella Baxter, keyless — *Taken by Francisco 2026-10-29 (instance self-hosted, Bella's OpenBao, one API key per service later, CI first)*
-- [ ] Resolution of `[NEEDS CLARIFICATION: EC2 region]` and associated Data Residency amendment
-- [ ] Resolution of domain names, AWS account ownership, and staging environment scope
+- [ ] Resolution of the EC2 region (answered 2026-11-25: `eu-central-1`) and associated Data Residency amendment — *waiver drafted, not ratified*
+- [ ] Resolution of domain names, AWS account ownership, and staging environment scope — *staging (none) and domain shape answered 2026-11-25; exact domain and account ownership still open*
 - [ ] Findings F1–F6 reviewed against the code by Claude on 2026-10-09 (F1 reproduced against the built image), pending Francisco's read
 - [ ] Constitution amendment (Stack, MVP Prohibitions, Data Residency) written and ratified — *drafted 2026-10-26 in [constitution-amendment-draft.md](./constitution-amendment-draft.md), region still open; not ratified*

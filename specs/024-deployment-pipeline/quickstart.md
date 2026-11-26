@@ -4,13 +4,14 @@ This is the **declared form of everything Dokploy's UI holds** (constitution dra
 the UI and this file disagree, one of them is wrong, and it should be fixed the same day. Evidence of
 each check goes in [quickstart-results.md](./quickstart-results.md).
 
-Placeholders still open (spec open questions): `<REGION>` (EC2 region — also decides the constitution
-amendment's variant), `<APP_DOMAIN>` and `<API_DOMAIN>` (e.g. `app.legalconnect.mx`,
-`api.legalconnect.mx`), `<ENV>` (`prod`, unless staging is decided).
+Answered 2026-11-25: region **`eu-central-1`** (the EC2 host and the documents bucket), a single
+**production** environment (`environment=prod`), and two subdomains of a domain CC controls on the one
+Compose service. Placeholders still open: `<APP_DOMAIN>` and `<API_DOMAIN>` — shape
+`app.legalconnect.<domain>` and `api.legalconnect.<domain>`.
 
-**Blocking the first real sign-in (Decision 13, pending):** `POST …/seed-administrator` creates the
-first administrator's invitation but neither returns its link nor sends it (no email provider yet),
-so §7 cannot finish for a real firm until that is decided. See tasks T041.
+**First real sign-in (Decision 13 (a), chosen 2026-11-25):** `POST …/seed-administrator` returns the
+first administrator's `invitationLink` once (task T041, its own PR against `main`). §7 shows how to
+use it. Email (Resend) is not built; the operator delivers the link.
 
 ---
 
@@ -19,7 +20,7 @@ so §7 cannot finish for a real firm until that is decided. See tasks T041.
 ```bash
 cd infra
 terraform init
-terraform apply -var aws_region=<REGION> -var environment=<ENV> -var backup_retention_days=<N>
+terraform apply -var aws_region=eu-central-1 -var environment=prod -var backup_retention_days=<N>
 ```
 
 This creates the TOTP envelope key (`main.tf`) and the backup bucket, its key and the writer/reader
@@ -98,7 +99,7 @@ OBJECT_STORE_BUCKET=<production documents bucket>
 OBJECT_STORE_ACCESS_KEY_ID=<…>
 OBJECT_STORE_SECRET_ACCESS_KEY=<…>
 AUTH_KMS_KEY_ID=<terraform output totp_envelope_key_id>
-AWS_REGION=<REGION>
+AWS_REGION=eu-central-1
 # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY only if not using the instance profile
 EMAIL_SENDER_ADDRESS=no-reply@legalconnect.mx
 
@@ -145,7 +146,10 @@ docker exec -i <backend-container> node -e '
 ```
 
 Then `POST /internal/platform/tenants/<id>/seed-administrator` with `{ "email": "<admin email>" }`
-the same way. **This is where Decision 13 bites**: the invitation exists, its link reaches no one.
+the same way. The `201` body carries `"invitationLink": "/aceptar/<reference>"` (Decision 13 (a),
+needs T041 merged): send `https://<APP_DOMAIN>/aceptar/<reference>` to the administrator by a
+channel you trust. It is shown **once** — it is in no log and no later read; if it is lost, issue
+another seed invitation (allowed while the firm has no live member). The link expires in 7 days.
 
 ## 8. Scheduled jobs on the host
 
@@ -159,7 +163,7 @@ DATABASE_URL_BACKUP=postgresql://lc_migration:<pw>@<pg-internal-host>:5432/legal
 DATABASE_URL_RETENTION=postgresql://lc_retention:<LC_RETENTION_PASSWORD>@<pg-internal-host>:5432/legalconnect
 BACKUP_TARGET=<terraform output db_backup_target>
 BACKUP_KMS_KEY_ID=<terraform output db_backup_kms_key_id>   # the ARN: the bucket refuses any other key
-AWS_REGION=<REGION>
+AWS_REGION=eu-central-1
 ```
 
 ```cron

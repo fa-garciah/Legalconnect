@@ -53,9 +53,14 @@ a decision. Everything else is repository work and does not wait on them.
 
 - [ ] T012 **[Francisco]** Answer spec open questions 1–4 (EC2 region, AWS account ownership,
       domains, staging) in `spec.md`.
+      *(2026-11-25: region `eu-central-1`, production only, domain shape
+      `app.`/`api.legalconnect.<domain>` — recorded in `spec.md`, `quickstart.md` and the amendment
+      draft. Still open: the exact domain, and whether the EC2 and the documents bucket share an
+      AWS account.)*
 - [ ] T013 **[Francisco]** Ratify or reject D5–D8, D9, D10, D12, D14, and choose D11 (accept a
       redeploy gap, or split into Dokploy Applications) and D13 (how a real firm's first administrator
       gets their invitation).
+      *(2026-11-25: D11 → (a), FR-017 reworded; D13 → (a), T041. The ratifications remain.)*
 - [x] T014 Spec corrections (plan § Findings): US1 scenario 1 → two images and `main` tag; approval
       checklist's D6 label; inventory `NEXTAUTH_URL` → `APP_PUBLIC_URL`; KMS edge case → boot
       failure (D12); FR-017 wording per D11.
@@ -187,9 +192,13 @@ a decision. Everything else is repository work and does not wait on them.
 
 ## Phase 9: Close
 
-- [ ] T041 After T013 chooses D13: make a real firm's first administrator reachable. If (a), the
+- [x] T041 After T013 chooses D13: make a real firm's first administrator reachable. If (a), the
       seed endpoint returns the reference link once — test-first, a contract test on
       `seed.controller.ts`; it changes 002/FR-035's response, so its own small PR.
+      *(Done 2026-11-25 on branch `024-t041-seed-invitation-link`, against `main`: scenarios 7 and
+      7b in `tests/contract/seed-first-administrator.test.ts` failed first, then pass; the link's
+      hash is the stored `reference_hash`, and the token is in neither the row nor the audit entry.
+      002's contract and FR-035 annotated.)*
 - [ ] T042 Constitution debt 13 (once ratified): CI's S3 key pair → GitHub OIDC to a role scoped to
       the test bucket. Needs `object-store.config.ts` to accept the default credential chain, which it
       does not today (it requires the static pair).
