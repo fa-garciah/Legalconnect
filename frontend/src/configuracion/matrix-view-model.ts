@@ -48,6 +48,7 @@ const LABELS: Readonly<Record<string, string>> = {
   'case.read': 'Abrir un expediente',
   'case.create': 'Abrir expedientes nuevos',
   'case.change_status': 'Cambiar el estado de un expediente',
+  'case.manage_team': 'Asignar el equipo de un expediente',
   'case.read_catalog': 'Consultar catálogos de expedientes',
   'document.upload': 'Subir documentos a un expediente',
   'document.read': 'Ver y previsualizar documentos',

@@ -44,7 +44,19 @@ import { QueryBoundary } from '@/feedback/QueryBoundary';
 import { can } from '@/authz/can';
 import { useDialogAnchor } from '@/lib/use-dialog-anchor';
 import type { FailedResponse } from '@/lib/api-client';
-import { changeCaseStatus, declareOutcome, listCaseCatalog, readCase } from '@/cases/api';
+import {
+  assignTeamMember,
+  changeCaseStatus,
+  declareOutcome,
+  listCaseCatalog,
+  listTeamCandidates,
+  readCase,
+  unassignTeamMember,
+  type RoleOnCase,
+  type TeamCandidate,
+} from '@/cases/api';
+import { Button } from '@/components/ui/button';
+import { ARCHETYPE_LABEL } from '@/shell/archetype-labels';
 import { formatCalendarDate } from '@/cases/format';
 import { CASE_OUTCOMES } from '@/cases/types';
 import type { CaseDetail, CaseOutcome, CaseTeamMember, CatalogEntry } from '@/cases/types';
@@ -53,6 +65,7 @@ import type { Archetype } from '@/session/types';
 /** The wire's words for a role; the firm's words are what reach the screen. */
 const ROLE_LABEL: Readonly<Record<string, string>> = {
   lead: 'Responsable',
+  collaborator: 'Colaborador',
   support: 'Apoyo',
 };
 
@@ -195,7 +208,7 @@ function CaseDetailContent({
         <h3 id="case-team-heading" className="mb-2 text-sm font-medium">
           Equipo del expediente
         </h3>
-        <CaseTeam team={detail.team} />
+        <CaseTeam caseId={caseId} team={detail.team} archetype={archetype} />
       </section>
 
       {/* 021 (FR-001, Decision 1). Documents have their own page: a preview needs the width. */}
@@ -445,35 +458,218 @@ function CatalogValue({
   );
 }
 
+/** Wire codes this panel words itself; anything else goes through `classifyRefusal`. */
+const TEAM_REFUSAL: Readonly<Record<string, string>> = {
+  already_assigned: 'Esa persona ya está en el equipo de este expediente.',
+  membership_not_available: 'Esa persona ya no está disponible en el despacho.',
+  not_assigned: 'Esa persona ya no estaba en el equipo de este expediente.',
+};
+
+const ROLE_OPTIONS: readonly RoleOnCase[] = ['lead', 'collaborator', 'support'];
+
+const SELECT_CLASS =
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50';
+
+/** How a person reads: their email when the caller may see it, else role and position. */
+function describePerson(person: TeamCandidate): { primary: string; secondary: string | null } {
+  const role = ARCHETYPE_LABEL[person.archetype] ?? person.archetype;
+  // A firm often names the position after the role ("Socio"); saying it twice reads as a glitch.
+  const roleLine =
+    person.positionName && person.positionName !== role ? `${role} · ${person.positionName}` : role;
+  return person.email
+    ? { primary: person.email, secondary: roleLine }
+    : { primary: roleLine, secondary: null };
+}
+
 /**
- * The live case team.
+ * The live case team, and — for MP, CM and SA (row 33) — the controls that staff it.
  *
- * **A role and an identifier, because there is no name.** No table in this product stores
- * one — `identity` holds an email, `membership` an archetype (019 spec, Q2). Showing the
- * membership id is honest; inventing a display from an email would not be.
+ * **People, not ids.** No table stores a name (019 spec, Q2), so a member reads as their email
+ * where the caller may read emails (SA, MP — row 5), and as role and position from the
+ * directory otherwise (row 24). The membership id shows only when neither source knows the
+ * person — a member revoked since, say.
+ *
+ * Whether *this* caller may staff *this* matter is the server's call: a CM not on the matter
+ * never got to open it (`404`), and one taken off it meanwhile gets the same opaque refusal.
  *
  * An empty team is a legitimate, transient state: a freshly created matter has nobody on it
  * until someone is assigned (`006` Decision 3).
  */
-function CaseTeam({ team }: { readonly team: readonly CaseTeamMember[] }): React.JSX.Element {
-  if (team.length === 0) {
-    return (
-      <p data-testid="case-team" className="text-sm text-muted-foreground">
-        Sin asignar. Este expediente todavía no tiene a nadie del despacho a cargo.
-      </p>
-    );
-  }
+function CaseTeam({
+  caseId,
+  team,
+  archetype,
+}: {
+  readonly caseId: string;
+  readonly team: readonly CaseTeamMember[];
+  readonly archetype: Archetype;
+}): React.JSX.Element {
+  const queryClient = useQueryClient();
+  const manages = can('case.manage_team', archetype);
+  const withEmail = can('membership.read_tenant', archetype);
+
+  const people = useQuery<readonly TeamCandidate[], FailedResponse | null>({
+    queryKey: ['team-candidates', withEmail],
+    queryFn: () => listTeamCandidates(withEmail),
+    // `/tenant/members` is an audited read of personal data: once per panel, not per focus.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const byId = new Map((people.data ?? []).map((person) => [person.membershipId, person]));
+
+  const [personId, setPersonId] = useState('');
+  const [role, setRole] = useState<RoleOnCase>('collaborator');
+  const [refusal, setRefusal] = useState<FailedResponse | null | undefined>(undefined);
+
+  const reload = () => {
+    void queryClient.invalidateQueries({ queryKey: ['case', caseId] });
+    void queryClient.invalidateQueries({ queryKey: ['cases'] });
+  };
+
+  const assign = useMutation<
+    unknown,
+    FailedResponse | null,
+    { membershipId: string; roleOnCase: RoleOnCase }
+  >({
+    mutationFn: ({ membershipId, roleOnCase }) => assignTeamMember(caseId, membershipId, roleOnCase),
+    onSuccess: () => {
+      setPersonId('');
+      reload();
+    },
+    onError: (failed) => setRefusal(failed),
+  });
+
+  const unassign = useMutation<unknown, FailedResponse | null, string>({
+    mutationFn: (membershipId) => unassignTeamMember(caseId, membershipId),
+    onSuccess: reload,
+    onError: (failed) => setRefusal(failed),
+  });
+
+  const onTeam = new Set(team.map((member) => member.membershipId));
+  // Only people who could open the matter once on it: a BM holds no case capability (row 30),
+  // so putting one on a team would staff it with somebody who cannot see it.
+  const candidates = (people.data ?? []).filter(
+    (person) => !onTeam.has(person.membershipId) && can('case.read', person.archetype),
+  );
+  const busy = assign.isPending || unassign.isPending;
+  const worded = refusal ? TEAM_REFUSAL[refusal.body.error.code] : undefined;
 
   return (
-    <ul data-testid="case-team" className="flex flex-col gap-2">
-      {team.map((member) => (
-        <li key={member.membershipId} className="flex items-center gap-3 text-sm">
-          <Badge variant="secondary">{ROLE_LABEL[member.roleOnCase] ?? member.roleOnCase}</Badge>
-          <span className="truncate font-mono text-xs text-muted-foreground">
-            {member.membershipId}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-3">
+      {team.length === 0 ? (
+        <p data-testid="case-team" className="text-sm text-muted-foreground">
+          Sin asignar. Este expediente todavía no tiene a nadie del despacho a cargo.
+        </p>
+      ) : (
+        <ul data-testid="case-team" className="flex flex-col gap-2">
+          {team.map((member) => {
+            const person = byId.get(member.membershipId);
+            const shown = person ? describePerson(person) : null;
+            return (
+              <li key={member.membershipId} className="flex items-center gap-3 text-sm">
+                <Badge variant="secondary">{ROLE_LABEL[member.roleOnCase] ?? member.roleOnCase}</Badge>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  {shown ? (
+                    <>
+                      <span className="truncate">{shown.primary}</span>
+                      {shown.secondary ? (
+                        <span className="truncate text-xs text-muted-foreground">{shown.secondary}</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="truncate font-mono text-xs text-muted-foreground">
+                      {people.isPending ? 'Cargando…' : member.membershipId}
+                    </span>
+                  )}
+                </span>
+                {manages ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    aria-label={`Quitar a ${shown?.primary ?? 'esta persona'} del expediente`}
+                    onClick={() => {
+                      setRefusal(undefined);
+                      unassign.mutate(member.membershipId);
+                    }}
+                  >
+                    Quitar
+                  </Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {manages ? (
+        <form
+          className="grid gap-2 sm:grid-cols-[1fr_11rem_auto] sm:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!personId) return;
+            setRefusal(undefined);
+            assign.mutate({ membershipId: personId, roleOnCase: role });
+          }}
+        >
+          <div className="grid gap-1">
+            <Label htmlFor="team-person">Persona</Label>
+            <select
+              id="team-person"
+              className={SELECT_CLASS}
+              value={personId}
+              disabled={busy || people.isPending}
+              onChange={(event) => setPersonId(event.target.value)}
+            >
+              <option value="">
+                {people.isPending
+                  ? 'Cargando…'
+                  : candidates.length === 0
+                    ? 'No hay más personas'
+                    : 'Elige a alguien'}
+              </option>
+              {candidates.map((person) => {
+                const shown = describePerson(person);
+                return (
+                  <option key={person.membershipId} value={person.membershipId}>
+                    {shown.secondary ? `${shown.primary} (${shown.secondary})` : shown.primary}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="team-role">Papel en el expediente</Label>
+            <select
+              id="team-role"
+              className={SELECT_CLASS}
+              value={role}
+              disabled={busy}
+              onChange={(event) => setRole(event.target.value as RoleOnCase)}
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {ROLE_LABEL[option]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button type="submit" size="sm" disabled={busy || !personId}>
+            Agregar al equipo
+          </Button>
+        </form>
+      ) : null}
+
+      {worded ? (
+        <p role="alert" className="text-sm text-destructive">
+          {worded}
+        </p>
+      ) : refusal !== undefined ? (
+        <ErrorState refusal={classifyRefusal(refusal)} onRetry={() => setRefusal(undefined)} />
+      ) : null}
+    </div>
   );
 }

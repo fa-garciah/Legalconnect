@@ -51,6 +51,8 @@ export const CAPABILITY_MATRIX: Readonly<Record<string, ReadonlySet<Subject>>> =
   'case.create': new Set<Subject>(['MP', 'CM', 'SA']),
   // Row 32 — `assigned`. `PL` reads and opens matters and moves none of them.
   'case.change_status': new Set<Subject>(['MP', 'AA', 'CM', 'SA']),
+  // Row 33 — `assigned`. Staffing a matter: the case panel's team controls.
+  'case.manage_team': new Set<Subject>(['MP', 'CM', 'SA']),
   // Row 34 — the only case row `BM` holds. Reading the firm's own catalogs is not content.
   'case.read_catalog': new Set<Subject>(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 
