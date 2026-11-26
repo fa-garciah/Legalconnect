@@ -9,6 +9,7 @@ import { createPlatformApp } from '../helpers/platform-app';
 import { closePlatformDb } from '../../src/common/db/platform-client';
 import { uniqueRfc } from '../helpers/rfc';
 import { connectAs } from '../helpers/db';
+import { hashInvitationToken } from '../../src/modules/invitation/token';
 
 describe('POST /internal/platform/tenants/:id/seed-administrator (US6)', () => {
   let app: INestApplication;
@@ -130,6 +131,55 @@ describe('POST /internal/platform/tenants/:id/seed-administrator (US6)', () => {
     } finally {
       await migration.end();
     }
+  });
+
+  it('scenario 7 (024 D13): the caller receives the invitation link once, and only the response carries it', async () => {
+    const tenantId = await freshTenant();
+    const response = await request(app.getHttpServer())
+      .post(`/internal/platform/tenants/${tenantId}/seed-administrator`)
+      .send({ email: `linked-${Date.now()}@example.com` });
+
+    expect(response.status).toBe(201);
+    const link: unknown = response.body.invitationLink;
+    expect(typeof link).toBe('string');
+    const match = /^\/aceptar\/([A-Za-z0-9_-]{43})$/.exec(link as string);
+    expect(match).not.toBeNull();
+    const rawToken = match![1]!;
+
+    const migration = await connectAs('migration');
+    try {
+      // The link is the real credential for THIS invitation: its hash is the stored reference.
+      const stored = await migration.query<{ reference_hash: string }>(
+        `SELECT reference_hash FROM invitation WHERE id = $1`,
+        [response.body.id],
+      );
+      expect(stored.rows[0]!.reference_hash).toBe(hashInvitationToken(rawToken));
+
+      // …and it is not kept anywhere else: not in the invitation row, not in the audit log.
+      expect(JSON.stringify(stored.rows[0])).not.toContain(rawToken);
+      const audit = await migration.query(
+        `SELECT * FROM audit_event WHERE action = 'invitation.seed_issued' AND tenant_id = $1`,
+        [tenantId],
+      );
+      expect(audit.rows).toHaveLength(1);
+      expect(JSON.stringify(audit.rows)).not.toContain(rawToken);
+    } finally {
+      await migration.end();
+    }
+  });
+
+  it('scenario 7b: two seed invitations carry two different links', async () => {
+    const tenantId = await freshTenant();
+    const first = await request(app.getHttpServer())
+      .post(`/internal/platform/tenants/${tenantId}/seed-administrator`)
+      .send({ email: `link-a-${Date.now()}@example.com` });
+    const second = await request(app.getHttpServer())
+      .post(`/internal/platform/tenants/${tenantId}/seed-administrator`)
+      .send({ email: `link-b-${Date.now()}@example.com` });
+
+    expect(first.body.invitationLink).toMatch(/^\/aceptar\//);
+    expect(second.body.invitationLink).toMatch(/^\/aceptar\//);
+    expect(first.body.invitationLink).not.toBe(second.body.invitationLink);
   });
 
   it('scenario 6: seeding a deactivated tenant is refused', async () => {
