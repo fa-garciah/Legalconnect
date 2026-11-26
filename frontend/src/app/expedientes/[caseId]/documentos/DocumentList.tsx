@@ -68,9 +68,7 @@ export function DocumentList({ caseId, archetype, previewingId, onPreview, onWit
             <TableHeader>
               <TableRow>
                 <TableHead>Documento</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Tamaño</TableHead>
-                <TableHead>Subido</TableHead>
+                <TableHead>Detalles</TableHead>
                 <TableHead className="sr-only">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -79,21 +77,35 @@ export function DocumentList({ caseId, archetype, previewingId, onPreview, onWit
                 .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
                 .map((document) => (
                   <TableRow key={document.id} data-state={previewingId === document.id ? 'selected' : undefined}>
-                    <TableCell className="max-w-[16rem] truncate font-medium" title={document.originalFilename}>
-                      {document.originalFilename}
+                    {/* w-full + max-w-0: the name takes whatever the other two columns leave rather
+                        than pushing the table wider, and wraps to two lines there (full name on
+                        hover) — the row is two buttons tall anyway, so the second line is free. */}
+                    <TableCell className="w-full max-w-0 font-medium" title={document.originalFilename}>
+                      <span className="line-clamp-2 break-words">{document.originalFilename}</span>
+                    </TableCell>
+                    {/* Category, size and date share one column, two lines, so the table fits beside
+                        the preview on a 1366 px laptop instead of scrolling sideways. Each value
+                        stays its own element: tests and readers find "472 KB" on its own. */}
+                    <TableCell>
+                      <div>
+                        <span>{categoryLabel(document.categoryName)}</span>
+                        {document.categoryStatus === 'retired' ? (
+                          <Badge variant="outline" className="ml-2">
+                            Retirada
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="whitespace-nowrap text-sm text-muted-foreground">
+                        <span>{formatBytes(document.sizeBytes)}</span>
+                        <span aria-hidden> · </span>
+                        <span>{formatDate(document.uploadedAt)}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <span>{categoryLabel(document.categoryName)}</span>
-                      {document.categoryStatus === 'retired' ? (
-                        <Badge variant="outline" className="ml-2">
-                          Retirada
-                        </Badge>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">{formatBytes(document.sizeBytes)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatDate(document.uploadedAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap justify-end gap-2">
+                      {/* Two buttons a line (14rem holds "Cambiar categoría" + "Retirar"): four in a
+                          row do not fit beside the preview, and one per line made every row four
+                          buttons tall. */}
+                      <div className="ml-auto flex w-56 flex-wrap justify-end gap-2">
                         <Button
                           variant={previewingId === document.id ? 'default' : 'outline'}
                           size="sm"

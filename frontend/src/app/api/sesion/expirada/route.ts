@@ -20,7 +20,15 @@
  * be the very one the API has just refused.
  */
 import { signOut } from '@/auth';
+import { safeDestination } from '@/session/destination';
 
-export async function GET(): Promise<void> {
-  await signOut({ redirectTo: '/ingresar?sesion=expirada' });
+/**
+ * `?destino=` is the page the session died on, passed by the root layout, so signing in again
+ * resumes it — the notice on `/ingresar` says "Vuelve a ingresar para continuar", and before
+ * 2026-10-29 continuing meant starting over on the home page.
+ */
+export async function GET(request?: Request): Promise<void> {
+  const destino = request ? safeDestination(new URL(request.url).searchParams.get('destino')) : null;
+  const resume = destino ? `&destino=${encodeURIComponent(destino)}` : '';
+  await signOut({ redirectTo: `/ingresar?sesion=expirada${resume}` });
 }

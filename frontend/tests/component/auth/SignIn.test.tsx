@@ -68,6 +68,22 @@ describe('SignInForm (T051)', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/verificar?reto=opaque-token'));
   });
 
+  it('carries where the person was going on to the challenge', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ challengeToken: 'opaque-token', next: 'factor' }),
+    } as Response);
+    render(<SignInForm destino="/expedientes" />);
+
+    await userEvent.type(screen.getByLabelText('Correo electrónico'), 'persona@despacho.mx');
+    await userEvent.type(screen.getByLabelText('Contraseña'), 'una-contrasena');
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/verificar?reto=opaque-token&destino=%2Fexpedientes'),
+    );
+  });
+
   it('routes to enrollment when the identity has no confirmed factor (FR-006)', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

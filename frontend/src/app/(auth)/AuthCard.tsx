@@ -8,15 +8,18 @@
  *
  * LAYOUT FROM A REFERENCE, IDENTITY FROM `020`. The structure follows a reference mock-up
  * reviewed on 2026-09-22 — a deep brand panel on the left, a clean form column on the right —
- * and was then pared back on 2026-09-23 to the essentials: wordmark, one positioning line,
- * one headline, the voucher, and a single quiet line of guarantees. The palette, the two families and the no-literal rule are `020`'s and are not
- * reopened: the reference's bright blue is our indigo, its sans headings are our serif.
+ * and was then pared back on 2026-09-23 to the essentials: wordmark, one headline, one object
+ * and a single quiet line of guarantees. The palette, the two families and the no-literal rule
+ * are `020`'s and are not reopened: the reference's bright blue is our indigo, its sans headings
+ * are our serif.
  *
- * WHAT THE REFERENCE PROMISED AND THIS DOES NOT. Its feature list read "Facturación CFDI 4.0 /
- * Contabilidad / Inventarios". None of that exists here — slice 011 is unbuilt and the PAC is
- * still [PENDING] — so every sentence marked `data-claim` is something the product ALREADY
- * does, and `AuthCard.test.tsx` fails if one starts promising invoicing or stamping. The
- * fiscal register is carried by the voucher instead, which is decoration and `aria-hidden`.
+ * THE OBJECT IS A CASE-FILE COVER (2026-10-29). Until then it was a stylised fiscal voucher —
+ * RFC, folio fiscal, a total — under an "ERP legal y fiscal" eyebrow: the largest thing on the
+ * first screen promised invoicing, and slice 011 is unbuilt with the PAC still [PENDING]. The
+ * cover shows what the product is built around instead: the file number, the proceeding and the
+ * parties, the first thing a lawyer looks for. `AuthCard.test.tsx` now reads the WHOLE panel for
+ * invoicing words, decoration included, because the old check read only `data-claim` and the
+ * voucher was exactly what it could not see.
  *
  * Small text on the panel is `primary-foreground`, never ochre: ochre on indigo is 3.03:1,
  * below the 4.5:1 small text needs (found by `design:design-critique`). Ochre is kept for
@@ -54,40 +57,44 @@ function Wordmark({ inverted = false }: { inverted?: boolean }): React.JSX.Eleme
 }
 
 /**
- * A stylised fiscal voucher. Decoration only. The values are fictitious: the issuer is the
- * local seed firm's RFC and the receiver is the SAT's generic "público en general" RFC, which
- * by definition names nobody. The total is deliberately a `heading` step, not `display` — at
- * display size it was the loudest element on the screen and pulled the eye off the form.
+ * A case-file cover (carátula), the way the paper one sits on the front of the folder: the file
+ * number large, the proceeding under it, then the parties on ruled lines like a printed form.
+ * Decoration only, so `aria-hidden`. Every value is fictitious and comes from the local demo seed
+ * (`backend/drizzle/demo`), which names no real firm or person.
+ *
+ * Manila from `accent-warm-tint`, the clasp in ochre: both tokens `020` already decided, so the
+ * object adds no colour. The file number takes the display serif with tabular figures, the same
+ * voice it has on the case register — the cover is the product's own identifier, drawn large.
  */
-function FiscalVoucher(): React.JSX.Element {
-  const rows = [
-    ['RFC emisor', 'DAL091203AB1'],
-    ['RFC receptor', 'XAXX010101000'],
+function CaseCover(): React.JSX.Element {
+  const parties = [
+    ['Actor', 'Tecnologías Núcleo Sur, S.A.P.I. de C.V.'],
+    ['Demandado', 'Servicios Médicos Valdivia, S.C.'],
+    ['Responsable', 'Lic. Laura Ramírez Ibarra'],
   ] as const;
 
   return (
     <div
       aria-hidden="true"
-      data-testid="auth-fiscal-voucher"
-      className="w-full max-w-xs rounded-xl bg-card p-5 text-card-foreground shadow-2xl ring-1 ring-primary-foreground/10"
+      data-testid="auth-case-cover"
+      className="relative w-full max-w-lg rounded-lg bg-accent-warm-tint px-10 pt-10 pb-8 text-foreground shadow-2xl"
     >
-      <p className="border-b border-dashed pb-2 text-caption font-semibold tracking-widest text-muted-foreground uppercase">
-        Comprobante fiscal
+      {/* The folder's clasp, centred on the top edge. */}
+      <span className="absolute top-3 left-1/2 h-1.5 w-16 -translate-x-1/2 rounded-full bg-accent-warm" />
+      <p className="text-small text-muted-foreground">Expediente</p>
+      <p className="tabular font-display text-display leading-tight font-semibold tracking-tight">
+        EXP-2026-2040
       </p>
-      <dl className="mt-2 space-y-1 text-caption">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="tabular font-medium">{value}</dd>
+      <p className="mt-1 text-small">Juicio ordinario mercantil</p>
+      <dl className="mt-6 text-small">
+        {parties.map(([label, value]) => (
+          <div key={label} className="flex gap-4 border-b border-accent-warm/40 py-2">
+            <dt className="w-24 shrink-0 text-muted-foreground">{label}</dt>
+            <dd className="font-medium">{value}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-caption text-muted-foreground">Folio fiscal</p>
-      <p className="tabular font-mono text-caption">5F3C2A9E-7B41-4D0C-9A62-1E8B4F7D2C90</p>
-      <div className="mt-2 flex items-baseline justify-between border-t pt-2">
-        <span className="text-caption text-muted-foreground">Total</span>
-        <span className="tabular font-display text-heading font-semibold">$18,560.00</span>
-      </div>
+      <p className="tabular mt-4 text-right text-caption text-muted-foreground">Fojas 1 a 128</p>
     </div>
   );
 }
@@ -98,38 +105,23 @@ function BrandPanel(): React.JSX.Element {
       data-testid="auth-brand-panel"
       className="relative hidden overflow-hidden bg-primary text-primary-foreground lg:flex"
     >
-      {/* Ledger ruling, the paper a register is kept on. currentColor, never a literal. */}
-      <svg aria-hidden className="absolute inset-0 h-full w-full opacity-[0.06]">
-        <defs>
-          <pattern id="ledger" width="28" height="28" patternUnits="userSpaceOnUse">
-            <path d="M0 27.5H28M27.5 0V28" fill="none" stroke="currentColor" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#ledger)" />
-      </svg>
       <div className="relative flex w-full flex-col justify-between px-12 py-10 xl:px-16">
         <Wordmark inverted />
 
         <div className="space-y-10">
-          <div className="space-y-4">
-            <p className="text-caption font-semibold tracking-[0.2em] uppercase opacity-70">
-              ERP legal y fiscal
-            </p>
-            <h2 className="max-w-md font-display text-hero leading-[1.1] font-semibold tracking-tight">
-              La operación de tu despacho, en orden.
-            </h2>
-          </div>
-          <FiscalVoucher />
+          <h2 className="max-w-md font-display text-hero leading-[1.1] font-semibold tracking-tight">
+            La operación de tu despacho, en orden.
+          </h2>
+          <CaseCover />
         </div>
 
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-caption opacity-70">
-          {CLAIMS.map((claim, index) => (
-            <span key={claim} className="flex items-center gap-3">
-              {index > 0 ? <span aria-hidden>·</span> : null}
-              <span data-claim>{claim}</span>
-            </span>
+        <ul className="flex flex-wrap gap-x-6 gap-y-1 text-caption opacity-70">
+          {CLAIMS.map((claim) => (
+            <li key={claim} data-claim>
+              {claim}
+            </li>
           ))}
-        </p>
+        </ul>
       </div>
     </aside>
   );
@@ -162,9 +154,7 @@ export function AuthCard({
               what it is, which is the whole point of FR-010 for a screen seen on a phone. */}
           <div className="mb-10 flex flex-col items-center gap-2 text-center lg:hidden">
             <Wordmark />
-            <p className="text-caption font-semibold tracking-[0.2em] text-accent-warm-foreground uppercase">
-              ERP legal y fiscal para despachos
-            </p>
+            <p className="text-small text-muted-foreground">Expedientes de tu despacho, en orden</p>
           </div>
 
           <div className="w-full max-w-md space-y-7">
