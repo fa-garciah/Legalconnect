@@ -1,7 +1,7 @@
 # Quickstart results — `023-firm-documents`
 
 **Run**: 2026-09-25, same machine as `022` (Windows 11, Node 22.13.1, PostgreSQL 16 in Docker on
-port 5455, MinIO **unavailable**, backend on 3001, frontend on 3000).
+port 5455, object store **unreachable**, backend on 3001, frontend on 3000).
 
 What was verified, and what was not. Nothing here is claimed from a sibling suite or a reading.
 
@@ -92,7 +92,7 @@ added. Any future slice adding a capability owes that screen one too.
 
 **2029 passed, 26 failed, 13 skipped, across 205 files (11 failed).**
 
-The failing eleven are byte-for-byte the set `022` established as MinIO-dependent:
+The failing eleven are byte-for-byte the set `022` established as object-store-dependent:
 
 ```
 tests/contract/document-access-audited.test.ts        tests/contract/documents-upload-cap.test.ts
@@ -105,10 +105,9 @@ tests/contract/documents-download-disposition.test.ts
 
 Same files, same 26 failures, and passing tests rose from 1954 to **2029** — the +75 this slice
 adds. It introduces no new failure and fixes none of the existing ones, which are environmental:
-the MinIO image cannot be pulled here at all.
+the object store is unreachable on this machine.
 
-**MinIO remains unavailable**: `quay.io` answers `401` for the pinned `minio/minio` and
-`minio/mc` images. The firm-wide list never touches the object store, which is precisely why its
+**The object store remains unreachable**: its container images could not be pulled here. The firm-wide list never touches the object store, which is precisely why its
 contract tests insert `document` rows directly and pass here; preview and download are `021`'s
 and are exercised where a store exists.
 

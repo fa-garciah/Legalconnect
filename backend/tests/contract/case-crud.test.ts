@@ -209,8 +209,24 @@ describe('opening a case', () => {
     expect(noStatus.status).toBe(400);
   });
 
-  it('Decision 3 — a freshly opened case has no team, and that is legal', async () => {
+  it('Decision 3 (amended) — the CM who opens a case is on its team, as lead, and still sees it', async () => {
     const opened = await open(firm.cm, firm.tenantId, {
+      clientId,
+      fileNumber: uniqueName('EXP-CM'),
+      caseStatusId: firm.statusOpenId,
+    });
+    expect(opened.status).toBe(201);
+
+    const detail = await read(firm.mp, firm.tenantId, opened.body.id);
+    expect(detail.body.team).toEqual([
+      expect.objectContaining({ membershipId: firm.cm.membershipId, roleOnCase: 'lead' }),
+    ]);
+    // Without this the opener lost sight of the matter the moment they created it.
+    expect((await read(firm.cm, firm.tenantId, opened.body.id)).status).toBe(200);
+  });
+
+  it('Decision 3 — a case opened by MP has no team, and that is legal', async () => {
+    const opened = await open(firm.mp, firm.tenantId, {
       clientId,
       fileNumber: uniqueName('EXP-SOLO'),
       caseStatusId: firm.statusOpenId,

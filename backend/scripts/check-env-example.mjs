@@ -76,8 +76,10 @@ for (const file of walk(join(backend, 'src'))) {
   }
 }
 
-// NODE_ENV and friends come from the runtime, not from this project's own config.
-const RUNTIME_PROVIDED = new Set(['NODE_ENV', 'PORT', 'CI', 'TZ']);
+// NODE_ENV and friends come from the runtime, not from this project's own config. BUILD_SHA is
+// baked into the image by backend/Dockerfile (024 D9); no operator sets it, and unset it reads
+// "unknown".
+const RUNTIME_PROVIDED = new Set(['NODE_ENV', 'PORT', 'CI', 'TZ', 'BUILD_SHA']);
 
 const missing = [...documented].filter((key) => !present.has(key)).sort();
 const undocumented = [...used]

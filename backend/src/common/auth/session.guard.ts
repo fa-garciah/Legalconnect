@@ -25,6 +25,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  NotFoundException,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -45,6 +46,10 @@ export const AuthSurface = (): MethodDecorator & ClassDecorator =>
 
 export interface AuthenticatedRequest {
   headers: Record<string, string | string[] | undefined>;
+  /** The TCP peer. Read only for the platform surface's loopback check (024 F1). */
+  socket?: { remoteAddress?: string };
+  method?: string;
+  originalUrl?: string;
   /** Set by this guard, read by the tenant and identity contexts. */
   identityId?: string;
   /**
@@ -104,9 +109,24 @@ export class SessionGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPlatformSurface) return true;
-
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    // 024 F1. The loopback BINDING above stops being a control the moment the API runs in a
+    // container, which must listen on every interface to be reachable at all — and then anyone
+    // who can reach the API could create a firm or seed its administrator. So the surface now
+    // checks the caller itself: only a TCP peer on this machine gets through. The peer address
+    // is read from the socket and never from `X-Forwarded-For`, which any client can write.
+    // Behind a reverse proxy every request arrives from the proxy's address, so the surface is
+    // unreachable through it by construction; an operator reaches it from inside the container.
+    // The refusal is the body an unknown route gets, so the surface's existence is not disclosed.
+    if (isPlatformSurface) {
+      if (isLoopbackPeer(request.socket?.remoteAddress)) return true;
+      throw new NotFoundException({
+        message: `Cannot ${request.method ?? 'GET'} ${request.originalUrl ?? ''}`,
+        error: 'Not Found',
+        statusCode: 404,
+      });
+    }
 
     // Already established by server-side wiring earlier in the chain. In
     // PRODUCTION nothing does this — `AppModule` installs no such middleware, and
@@ -139,4 +159,15 @@ export class SessionGuard implements CanActivate {
     request.familyCreatedAt = new Date(row.family_created_at);
     return true;
   }
+}
+
+/**
+ * Whether a TCP peer address is this machine. IPv4 loopback is the whole of 127.0.0.0/8, and a
+ * dual-stack listener reports it IPv4-mapped (`::ffff:127.0.0.1`).
+ */
+export function isLoopbackPeer(address: string | undefined): boolean {
+  if (!address) return false;
+  if (address === '::1') return true;
+  const v4 = address.startsWith('::ffff:') ? address.slice('::ffff:'.length) : address;
+  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(v4);
 }

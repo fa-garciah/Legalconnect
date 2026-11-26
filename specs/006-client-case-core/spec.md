@@ -225,7 +225,8 @@ request while the other is unaffected. Delivers working assignment-based scope.
 ### Edge Cases
 
 - **A case with zero assigned members.** Legal transiently — a matter opened and not yet
-  staffed. Readable only by `MP` and `SA`. See Decision 3. Revoking the last member of a
+  staffed (opened by `MP` or `SA`; a `CM` who opens one is on it). Readable only by `MP`
+  and `SA`. See Decision 3. Revoking the last member of a
   staffed case reaches this same state by a different route (FR-012a), and is equally
   legal — a matter does not close because the person on it left the firm.
 - **An ethical wall between two cases of the same client.** This slice supplies the
@@ -607,6 +608,12 @@ nothing about the existence of matters they are screened from.
 a real state, not an error condition worth preventing at creation time. Such a case is
 readable only by `MP` and `SA` until someone is assigned, which is a consequence of
 Decision 2 rather than a separate rule.
+
+**Amended 2026-11-26 (CC technical lead):** a case opened by a `CM` is created with that
+`CM` on its team as `lead`, in the same transaction, and the `case.created` audit event
+carries `creatorAssignedAs: "lead"`. Without it a `CM` — who reads only the matters they are
+on — lost sight of a case the moment they opened it. Cases opened by `MP` or `SA` still start
+with zero members, and a case can still reach zero members later (FR-012a).
 
 ### Decision 4 — An `assigned`-scope refusal is a 404, not a 403 *(inherited, and this is where it comes due)*
 

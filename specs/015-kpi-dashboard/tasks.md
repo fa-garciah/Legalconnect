@@ -146,7 +146,7 @@ Stories: **US1** the firm's figures · **US2** workload · **US3** outcomes · *
 
 - [x] T026 Backend gates: `typecheck`, `lint`, `test`, and with a database `test:rls`,
       `test:isolation`, `verify:role`, `test:auth-coverage`, `npm test -- --coverage`. Record the
-      MinIO-dependent failures as `022`/`023` established them, and **never** claim a suite that
+      object-store-dependent failures as `022`/`023` established them, and **never** claim a suite that
       did not run.
 - [x] T027 **`test:rls` deserves attention this time**, not a glance: this is the first slice
       since `013` to change a tenant-scoped table. Confirm `case_file`'s policy still covers the

@@ -21,7 +21,8 @@
  * that one exists: both are single misconfigurations that leave every test green
  * and the protection absent. Neither is recoverable by noticing later.
  */
-import { configuredKeyProviderKind } from './key-provider';
+import { randomBytes } from 'node:crypto';
+import { configuredKeyProviderKind, resolveKeyProvider, type KeyProvider } from './key-provider';
 
 /**
  * Environments where the local provider is a configuration error rather than the
@@ -60,5 +61,41 @@ export function assertKeyProviderIsSafe(env: NodeJS.ProcessEnv = process.env): v
   if (!isDeployedEnvironment(env)) return;
   if (configuredKeyProviderKind(env) === 'local') {
     throw new InsecureKeyProviderInDeployment(env.NODE_ENV ?? '');
+  }
+}
+
+export class KeyProviderUnreachable extends Error {
+  constructor(reference: string, cause: string) {
+    super(
+      `refusing to start: the envelope key ${reference} failed a wrap/unwrap round trip (${cause}). ` +
+        'Every MFA enrolment and challenge would fail. Check AUTH_KMS_KEY_ID, AWS_REGION and the ' +
+        'IAM grant of kms:Encrypt and kms:Decrypt on that key.',
+    );
+    this.name = 'KeyProviderUnreachable';
+  }
+}
+
+/**
+ * 024 D12. In a deployed environment, wraps and unwraps a random canary through the configured key
+ * before the API listens. `assertKeyProviderIsSafe` above proves only that the provider is KMS, and
+ * `/health` deliberately probes only the database, so a wrong key id or a missing IAM grant would
+ * otherwise deploy green and fail every second factor. Throwing here keeps the new container from
+ * ever turning healthy, and the previous one keeps serving.
+ *
+ * The canary is never logged: a mismatch reports that the bytes differ, not what they were.
+ */
+export async function assertKeyProviderReachable(
+  env: NodeJS.ProcessEnv = process.env,
+  resolve: (env: NodeJS.ProcessEnv) => KeyProvider = resolveKeyProvider,
+): Promise<void> {
+  if (!isDeployedEnvironment(env)) return;
+  const provider = resolve(env);
+  const canary = randomBytes(32);
+  try {
+    const wrapped = await provider.wrap(canary);
+    const unwrapped = await provider.unwrap(wrapped.keyReference, wrapped.ciphertext);
+    if (!unwrapped.equals(canary)) throw new Error('unwrapped bytes differ from the canary');
+  } catch (cause) {
+    throw new KeyProviderUnreachable(provider.reference, (cause as Error).message);
   }
 }

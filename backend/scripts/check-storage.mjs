@@ -7,7 +7,7 @@
  *   2. writes (upload), 3. signs a download link and fetches it with its file name,
  *   4. deletes (the app deletes only to undo a failed upload).
  *
- * Prints no credential — only the endpoint, region, bucket and each step's outcome, in Spanish,
+ * Prints no credential — only the region, bucket and each step's outcome, in Spanish,
  * with what to fix in AWS when a step fails. Exit code 0 only if every step passed.
  */
 import { readFileSync, existsSync } from 'node:fs';
@@ -34,14 +34,12 @@ if (existsSync(envPath)) {
   }
 }
 
-const endpoint = env.OBJECT_STORE_ENDPOINT || undefined;
 const configuredRegion = env.OBJECT_STORE_REGION || 'mx-central-1';
 const bucket = env.OBJECT_STORE_BUCKET;
 const accessKeyId = env.OBJECT_STORE_ACCESS_KEY_ID;
 const secretAccessKey = env.OBJECT_STORE_SECRET_ACCESS_KEY;
-const forcePathStyle = env.OBJECT_STORE_FORCE_PATH_STYLE === 'true';
 
-console.log(`Almacenamiento: ${endpoint ? `servicio compatible con S3 en ${endpoint}` : 'AWS S3'}`);
+console.log('Almacenamiento: AWS S3');
 console.log(`Bucket: ${bucket ?? '(falta)'} · Región configurada: ${configuredRegion}`);
 if (!bucket || !accessKeyId || !secretAccessKey) {
   console.log('✖ Faltan OBJECT_STORE_BUCKET, OBJECT_STORE_ACCESS_KEY_ID u OBJECT_STORE_SECRET_ACCESS_KEY en backend/.env.');
@@ -49,7 +47,7 @@ if (!bucket || !accessKeyId || !secretAccessKey) {
 }
 
 const clientFor = (region) =>
-  new S3Client({ endpoint, region, forcePathStyle, credentials: { accessKeyId, secretAccessKey } });
+  new S3Client({ region, credentials: { accessKeyId, secretAccessKey } });
 
 const HINTS = {
   AccessDenied:
@@ -77,10 +75,6 @@ async function step(label, run) {
 
 let client = clientFor(configuredRegion);
 await step('Encontrar el bucket', async () => {
-  if (endpoint) {
-    await client.send(new HeadBucketCommand({ Bucket: bucket }));
-    return 'responde';
-  }
   let region = null;
   try {
     const head = await client.send(new HeadBucketCommand({ Bucket: bucket }));

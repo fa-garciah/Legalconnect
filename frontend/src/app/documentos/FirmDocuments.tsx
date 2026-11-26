@@ -15,10 +15,17 @@
  */
 'use client';
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Plus } from 'lucide-react';
 import { useInfiniteQuery, useQueries, type InfiniteData } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { QueryBoundary } from '@/feedback/QueryBoundary';
 import { can } from '@/authz/can';
@@ -58,6 +65,13 @@ export function FirmDocuments({ archetype }: FirmDocumentsProps): React.JSX.Elem
   const [categoryId, setCategoryId] = useState(ALL);
   const [caseId, setCaseId] = useState(ALL);
   const [selected, setSelected] = useState<FirmDocumentSummary | null>(null);
+  // The "Ver" that opened the preview. The panel has no Radix `Trigger` (every card has its own
+  // button), so Radix has nothing to hand focus back to on close; this does it instead.
+  const openedFrom = useRef<HTMLElement | null>(null);
+  const preview = useCallback((item: FirmDocumentSummary) => {
+    openedFrom.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setSelected(item);
+  }, []);
   const [uploadOpen, setUploadOpen] = useState(false);
 
   /*
@@ -202,7 +216,7 @@ export function FirmDocuments({ archetype }: FirmDocumentsProps): React.JSX.Elem
                   key={item.id}
                   item={item}
                   archetype={archetype}
-                  onPreview={setSelected}
+                  onPreview={preview}
                 />
               ))}
             </div>
@@ -224,7 +238,7 @@ export function FirmDocuments({ archetype }: FirmDocumentsProps): React.JSX.Elem
                     key={item.id}
                     item={item}
                     archetype={archetype}
-                    onPreview={setSelected}
+                    onPreview={preview}
                   />
                 ))}
               </TableBody>
@@ -253,14 +267,39 @@ export function FirmDocuments({ archetype }: FirmDocumentsProps): React.JSX.Elem
         </div>
       ) : null}
 
-      {selected ? (
-        // `021`'s pane, unchanged, driven by the selected row's OWN case id.
-        <PreviewPane
-          caseId={selected.caseId}
-          document={selected}
-          mayDownload={can('document.download', archetype)}
-        />
-      ) : null}
+      {/*
+        The preview opens where the person is, in a side panel named after the file. It used to
+        mount below the whole list, ~1700 px under the fold, so "Ver" looked like it did nothing
+        (2026-10-29 critique). Not a column beside the list as on a matter's own page: this
+        table has six columns and would overflow again at 1366 px. Closing returns focus to the
+        "Ver" that opened it. Inside, `021`'s pane, unchanged, driven by the row's OWN case id.
+      */}
+      <Sheet open={selected !== null} onOpenChange={(open) => (open ? undefined : setSelected(null))}>
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto sm:max-w-xl"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            openedFrom.current?.focus();
+          }}
+        >
+          {selected ? (
+            <>
+              <SheetHeader className="pr-8">
+                <SheetTitle className="font-display break-words">{selected.originalFilename}</SheetTitle>
+                <SheetDescription className="tabular">{selected.caseFileNumber}</SheetDescription>
+              </SheetHeader>
+              <div className="mt-4">
+                <PreviewPane
+                  caseId={selected.caseId}
+                  document={selected}
+                  mayDownload={can('document.download', archetype)}
+                />
+              </div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
 
       {/*
         Rendered only while open, so closing it DISCARDS the matter that was chosen rather

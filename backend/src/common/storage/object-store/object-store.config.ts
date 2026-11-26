@@ -1,5 +1,5 @@
 /**
- * T008 — the four `OBJECT_STORE_*` values, read in one place. 007/research.md D6.
+ * T008 — the `OBJECT_STORE_*` values, read in one place. 007/research.md D6.
  *
  * This lived inside `documents.module.ts` as a module-private function, which was right
  * while the application was the only caller. `022`'s demo seed needs the same four values to
@@ -28,13 +28,9 @@ export function objectStoreConfigFromEnv(env: NodeJS.ProcessEnv = process.env): 
     );
   }
   return {
-    // Empty means real AWS S3: the SDK derives the endpoint from the region. An empty string
-    // passed through would be taken as an endpoint and fail, so it becomes `undefined`.
-    endpoint: env.OBJECT_STORE_ENDPOINT || undefined,
     region: env.OBJECT_STORE_REGION ?? 'mx-central-1',
     bucket,
     accessKeyId,
     secretAccessKey,
-    forcePathStyle: env.OBJECT_STORE_FORCE_PATH_STYLE === 'true',
   };
 }

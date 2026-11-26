@@ -222,7 +222,7 @@ describe('a server refusal lands on the form, with the typing intact', () => {
     );
     // Stand in for the directory the dialog always opens over — the thing that holds this
     // query in a real screen.
-    client.setQueryData(['clients', '', 'all'], { pages: [], pageParams: [] });
+    client.setQueryData(['clients', 'directory', '', 'all'], { pages: [], pageParams: [] });
 
     await screen.findByRole('dialog');
 
@@ -240,7 +240,7 @@ describe('a server refusal lands on the form, with the typing intact', () => {
      * asserting an artefact of how this test mounts things.
      */
     await waitFor(() => {
-      expect(client.getQueryState(['clients', '', 'all'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState(['clients', 'directory', '', 'all'])?.isInvalidated).toBe(true);
     });
   });
 });

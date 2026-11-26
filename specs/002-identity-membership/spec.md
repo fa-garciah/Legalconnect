@@ -288,7 +288,7 @@ first has been accepted, and assert it is refused.
 
 **Bootstrap**
 
-- **FR-035**: The platform administration context MUST be able to issue exactly one kind of invitation — target archetype `SA`, into a tenant with **zero live memberships**. This capability MUST become unavailable the moment the tenant holds any live membership, MUST NOT create a membership for the platform operator, MUST NOT grant the operator any read access to that tenant's data, and MUST be audited against the target tenant.
+- **FR-035**: The platform administration context MUST be able to issue exactly one kind of invitation — target archetype `SA`, into a tenant with **zero live memberships**. This capability MUST become unavailable the moment the tenant holds any live membership, MUST NOT create a membership for the platform operator, MUST NOT grant the operator any read access to that tenant's data, and MUST be audited against the target tenant. *(Amended 2026-11-25 by 024 Decision 13 (a): the response returns the invitation link once to the operator — see contracts/platform-seed.md.)*
 
 **Enumeration resistance**
 

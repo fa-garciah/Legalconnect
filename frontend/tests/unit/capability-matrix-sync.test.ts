@@ -74,14 +74,15 @@ const FOUR_ZERO_FOUR_MATRIX_FIXTURE: Readonly<Record<string, ReadonlySet<Subject
    *   | 32 | Change a case status       | MP ✅ AA ✅ PL ❌ CM ✅ BM ❌ SA ✅ |
    *   | 34 | Read the case catalogs     | MP ✅ AA ✅ PL ✅ CM ✅ BM ✅ SA ✅ |
    *
-   * Row 33 (`case.manage_team`) is deliberately absent: `019` displays a case team and does
-   * not edit one, so no control is keyed to it and the mirror must not carry a row nothing
-   * reads.
+   *   | 33 | Manage a case team         | MP ✅ AA ❌ PL ❌ CM ✅ BM ❌ SA ✅ |
+   *
+   * Row 33 joined when the case panel gained its team controls.
    */
   'case.read_list': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'case.read': new Set(['MP', 'AA', 'PL', 'CM', 'SA']),
   'case.create': new Set(['MP', 'CM', 'SA']),
   'case.change_status': new Set(['MP', 'AA', 'CM', 'SA']),
+  'case.manage_team': new Set(['MP', 'CM', 'SA']),
   'case.read_catalog': new Set(['MP', 'AA', 'PL', 'CM', 'BM', 'SA']),
 
   /*
