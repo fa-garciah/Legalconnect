@@ -53,6 +53,55 @@ export interface DemoMatter {
   readonly outcome: 'favorable' | 'desfavorable' | 'convenio' | 'sin_resolucion' | null;
   readonly leadSlug: string | null;
   readonly collaboratorSlugs: readonly string[];
+  /**
+   * The court the matter is before, and the court's own number for it ("1487/2026").
+   *
+   * Every list screen shows a Juzgado column, and a firm whose forty matters all read "—" there
+   * looks like a fixture rather than a practice. DERIVED FROM THE SLOT, not drawn from the RNG,
+   * for the same reason as `outcomeFor`: one more draw would move every later matter.
+   */
+  readonly venueName: string;
+  readonly venueCaseReference: string;
+}
+
+/**
+ * The courts a Mexico City litigation firm actually files in, by matter type. Invented
+ * numbering, real court kinds: a name a lawyer reads without stopping.
+ */
+export const DEMO_VENUES_BY_TYPE: Readonly<Record<string, readonly string[]>> = {
+  Mercantil: [
+    'Juzgado Décimo Segundo de lo Civil de Proceso Escrito de la Ciudad de México',
+    'Juzgado Tercero de Distrito en Materia Civil en la Ciudad de México',
+    'Juzgado Quinto de lo Civil de Proceso Oral de la Ciudad de México',
+  ],
+  Civil: [
+    'Juzgado Vigésimo Quinto de lo Civil de Proceso Escrito de la Ciudad de México',
+    'Juzgado Cuarto Civil de Primera Instancia de Tlalnepantla, Estado de México',
+  ],
+  Laboral: [
+    'Tribunal Laboral de la Ciudad de México, Sala Quinta',
+    'Tribunal Laboral Federal de Asuntos Individuales en la Ciudad de México',
+  ],
+  Familiar: ['Juzgado Décimo Octavo de lo Familiar de la Ciudad de México'],
+  Amparo: ['Juzgado Séptimo de Distrito en Materia Administrativa en la Ciudad de México'],
+  Penal: ['Juzgado de Control del Sistema Procesal Penal Acusatorio de la Ciudad de México'],
+};
+
+export const DEMO_VENUES: readonly string[] = [...new Set(Object.values(DEMO_VENUES_BY_TYPE).flat())];
+
+function venueFor(
+  firmRfc: string,
+  slot: string,
+  matterTypeName: string,
+  openedOn: string,
+): { venueName: string; venueCaseReference: string } {
+  const venues = DEMO_VENUES_BY_TYPE[matterTypeName] ?? DEMO_VENUES;
+  const digest = createHash('sha256').update(`demo-venue-${firmRfc}-${slot}`).digest();
+  const number = 100 + (digest.readUInt16BE(1) % 2800);
+  return {
+    venueName: venues[(digest[0] as number) % venues.length] as string,
+    venueCaseReference: `${number}/${openedOn.slice(0, 4)}`,
+  };
 }
 
 const iso = (date: Date): string => date.toISOString().slice(0, 10);
@@ -268,6 +317,7 @@ export function demoMatters(firm: DemoFirm, asOf: Date): readonly DemoMatter[] {
         outcome: closedOn === null ? null : outcomeFor(fileNumber, matterTypeName),
         leadSlug,
         collaboratorSlugs,
+        ...venueFor(firm.rfc, `m${sequence}`, matterTypeName, openedOn),
       });
     }
   }
