@@ -42,9 +42,17 @@ constraint at the data layer, not merely a default the request could override).
   "targetArchetype": "SA",
   "seeded": true,
   "issuedAt": "2026-08-21T18:04:11Z",
-  "expiresAt": "2026-08-28T18:04:11Z"
+  "expiresAt": "2026-08-28T18:04:11Z",
+  "invitationLink": "/aceptar/<43-character reference>"
 }
 ```
+
+**`invitationLink`** — added 2026-11-25 by slice 024, Decision 13 (a). The path the invitee opens
+on the frontend's origin; its last segment is the raw reference token, whose SHA-256 is the stored
+`reference_hash`. It is returned **once, in this response only**: never stored, never in the audit
+entry, never logged, and no later read returns it. The operator delivers it to the invitee until
+transactional email (Resend) is built. Same shape and rules as the tenant-issued invitation's link
+([tenant-invitations.md](./tenant-invitations.md), 014 Decision 3).
 
 **Errors**
 

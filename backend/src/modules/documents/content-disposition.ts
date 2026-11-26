@@ -1,7 +1,7 @@
 /**
  * 021 Decision 4. The `Content-Disposition` a signed URL asks the object store to answer with.
  *
- * Without it, S3/MinIO serve the object under its storage key — `tenant/…/case/…/{uuid}` — and the
+ * Without it, S3 serves the object under its storage key — `tenant/…/case/…/{uuid}` — and the
  * browser saves a file with no name and no extension. The `filename` field in the download
  * response cannot fix that: a cross-origin download ignores the page's `download` attribute.
  *

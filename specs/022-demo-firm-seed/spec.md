@@ -215,10 +215,10 @@ purpose — writing known credentials for known people — is a catastrophe anyw
   (Decision 8) — but it does need the `plan` rows, so it seeds the plan it uses if absent.
 - **Run twice concurrently**: the second run sees the first's rows through the same `ON CONFLICT`
   guards and writes nothing. No statement depends on a read-then-write gap outside a transaction.
-- **The object store is unreachable** (MinIO down, or `OBJECT_STORE_*` unset): every database row
+- **The object store is unreachable** (S3 unreachable, or `OBJECT_STORE_*` unset): every database row
   is still written, the objects are reported as skipped, and the command exits non-zero saying
   which documents have no bytes. It must not leave a silent half-state (**FR-016**).
-- **`quay.io` is blocked, so MinIO cannot be pulled at all** — the state of this machine on
+- **The object store cannot be reached at all** — the state of this machine on
   2026-09-25. Then FR-016's path is the only one available, and `quickstart-results.md` records
   which document assertions could not run.
 - **A demo person's email collides with a real identity** in a developer's database: `identity`
@@ -493,8 +493,8 @@ purposes, one command, per Decision 1's reasoning).
 - `npm run db:migrate` has already run. The command asserts the tables it needs exist and says so
   plainly if they do not; it does not run migrations itself.
 - Postgres reachable on the migration connection, on a local host per Decision 3.
-- MinIO reachable at `OBJECT_STORE_*` for FR-009. When it is not — the state of this machine on
-  2026-09-25, `quay.io` refusing the MinIO image — FR-016's degraded path is exercised instead and
+- The S3 bucket reachable at `OBJECT_STORE_*` for FR-009. When it is not — the state of this machine on
+  2026-09-25, the object store unreachable — FR-016's degraded path is exercised instead and
   `quickstart-results.md` records exactly which assertions could not run.
 - `AUTH_LOCAL_KEY` is set (it is, in `.env.example`), so `resolveKeyProvider()` returns the local
   provider in development. FR-003 works unchanged under KMS.

@@ -12,8 +12,7 @@ A run-and-verify guide, not an implementation guide.
 
 Identical to 006 — nothing new at the database layer. Docker running,
 `backend/.env` already established, plus S3 access for the object-store module
-(research.md D6) — a local S3-compatible endpoint (e.g. MinIO) or a real bucket in
-`mx-central-1`, configured the same way `plan.md`'s Phase 2 (`/speckit-tasks`) will
+(research.md D6) — an AWS S3 bucket (`mx-central-1` in production), configured the same way `plan.md`'s Phase 2 (`/speckit-tasks`) will
 specify.
 
 ```bash

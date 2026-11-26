@@ -14,24 +14,6 @@ import { join } from 'node:path';
 
 const envPath = join(__dirname, '..', '.env');
 
-/**
- * Tests always use the local MinIO from docker-compose.yml, whatever `.env` points the running app
- * at. Found when `.env` was switched to a real AWS bucket: the suite then wrote fixtures to it (or
- * failed on its permissions). The app's storage is a deployment choice; the tests' is not. CI sets
- * its own OBJECT_STORE_* in the environment, and those still win, since only absent keys are set.
- */
-const TEST_OBJECT_STORE: Readonly<Record<string, string>> = {
-  OBJECT_STORE_ENDPOINT: 'http://localhost:9000',
-  OBJECT_STORE_REGION: 'us-east-1',
-  OBJECT_STORE_BUCKET: 'legalconnect-documents-dev',
-  OBJECT_STORE_ACCESS_KEY_ID: 'lc_minio_dev',
-  OBJECT_STORE_SECRET_ACCESS_KEY: 'lc_minio_dev_password',
-  OBJECT_STORE_FORCE_PATH_STYLE: 'true',
-};
-for (const [key, value] of Object.entries(TEST_OBJECT_STORE)) {
-  if (!(key in process.env)) process.env[key] = value;
-}
-
 if (existsSync(envPath)) {
   for (const raw of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const line = raw.trim();
@@ -41,6 +23,16 @@ if (existsSync(envPath)) {
     const key = line.slice(0, eq).trim();
     if (!(key in process.env)) process.env[key] = line.slice(eq + 1).trim();
   }
+}
+
+/**
+ * Tests use the same AWS bucket as the app unless `OBJECT_STORE_TEST_BUCKET` names another one.
+ * Sharing it is safe for the app's data: every test firm is a fresh tenant with its own random
+ * id, and every object key starts with `tenant/{that id}/`, so a test can neither overwrite nor
+ * read a real firm's documents. It does leave test objects behind; a dedicated bucket avoids that.
+ */
+if (process.env.OBJECT_STORE_TEST_BUCKET) {
+  process.env.OBJECT_STORE_BUCKET = process.env.OBJECT_STORE_TEST_BUCKET;
 }
 
 for (const required of [

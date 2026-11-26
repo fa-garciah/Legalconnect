@@ -150,8 +150,8 @@ A partner adds "Poderes notariales" to the firm's categories and retires one nob
 - **Two tabs, one withdraws, the other restores**: `409 already_withdrawn` / `not_withdrawn` →
   re-read, the same handling `018` gives `already_deactivated`.
 - **Large file**: until Decision 4 lands, a large upload is sent without a size check.
-- **Preview inside the page**: the signed URL is on the object store's origin (MinIO in
-  development, S3 later); the preview must not require relaxing the app's own security headers
+- **Preview inside the page**: the signed URL is on the object store's origin (the S3
+  bucket); the preview must not require relaxing the app's own security headers
   beyond allowing that one origin in `frame-src`/`img-src`.
 
 ---
@@ -293,7 +293,7 @@ position catalog it mirrors. **Alternative**: a separate `/documentos/categorias
 ## Assumptions
 
 - `006`/`019`'s case detail read and `016a`'s classifier are unchanged.
-- MinIO in development serves signed URLs from `http://localhost:9000`; the frontend's security
+- The S3 bucket serves signed URLs from its own origin; the frontend's security
   headers are adjusted to allow exactly the configured object-store origin for preview.
 - The demo firm (Alfa) already has the four default categories, seeded at provisioning.
 

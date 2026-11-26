@@ -14,7 +14,8 @@ while connected to anything real, the command has already refused.
 cd backend
 npm ci
 
-# Postgres (and MinIO, if it can be pulled — see "MinIO" below)
+# Postgres; OBJECT_STORE_* in backend/.env for the AWS bucket (npm run check:storage) — see
+# "The object store" below
 npm run db:up
 
 npm run db:migrate      # schema
@@ -121,11 +122,10 @@ Every name is invented. There is no real company and no real person in this data
 **The second firm is deliberately thin.** It exists so that switching firms visibly changes the
 data, which is how a reviewer *checks* tenant isolation rather than taking it on trust.
 
-## MinIO, and what fails without it
+## The object store, and what fails without it
 
 Document rows are always written. The bytes behind them need the object store, and on
-2026-09-25 `quay.io` refuses the pinned `minio/minio` and `minio/mc` images with `401
-Unauthorized` (Docker Hub pulls work, so it is not a proxy).
+2026-09-25 it was unreachable on this machine.
 
 When the store is unreachable the command:
 
@@ -133,8 +133,8 @@ When the store is unreachable the command:
 - names the documents whose bytes are missing,
 - exits **non-zero**.
 
-Everything except document preview and download works normally in that state. When MinIO is
-available again, re-run `npm run db:seed:demo`: it writes only the missing objects, because
+Everything except document preview and download works normally in that state. When the object store is
+reachable again, re-run `npm run db:seed:demo`: it writes only the missing objects, because
 every key is derived rather than generated.
 
 ## The two refusals

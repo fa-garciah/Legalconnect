@@ -17,7 +17,7 @@ Verificado corriendo `tsc --noEmit` y las suites que no necesitan servicios: bac
 typecheck limpio.
 
 > **No verificado:** las suites de integración, RLS, aislamiento y `verify:role` necesitan
-> Postgres 16 + MinIO por Docker, y **Docker no está disponible en esta máquina**. Las
+> Postgres 16 por Docker y el bucket S3 de AWS, y **Docker no está disponible en esta máquina**. Las
 > afirmaciones de cobertura bloqueante de más abajo vienen de los `quickstart-results.md`
 > de cada slice, no de una corrida de hoy. **Primera acción de quien tome este plan:
 > levantar Docker y correr la suite completa**, para que el punto de partida sea un hecho
@@ -52,7 +52,7 @@ falta ([`navigation-items.ts`](../frontend/src/shell/navigation-items.ts)).
 El backend está completo y probado: módulo, repositorio, servicio, categorías, validación de
 subida, el *chokepoint* de object-store (`backend/src/common/storage/object-store/`), ocho
 capacidades en la matriz, ocho acciones de auditoría, migraciones `0026`–`0029`, y el
-servicio MinIO ya está en CI.
+acceso al bucket S3 ya está en CI.
 
 Falta **todo el frontend y todo el cierre**:
 
@@ -131,8 +131,9 @@ y no hace falta especificar nada nuevo. Es la tarea de mayor valor por unidad de
 hay en el repo.
 
 **Cómo:**
-1. Levantar backend + Postgres + MinIO (`backend/docker-compose.yml`, `npm run db:up`,
-   `db:migrate`, `db:seed`) y el front en 3000 contra el back en 3001 — el mismo montaje que
+1. Levantar backend + Postgres (`backend/docker-compose.yml`, `npm run db:up`,
+   `db:migrate`, `db:seed`), con `OBJECT_STORE_*` en `backend/.env` apuntando al bucket S3 de AWS
+   (`npm run check:storage`), y el front en 3000 contra el back en 3001 — el mismo montaje que
    usaron los `quickstart-results.md` de 018 y 019.
 2. Leer `018-frontend-clients/contracts/design-system.md` **antes** de escribir un componente.
    018 estableció el sistema de diseño; 007 consume, no inventa.

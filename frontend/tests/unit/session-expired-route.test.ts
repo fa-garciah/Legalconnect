@@ -36,4 +36,18 @@ describe('GET /api/sesion/expirada', () => {
       expect.objectContaining({ redirectTo: '/ingresar?sesion=expirada' }),
     );
   });
+
+  it('keeps where the person was, so signing in again resumes it', async () => {
+    await GET(new Request('http://localhost/api/sesion/expirada?destino=%2Fclientes'));
+    expect(signOut).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectTo: '/ingresar?sesion=expirada&destino=%2Fclientes' }),
+    );
+  });
+
+  it('drops a destino that leaves the product', async () => {
+    await GET(new Request('http://localhost/api/sesion/expirada?destino=%2F%2Fevil.example'));
+    expect(signOut).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectTo: '/ingresar?sesion=expirada' }),
+    );
+  });
 });

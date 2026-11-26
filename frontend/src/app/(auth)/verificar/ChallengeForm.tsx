@@ -23,6 +23,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { safeDestination } from '@/session/destination';
 
 /** The same one message the credential step uses. A wrong code, an expired
  *  challenge, a replay, a lockout and an unavailable key are indistinguishable
@@ -33,6 +34,8 @@ export function ChallengeForm(): React.JSX.Element {
   const router = useRouter();
   const params = useSearchParams();
   const challengeToken = params.get('reto') ?? '';
+  // Where the person was going before sign-in interrupted them, if anywhere inside the product.
+  const destino = safeDestination(params.get('destino'));
 
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +62,7 @@ export function ChallengeForm(): React.JSX.Element {
       return;
     }
 
-    router.push('/');
+    router.push(destino ?? '/');
     router.refresh();
   }
 
@@ -69,6 +72,8 @@ export function ChallengeForm(): React.JSX.Element {
         <Label htmlFor="code">Código de verificación</Label>
         <InputOTP
           id="code"
+          // The only thing to do on this screen; the code is usually typed the moment it loads.
+          autoFocus
           maxLength={6}
           value={code}
           onChange={setCode}

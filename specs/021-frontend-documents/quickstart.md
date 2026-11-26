@@ -4,7 +4,8 @@
 
 ## Setup
 
-As `014`'s quickstart: `docker compose up -d` (Postgres + MinIO) in `backend/`, `npm run db:migrate`
+As `014`'s quickstart: `docker compose up -d` (Postgres) in `backend/`, `OBJECT_STORE_*` in `backend/.env` for the AWS
+bucket (`npm run check:storage`), `npm run db:migrate`
 (includes `0045`), `PORT=3001 npm run dev` in `backend/`, `npm run dev` in `frontend/`.
 `DOCUMENT_MAX_UPLOAD_BYTES` (default 25 MB) caps uploads.
 

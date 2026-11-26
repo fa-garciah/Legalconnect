@@ -21,9 +21,15 @@ export interface SeedInvitationRow {
   readonly expiresAt: string;
 }
 
+export interface SeededInvitation {
+  readonly row: SeedInvitationRow;
+  /** Never persisted, never audited — the controller hands it to the caller once (024 D13). */
+  readonly rawReferenceToken: string;
+}
+
 @Injectable()
 export class SeedAdministratorService {
-  async seed(tenantId: string, input: { readonly email?: unknown }): Promise<SeedInvitationRow> {
+  async seed(tenantId: string, input: { readonly email?: unknown }): Promise<SeededInvitation> {
     const email = normaliseEmail(input.email);
     const tx = currentPlatformTx();
 
@@ -60,12 +66,15 @@ export class SeedAdministratorService {
     `);
 
     return {
-      id,
-      tenantId,
-      targetArchetype: 'SA',
-      seeded: true,
-      issuedAt: issuedAt.toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      row: {
+        id,
+        tenantId,
+        targetArchetype: 'SA',
+        seeded: true,
+        issuedAt: issuedAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      },
+      rawReferenceToken: token.raw,
     };
   }
 }

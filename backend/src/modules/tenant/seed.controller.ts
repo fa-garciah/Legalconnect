@@ -37,11 +37,21 @@ export class SeedAdministratorController {
     @Param('tenantId') tenantId: string,
     @Body() body: unknown,
     @Req() req: AuditableRequest,
-  ): Promise<SeedInvitationRow> {
+  ): Promise<SeedInvitationRow & { readonly invitationLink: string }> {
     const id = assertUuid(tenantId, 'tenant id');
-    const row = await this.seed.seed(id, (body ?? {}) as Record<string, unknown>);
+    const { row, rawReferenceToken } = await this.seed.seed(id, (body ?? {}) as Record<string, unknown>);
     req.auditTargetId = row.id;
     req.auditTenantId = id;
-    return row;
+    /*
+     * 024 Decision 13 (a), chosen 2026-11-25. Without this the first administrator of a real
+     * firm could never be reached: no email provider sends the invitation yet (Resend is
+     * decided, not built), and the demo seed refuses non-local databases. The caller is the
+     * platform operator with a shell inside the backend container (024 Decision 6) — the most
+     * privileged party there is — and receives the link once, exactly as a tenant-issued
+     * invitation's issuer does (invitation.controller.ts).
+     *
+     * THIS response only: not in the audit metadata, not in any log line, not in the row.
+     */
+    return { ...row, invitationLink: `/aceptar/${rawReferenceToken}` };
   }
 }
