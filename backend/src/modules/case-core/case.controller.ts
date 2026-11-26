@@ -17,7 +17,8 @@ import { Audited, addAuditMetadata } from '../../common/audit/interceptor';
 import { Capability, ScopeTarget } from '../../common/authz/declare';
 import { decodeCursor } from '../../common/http/pagination';
 import { assertUuid } from '../tenant/rfc';
-import { CaseService } from './case.service';
+import { CREATOR_ROLE_ON_CASE, CaseService, staffsItsCreator } from './case.service';
+import { currentPrincipal } from '../../common/tenant/middleware';
 import type { CaseOutcome, CaseRow, CatalogRef } from './case.repository';
 import { CaseAssignmentRepository, type TeamMemberRow } from './case-assignment.repository';
 
@@ -100,6 +101,11 @@ export class CaseController {
   async create(@Body() body: unknown, @Req() req: AuditableRequest): Promise<CaseItem> {
     const row = await this.cases.create(body);
     req.auditTargetId = row.id;
+    // The opener's own staffing rides on this event rather than a second one: it is not a
+    // separate decision anybody made, and one request records one audit row.
+    if (staffsItsCreator(currentPrincipal().archetype)) {
+      addAuditMetadata(req as object, { creatorAssignedAs: CREATOR_ROLE_ON_CASE });
+    }
     return present(row);
   }
 

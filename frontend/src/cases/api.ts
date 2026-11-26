@@ -16,6 +16,7 @@
  * come to disagree.
  */
 import { apiFetch, type ApiResult, type FailedResponse } from '../lib/api-client';
+import type { Archetype } from '../session/types';
 import type {
   CaseDetail,
   CaseOutcome,
@@ -168,4 +169,53 @@ export function declareOutcome(id: string, outcome: CaseOutcome): Promise<CaseDe
     method: 'PATCH',
     body: JSON.stringify({ outcome }),
   }).then(unwrap);
+}
+
+/** One person who can be shown on, or put on, a case team. */
+export interface TeamCandidate {
+  readonly membershipId: string;
+  /** `null` when the caller may not read emails (row 5) and the directory answered instead. */
+  readonly email: string | null;
+  readonly archetype: Archetype;
+  readonly positionName: string | null;
+}
+
+/**
+ * The firm's live members, to name the people on a team and to offer who can be added.
+ *
+ * `withEmail` is the caller's `membership.read_tenant` (SA, MP): only they may read emails, and
+ * asking `/tenant/members` without it would just collect a `403`. Everyone else reads the
+ * directory (row 24), which names role and position — still a person, not a membership id.
+ */
+export async function listTeamCandidates(withEmail: boolean): Promise<readonly TeamCandidate[]> {
+  if (withEmail) {
+    const members = await apiFetch<{ items: readonly TeamCandidate[] }>('/tenant/members').then(unwrap);
+    return members.items;
+  }
+  const directory = await apiFetch<{
+    items: readonly { membershipId: string; archetype: Archetype; positionName: string | null }[];
+  }>('/tenant/directory?limit=200').then(unwrap);
+  return directory.items.map((item) => ({ ...item, email: null }));
+}
+
+export type RoleOnCase = 'lead' | 'collaborator' | 'support';
+
+/** `POST /tenant/cases/:id/team` (row 33, `assigned` scope). */
+export function assignTeamMember(
+  caseId: string,
+  membershipId: string,
+  roleOnCase: RoleOnCase,
+): Promise<unknown> {
+  return apiFetch(`/tenant/cases/${encodeURIComponent(caseId)}/team`, {
+    method: 'POST',
+    body: JSON.stringify({ membershipId, roleOnCase }),
+  }).then(unwrap);
+}
+
+/** `DELETE /tenant/cases/:id/team/:membershipId` — sets `unassigned_at`; nothing is deleted. */
+export function unassignTeamMember(caseId: string, membershipId: string): Promise<unknown> {
+  return apiFetch(
+    `/tenant/cases/${encodeURIComponent(caseId)}/team/${encodeURIComponent(membershipId)}`,
+    { method: 'DELETE' },
+  ).then(unwrap);
 }

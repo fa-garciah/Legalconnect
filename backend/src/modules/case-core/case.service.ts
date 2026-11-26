@@ -18,6 +18,7 @@ import { currentPrincipal } from '../../common/tenant/middleware';
 import { CASE_OUTCOMES, CaseRepository, type CaseOutcome, type CaseRow } from './case.repository';
 import { ClientRepository } from './client.repository';
 import { CaseCatalogRepository } from './catalogs/case-catalog.repository';
+import { CaseAssignmentRepository, type CaseRoleOnCase } from './case-assignment.repository';
 
 const UNIQUE_VIOLATION = '23505';
 
@@ -96,6 +97,22 @@ function optionalSearch(raw: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+/**
+ * Amends 006/Decision 3 (2026-11-26). A `CM` reads only the matters they are on
+ * (Decision 2 exempts `MP` and `SA` alone), so a case a `CM` opened with nobody on it
+ * vanished from their own register the moment they created it. The opener is therefore
+ * put on the team, as `lead`, in the same transaction as the case itself.
+ *
+ * Only `CM`: `MP` and `SA` already read every case, and staffing them automatically would
+ * put a partner or the administrator on matters they only set up for someone else. A case
+ * may still reach zero members later (FR-012a), which stays legal.
+ */
+export const CREATOR_ROLE_ON_CASE: CaseRoleOnCase = 'lead';
+
+export function staffsItsCreator(archetype: string): boolean {
+  return archetype === 'CM';
+}
+
 function assertUuidish(raw: unknown, field: string): string {
   if (typeof raw !== 'string' || raw.trim().length === 0) {
     throw new ValidationFailed(`${field} is required.`);
@@ -109,6 +126,7 @@ export class CaseService {
     private readonly cases: CaseRepository,
     private readonly clients: ClientRepository,
     private readonly catalogs: CaseCatalogRepository,
+    private readonly assignments: CaseAssignmentRepository,
   ) {}
 
   /**
@@ -170,8 +188,9 @@ export class CaseService {
     const matterTypeId = await this.resolveOptionalCatalog(input.matterTypeId, 'matter-types');
     const venueId = await this.resolveOptionalCatalog(input.venueId, 'venues');
 
+    let created: CaseRow;
     try {
-      return await this.cases.insert({
+      created = await this.cases.insert({
         clientId,
         fileNumber,
         venueCaseReference,
@@ -191,6 +210,12 @@ export class CaseService {
       if (sqlstateOf(error) === UNIQUE_VIOLATION) throw new FileNumberAlreadyUsed();
       throw error;
     }
+
+    const principal = currentPrincipal();
+    if (staffsItsCreator(principal.archetype)) {
+      await this.assignments.insert(created.id, principal.membershipId, CREATOR_ROLE_ON_CASE);
+    }
+    return created;
   }
 
   /**
