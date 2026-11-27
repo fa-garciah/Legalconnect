@@ -106,6 +106,23 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
     networks: [dokploy-network]
 
+  # PROTOTYPE ONLY — the nightly backup, for a host where quickstart.md §8's cron cannot be
+  # installed. See prototype-backup/run.sh for what it gives up against the constitution's backup
+  # rule (documents bucket under backups/, not a separate bucket under its own key) and when to
+  # retire it. It is the one service besides `migrate` that receives the owner connection: a
+  # dump taken as lc_app would be refused by RLS and could not read the ACLs that restore needs.
+  backup:
+    build:
+      context: ./prototype-backup
+    restart: unless-stopped
+    environment:
+      DATABASE_URL_BACKUP: ${DATABASE_URL_MIGRATION}
+      BACKUP_BUCKET: ${OBJECT_STORE_BUCKET}
+      AWS_DEFAULT_REGION: ${OBJECT_STORE_REGION}
+      AWS_ACCESS_KEY_ID: ${OBJECT_STORE_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${OBJECT_STORE_SECRET_ACCESS_KEY}
+    networks: [dokploy-network]
+
 networks:
   dokploy-network:
     external: true
