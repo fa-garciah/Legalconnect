@@ -42,3 +42,14 @@ Thumbs.db
 # Local tooling state (per-machine, not shared)
 .claude/.headroom_wrap_*
 backend/docker-compose.override.yml
+
+# Material de presentación: se queda local, fuera del repo. La guía (docs/guia/guia-legalconnect.md) sí se versiona.
+tools/demo-video/
+*.webm
+docs/guia/*
+!docs/guia/guia-legalconnect.md
+docs/backlog/
+/*.pdf
+
+# Exportaciones de llaves de AWS descargadas de la consola de IAM
+*accessKeys*.csv
