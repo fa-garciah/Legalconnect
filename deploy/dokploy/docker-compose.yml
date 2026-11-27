@@ -77,21 +77,8 @@ services:
     #
     # the same host plus the path, outranks it by priority, and admits only 127.0.0.1 — which no
     # request arriving through the proxy is. Both entrypoints, so plain HTTP is no way round it.
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=dokploy-network
-      - traefik.http.middlewares.lc-internal-refuse.ipwhitelist.sourcerange=127.0.0.1/32
-      - traefik.http.routers.lc-internal-refuse-https.rule=Host(`${API_HOST}`) && (Path(`/internal`) || PathPrefix(`/internal/`))
-      - traefik.http.routers.lc-internal-refuse-https.entrypoints=websecure
-      - traefik.http.routers.lc-internal-refuse-https.tls.certresolver=letsencrypt
-      - traefik.http.routers.lc-internal-refuse-https.priority=1000
-      - traefik.http.routers.lc-internal-refuse-https.middlewares=lc-internal-refuse
-      - traefik.http.routers.lc-internal-refuse-https.service=noop@internal
-      - traefik.http.routers.lc-internal-refuse-http.rule=Host(`${API_HOST}`) && (Path(`/internal`) || PathPrefix(`/internal/`))
-      - traefik.http.routers.lc-internal-refuse-http.entrypoints=web
-      - traefik.http.routers.lc-internal-refuse-http.priority=1000
-      - traefik.http.routers.lc-internal-refuse-http.middlewares=lc-internal-refuse
-      - traefik.http.routers.lc-internal-refuse-http.service=noop@internal
+    # TEST BRANCH: the /internal refusal labels removed, to see whether they keep Traefik from
+    # routing the API. The guard in the API still answers /internal with 404 to any non-loopback peer.
     networks: [dokploy-network]
 
   frontend:
