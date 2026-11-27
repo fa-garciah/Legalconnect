@@ -195,7 +195,7 @@ function Timesheet({ archetype, today }: { archetype: Archetype; today: string }
                       <li key={entry.id} className="flex flex-col gap-1 border-l-2 border-primary pl-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div className="flex min-w-0 flex-col gap-1">
                           <div className="flex flex-wrap items-center gap-2 text-small text-muted-foreground">
-                            <Link href={`/expedientes/${entry.case.id}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                            <Link href={`/expedientes?abrir=${entry.case.id}`} className="font-medium text-foreground underline-offset-4 hover:underline">
                               {entry.case.fileNumber}
                             </Link>
                             <Badge variant="outline">{SOURCE_LABEL[entry.source]}</Badge>

@@ -146,4 +146,34 @@ describe('POST /auth/sign-in (T042)', () => {
       .send({ challengeToken: first.body.challengeToken, code: '123456' });
     expect(stale.status).toBe(401);
   });
+  describe('the per-origin throttle counts failures only (003/FR-005)', () => {
+    // No reset between calls here: the point is what accumulates across one office's sign-ins.
+    const raw = (email: string, password = CREDENTIAL) =>
+      request(app.getHttpServer()).post('/auth/sign-in').send({ email, password });
+
+    it('admits ten successful sign-ins in a row from one origin', async () => {
+      signInOriginThrottle.reset();
+      for (let i = 0; i < 10; i += 1) {
+        const response = await raw(enrolledEmail);
+        expect(response.status, `sign-in ${i + 1}`).toBe(201);
+      }
+    });
+
+    it('refuses the sixth attempt after five failures, even with the right credential', async () => {
+      signInOriginThrottle.reset();
+      for (let i = 0; i < 5; i += 1) {
+        expect((await raw(`nadie-${i}@example.com`, 'incorrecta')).status).toBe(401);
+      }
+      expect((await raw(enrolledEmail)).status).toBe(401);
+      signInOriginThrottle.reset();
+    });
+
+    it('a success clears the failures that came before it', async () => {
+      signInOriginThrottle.reset();
+      for (let i = 0; i < 4; i += 1) await raw(`nadie-${i}@example.com`, 'incorrecta');
+      expect((await raw(enrolledEmail)).status).toBe(201);
+      for (let i = 0; i < 4; i += 1) await raw(`nadie-${i}@example.com`, 'incorrecta');
+      expect((await raw(enrolledEmail)).status).toBe(201);
+    });
+  });
 });

@@ -70,6 +70,26 @@ export class OriginThrottle {
   }
 
   /**
+   * Whether this origin has used up its allowance of FAILED attempts in the current window.
+   *
+   * Read without recording: since 2026-11-27 only a failure counts (003/FR-005 says "repeated
+   * failed credential attempts", "counter reset on success"). Counting every attempt refused
+   * the sixth person of an office signing in within 15 minutes, and behind a reverse proxy,
+   * where every request shares the proxy's address, the sixth person of the whole platform.
+   */
+  isBlocked(origin: string): boolean {
+    const bucket = this.buckets.get(origin);
+    if (!bucket) return false;
+    if (this.now() - bucket.windowStartedAt >= this.windowSeconds * 1000) return false;
+    return bucket.count >= this.limit;
+  }
+
+  /** A successful credential step resets the origin's count (003/FR-005, "counter reset on success"). */
+  clear(origin: string): void {
+    this.buckets.delete(origin);
+  }
+
+  /**
    * Drops windows that have rolled over.
    *
    * Without this the map grows once per distinct origin for the process's

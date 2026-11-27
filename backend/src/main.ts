@@ -53,6 +53,19 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
 
+  // TRUST_PROXY_HOPS — how many reverse proxies stand in front of the API (Traefik on Dokploy: 1).
+  // Unset or 0 trusts none, so a caller reaching the API directly cannot pick its own address
+  // through X-Forwarded-For. Behind a proxy without it, every request carries the proxy's
+  // address: the sign-in throttle and the audit log's `ip` then see one client for everyone.
+  // The /internal loopback guard reads the socket's peer, never this, and is unaffected.
+  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
+  if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+    (app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set(
+      'trust proxy',
+      trustProxyHops,
+    );
+  }
+
   /*
    * Cross-origin access for the browser client (018-frontend-clients).
    *

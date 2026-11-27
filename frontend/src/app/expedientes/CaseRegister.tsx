@@ -21,7 +21,8 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQueries, type InfiniteData } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,19 @@ export function CaseRegister({ archetype }: CaseRegisterProps): React.JSX.Elemen
 
   const mayCreate = can('case.create', archetype);
   const mayOpen = can('case.read', archetype);
+
+  /*
+   * `?abrir=<caseId>` opens that matter's panel on arrival — how other screens (Registro de
+   * Horas) link to a matter, since a matter has no page of its own. A matter the reader may not
+   * reach answers as missing inside the panel, exactly as a click from this list would.
+   */
+  const toOpen = useSearchParams()?.get('abrir') ?? null;
+  useEffect(() => {
+    if (toOpen && mayOpen) {
+      setOpenCaseId(toOpen);
+      setPanelOpen(true);
+    }
+  }, [toOpen, mayOpen]);
   /**
    * `MP` and `SA` satisfy the assignment rule unconditionally (`006` Decision 2), so for them
    * an empty register genuinely means the firm has no matters. For everyone else it may mean

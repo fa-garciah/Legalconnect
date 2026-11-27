@@ -92,7 +92,8 @@ export class SignInService {
     // below is what actually defends an account; this bounds the log volume one
     // source can generate against one instance. A refusal here is
     // indistinguishable from any other.
-    if (!signInOriginThrottle.record(origin).allowed) refuse();
+    // Only FAILED attempts count against the origin, and a success clears it (003/FR-005).
+    if (signInOriginThrottle.isBlocked(origin)) refuse();
 
     type Outcome =
       | { kind: 'ok'; result: CredentialStepResult }
@@ -153,7 +154,11 @@ export class SignInService {
       return { kind: 'ok', result: { challengeToken, next: 'factor' } };
     });
 
-    if (outcome.kind === 'refused') refuse();
+    if (outcome.kind === 'refused') {
+      signInOriginThrottle.record(origin);
+      refuse();
+    }
+    signInOriginThrottle.clear(origin);
     return outcome.result;
   }
 
