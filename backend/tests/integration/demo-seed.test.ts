@@ -48,12 +48,19 @@ function runDemoSeed(asOf?: string): { readonly stdout: string; readonly code: n
       env: asOf ? { ...process.env, DEMO_SEED_AS_OF: asOf } : process.env,
       encoding: 'utf8',
       shell: process.platform === 'win32',
-      timeout: 180_000,
+      // 400 s, not 180. A run takes ~35 s on a developer machine, but on 2026-11-27 a second run in
+      // CI printed nothing at all — the signature of a run killed by this timeout (the seed prints
+      // only at the end), most likely held up behind locks of the integration tests running
+      // beside it. The margin is cheap; a killed run now says so in the failure message.
+      timeout: 400_000,
     });
     return { stdout, code: 0 };
   } catch (error) {
-    const failure = error as { status?: number; stdout?: string; stderr?: string };
-    return { stdout: `${failure.stdout ?? ''}${failure.stderr ?? ''}`, code: failure.status ?? 1 };
+    const failure = error as { status?: number | null; signal?: string | null; stdout?: string; stderr?: string };
+    // A run killed by the timeout has no status and printed nothing; say so, or the assertion
+    // that reads stdout fails with an empty string and no hint of why.
+    const killed = failure.signal ? `[seed killed by ${failure.signal}]` : '';
+    return { stdout: `${killed}${failure.stdout ?? ''}${failure.stderr ?? ''}`, code: failure.status ?? 1 };
   }
 }
 
@@ -64,7 +71,7 @@ describe('the demo firm seed', () => {
   beforeAll(async () => {
     migration = await connectAs('migration');
     firstRun = runDemoSeed();
-  }, 240_000);
+  }, 480_000);
 
   afterAll(async () => {
     await migration.end();
@@ -217,7 +224,7 @@ describe('the demo firm seed', () => {
       await migration.query(`UPDATE identity SET mfa_enrolled_at = now() WHERE email = $1`, [DEMO_UNENROLLED.email]);
       runDemoSeed();
       expect(await state()).toEqual({ credential: true, factor: false, codes: '0', enrolled: false, member: true });
-    }, 240_000);
+    }, 480_000);
 
     it('is the only demo person without a factor — every other one still signs in', async () => {
       const { rows } = await migration.query<{ email: string }>(
@@ -492,9 +499,9 @@ describe('the demo firm seed', () => {
       const after = await snapshot();
       expect(after).toBe(before);
       // And it prints the same credentials, which is what makes the demo returnable-to.
-      expect(second.stdout).toContain(DEMO_PASSWORD);
+      expect(second.stdout, `seed exited ${second.code}`).toContain(DEMO_PASSWORD);
       expect(second.stdout).toContain(totpSecretFor(DEMO_PEOPLE[0]!.slug));
-    }, 240_000);
+    }, 480_000);
 
     it('a re-run on ANOTHER day adds no row — the same counts, the same 130 documents', async () => {
       // Found 2026-10-08: a database re-seeded on different days held 149 documents where 130 were
