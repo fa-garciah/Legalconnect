@@ -22,6 +22,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQueries, type InfiniteData } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -71,12 +72,20 @@ export function CaseRegister({ archetype }: CaseRegisterProps): React.JSX.Elemen
    * can restore focus and the page's scroll position to whatever opened it — unmounting it
    * takes both away, and losing the reader's place is the one thing a panel exists to avoid.
    */
-  const [openCaseId, setOpenCaseId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  /*
+   * `?abrir=<caseId>` opens that matter's panel on arrival — how other screens (Registro de
+   * Horas) link to a matter, since a matter has no page of its own. Read once, as the initial
+   * state, so the panel is open on the first render. A matter the reader may not reach answers
+   * as missing inside the panel, exactly as a click from this list would.
+   */
+  const toOpen = useSearchParams()?.get('abrir') ?? null;
+  const [openCaseId, setOpenCaseId] = useState<string | null>(toOpen);
+  const [panelOpen, setPanelOpen] = useState(toOpen !== null);
   const [formOpen, setFormOpen] = useState(false);
 
   const mayCreate = can('case.create', archetype);
   const mayOpen = can('case.read', archetype);
+
   /**
    * `MP` and `SA` satisfy the assignment rule unconditionally (`006` Decision 2), so for them
    * an empty register genuinely means the firm has no matters. For everyone else it may mean

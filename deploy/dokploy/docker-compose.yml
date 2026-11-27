@@ -36,6 +36,9 @@ services:
       # Must be 0.0.0.0 to be reachable from the proxy. The platform surface no longer relies on
       # this: it answers only a loopback peer (024/FR-001).
       PLATFORM_BIND_HOST: 0.0.0.0
+      # Traefik is the one proxy in front: each person's own address, not Traefik's, reaches
+      # the sign-in throttle and the audit log.
+      TRUST_PROXY_HOPS: "1"
       DATABASE_URL_APP: ${DATABASE_URL_APP}
       DATABASE_URL_PLATFORM: ${DATABASE_URL_PLATFORM}
       DATABASE_URL_AUTH: ${DATABASE_URL_AUTH}

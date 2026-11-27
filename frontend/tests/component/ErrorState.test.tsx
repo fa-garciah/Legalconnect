@@ -40,4 +40,12 @@ describe('ErrorState', () => {
 
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  it('offers no retry under a role or plan refusal, which answers the same every time', () => {
+    for (const bucket of ['role', 'entitlement-feature', 'entitlement-limit'] as const) {
+      const { unmount } = render(<ErrorState refusal={{ bucket }} onRetry={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+      unmount();
+    }
+  });
 });

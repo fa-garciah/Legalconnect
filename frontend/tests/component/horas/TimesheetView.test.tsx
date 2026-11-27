@@ -66,6 +66,13 @@ describe('TimesheetView', () => {
     expect(items[1]).toHaveTextContent('Manual');
   });
 
+  it('links each matter to its panel in Expedientes, since a matter has no page of its own', async () => {
+    open();
+    const thursday = await screen.findByRole('region', { name: /jueves, 8 de octubre/i });
+    const link = within(thursday).getAllByRole('link', { name: 'EXP-2026-0042' })[0]!;
+    expect(link.getAttribute('href')).toMatch(/^\/expedientes\?abrir=[^/]+$/);
+  });
+
   it('offers "Corregir" and "Eliminar" only while the server says the entry is correctable', async () => {
     open();
     const thursday = await screen.findByRole('region', { name: /jueves, 8 de octubre/i });
