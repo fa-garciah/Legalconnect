@@ -1,27 +1,23 @@
 <!--
-SYNC IMPACT REPORT — 2026-11-26
+SYNC IMPACT REPORT — 2026-11-27
 ================================
-Version change: 1.5.0 → 1.6.0  (MINOR)
+Version change: 1.6.0 → 1.7.0  (MINOR)
 
-Bump rationale: the deployment target is set for the MVP. No Core Principle
-(I–VI) is removed, renamed or redefined. Technology Constraints and Security
-Constraints change; one [PENDING] closes; technical debt is added. Prepared in
-specs/024-deployment-pipeline/constitution-amendment-draft.md (task T015) and
-ratified 2026-11-26 by Claude on the CC technical lead's delegation.
+Bump rationale: the temporary residency exception of v1.6.0 named only eu-central-1, but the
+prototype environment as built keeps its documents, its TOTP envelope key and — since PR 28 — its
+database backups in us-east-2 (Ohio), in an AWS account the CC technical lead opened for it. The
+exception is widened to what actually runs, under the same window and the same consequences, and
+the backups' placement is recorded as technical debt. No Core Principle (I–VI) changes. Ratified
+2026-11-27 by Claude on the CC technical lead's delegation.
 
 Modified sections (no titles renamed):
-  - Technology Constraints › Stack — Cloud, Images and Email lines; note on
-    Dokploy and containerised PostgreSQL.
-  - Explicit MVP Prohibitions — Kubernetes line.
-  - Security Constraints › Data Residency — [PENDING] on the AWS account blockage
-    closed; dated residency exception for eu-central-1; backups must restore.
-  - Security Constraints › Dependencies and Infrastructure — where secrets live.
-  - Recognised Technical Debt — items 12 and 13 added.
-  - Governance — pending count 2 → 1.
+  - Security Constraints › Data Residency — temporary exception now names us-east-2 for the
+    prototype's documents, key and backups; backup-jurisdiction rule gains the same carve-out.
+  - Recognised Technical Debt — item 14 added.
 
 Follow-up TODOs / deferred items:
   - [PENDING] PAC selection — pre-existing, untouched.
-  - See "Consequences of the v1.6.0 Amendment" for the text left stale elsewhere.
+  - See "Consequences of the v1.7.0 Amendment".
   - No RATIFICATION_DATE change: 2026-08-14 preserved.
 -->
 
@@ -419,7 +415,10 @@ document bucket CC already operates are there and no `mx-central-1` capacity has
 been provisioned for LegalConnect yet. During this window case files, documents,
 identity records and the audit log of every firm on that environment reside in
 `eu-central-1`, and their backups with them. The region paragraphs above remain
-the target. Consequences: (1) no firm's production data goes in until each firm's
+the target. **Widened 2026-11-27 (v1.7.0):** the prototype environment keeps its
+documents, its TOTP envelope key (AWS KMS) and its database backups in `us-east-2`
+(Ohio), in the AWS account the CC technical lead opened for it; the same window and
+consequences apply to them. Consequences: (1) no firm's production data goes in until each firm's
 privacy notice declares the transfer under LFPDPPP; (2) no commercial material may
 claim residency in Mexico for this environment; (3) the window ends with a
 migration to `mx-central-1`, or with a further amendment — it does not lapse
@@ -448,7 +447,9 @@ Constraints that continue to apply:
 - The contractual operator of the infrastructure is documented along with its legal
   capacity (data processor), given that cloud is billed as a pass-through to the
   firm.
-- Backups reside in the same jurisdiction as the primary data.
+- Backups reside in the same jurisdiction as the primary data — except, during the
+  temporary residency exception above, the prototype's, which reside in `us-east-2`
+  (Technical Debt item 14).
 - A backup counts only if it restores. Database backups are taken with grants and
   owners (the isolation of Principle II lives in them), uploaded only once
   complete, and a backup format is trusted only after a restore of it has passed
@@ -896,6 +897,19 @@ to-do list: it is the commitment not to pretend these gaps do not exist.
     _Review trigger:_ Bella Baxter reachable from GitHub, at which point the key
     pair leaves GitHub.
 
+14. **Prototype backups in the documents bucket.** Recorded 2026-11-27. The
+    prototype host has no SSH, so its nightly backup runs as a service of the Dokploy
+    compose (`deploy/dokploy/prototype-backup/`) and writes to the documents bucket
+    under `backups/`, with that bucket's default encryption, instead of a dedicated
+    bucket under its own KMS key (`infra/backups.tf`); the service also holds the
+    schema owner's connection. The dump itself satisfies the backup rule: taken with
+    grants and owners, uploaded only once complete, and the first one the host took
+    passed `restore-check.sh` (2026-11-27).
+    _Remedy:_ apply `infra/backups.tf`, point the service at that bucket and key, or
+    replace it with quickstart.md §8's host cron.
+    _Review trigger:_ any firm's real data, or the end of the residency exception,
+    whichever comes first.
+
 The earlier item 12 (the 004 archetype matrix did not exist yet — only SA was ever granted
 anything, and `plan.entitlements` was written and read by nothing) is **struck**:
 slice 004 shipped the full matrix, the entitlement mechanism, and the scope port.
@@ -923,6 +937,15 @@ schedule pressure in the project.
 - Relaxing a principle de facto — without an amendment — invalidates the
   authority of the entire document. If a principle cannot be met, it is amended
   or removed; it is not ignored.
+
+---
+
+## Consequences of the v1.7.0 Amendment
+
+| Artifact | What is now stale | Blocks? |
+|---|---|---|
+| Privacy notice | Must also declare `us-east-2` (documents, key, backups) before any firm's data goes in | **Yes**, for a real firm — not for the demo |
+| `specs/024-deployment-pipeline/quickstart.md` | §8 still describes the host cron as the only backup path | No — text only |
 
 ---
 
@@ -967,10 +990,15 @@ predicate rule; every slice already merged.
 
 ---
 
-**Version:** 1.6.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-11-26
+**Version:** 1.7.0 | **Ratified:** 2026-08-14 | **Last Amended:** 2026-11-27
 
 ### Amendment History
 
+- **1.7.0** — Temporary residency exception widened to `us-east-2`, where the
+  prototype's documents, TOTP envelope key and database backups actually live; the
+  backup-jurisdiction rule carries the same carve-out for the same window. Technical
+  Debt 14 (prototype backups in the documents bucket, no dedicated key). Ratified
+  2026-11-27 by Claude on the CC technical lead's delegation.
 - **1.6.0** — **Deployment target set: Dokploy on EC2 with containerised
   PostgreSQL**, replacing ECS Fargate + RDS for the MVP (slice 024, D1/D2), with
   what is given up named. **`[PENDING]` on the AWS account blockage closed**: not
