@@ -1,0 +1,69 @@
+# PROTOTYPE ONLY — loads the demo firm (022) into the prototype's database, once, from the host.
+#
+# WHY THIS EXISTS. The prototype runs on a Dokploy host where neither SSH nor an exposed database
+# port is available, and the demo seed's guard (drizzle/demo/guard.ts) admits only local host names,
+# `postgres` among them. Here `postgres` is a TCP relay in this compose that forwards to the
+# prototype's database on dokploy-network. That steps around the guard ON PURPOSE, for a database
+# that holds demo data only.
+#
+# WHAT IT MEANS. The demo people sign in with the password and TOTP phrases committed in
+# drizzle/demo/firm.ts. Anyone who can read this repository can sign in to the prototype as them.
+# NEVER point this at a database that holds, or will hold, a real firm's data.
+#
+# USE. A Dokploy Compose service on this branch, compose path
+# ./deploy/dokploy/demo-seed/docker-compose.yml, Environment as below, Deploy once, read the
+# `seed` log, then DELETE the service (the relay keeps listening until it is removed).
+#
+#   DB_HOST=<the database's Internal Host>
+#   DB_PASSWORD=<lc_migration's password>
+#   LC_PLATFORM_PASSWORD=<the value given to migrate>
+#   AUTH_KMS_KEY_ID, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+#   OBJECT_STORE_REGION, OBJECT_STORE_BUCKET, OBJECT_STORE_ACCESS_KEY_ID, OBJECT_STORE_SECRET_ACCESS_KEY
+
+services:
+  postgres:
+    build:
+      context: ../../../backend
+      dockerfile: ../deploy/dokploy/demo-seed/Dockerfile
+    image: legalconnect-demo-seed:prototype
+    restart: "no"
+    environment:
+      DB_HOST: ${DB_HOST}
+    command:
+      - node
+      - -e
+      - >-
+        const net = require('net');
+        net.createServer((c) => {
+          const s = net.connect(5432, process.env.DB_HOST);
+          c.pipe(s); s.pipe(c);
+          c.on('error', () => s.destroy()); s.on('error', () => c.destroy());
+        }).listen(5432, () => console.log('relay to', process.env.DB_HOST, 'listening'));
+    networks: [seed, dokploy-network]
+
+  seed:
+    build:
+      context: ../../../backend
+      dockerfile: ../deploy/dokploy/demo-seed/Dockerfile
+    image: legalconnect-demo-seed:prototype
+    restart: "no"
+    depends_on: [postgres]
+    command: ["sh", "-c", "sleep 3 && npx tsx drizzle/seed-demo.ts"]
+    environment:
+      DATABASE_URL_MIGRATION: postgresql://lc_migration:${DB_PASSWORD}@postgres:5432/legalconnect
+      DATABASE_URL_PLATFORM: postgresql://lc_platform:${LC_PLATFORM_PASSWORD}@postgres:5432/legalconnect
+      AUTH_KEY_PROVIDER: kms
+      AUTH_KMS_KEY_ID: ${AUTH_KMS_KEY_ID}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      OBJECT_STORE_REGION: ${OBJECT_STORE_REGION}
+      OBJECT_STORE_BUCKET: ${OBJECT_STORE_BUCKET}
+      OBJECT_STORE_ACCESS_KEY_ID: ${OBJECT_STORE_ACCESS_KEY_ID}
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${OBJECT_STORE_SECRET_ACCESS_KEY}
+    networks: [seed]
+
+networks:
+  seed: {}
+  dokploy-network:
+    external: true
