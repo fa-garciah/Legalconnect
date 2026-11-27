@@ -17,8 +17,8 @@ The base URL defaults to the local rehearsal (`http://localhost:4100`). Both scr
 fixed demo credentials of `backend/drizzle/demo/firm.ts`, so they only work against a database the demo
 seed loaded — never point them at a firm's real data.
 
-`record.mjs` creates matter `EXP-2026-3001` as the case manager; file numbers are unique per firm, so
-re-record on a freshly seeded database.
+`record.mjs` creates matter `EXP-2026-3001` as the case manager. File numbers are unique per firm: to
+record again without re-seeding, pass another one, e.g. `DEMO_FILE_NUMBER=EXP-2026-3101`.
 
 Found with `smoke.mjs` on 2026-11-27, all fixed: the sign-in throttle refusing the sixth person to sign
 in from one address, Registro de Horas linking matters to a page that does not exist, and a

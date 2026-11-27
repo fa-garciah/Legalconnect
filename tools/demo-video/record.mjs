@@ -18,6 +18,9 @@ const OUT = process.argv[3] ?? join(here, 'out', 'video');
 mkdirSync(OUT, { recursive: true });
 for (const f of readdirSync(OUT)) rmSync(join(OUT, f), { force: true, recursive: true });
 const SIZE = { width: 1440, height: 900 };
+// The matter the case manager opens on camera. File numbers are unique per firm: pass another
+// (DEMO_FILE_NUMBER=EXP-2026-3101) to record again without re-seeding.
+const FILE_NUMBER = process.env.DEMO_FILE_NUMBER ?? 'EXP-2026-3001';
 
 /** Drawn on every page load: caption bar, cursor dot, title card. State survives navigation. */
 const OVERLAY = () => {
@@ -222,7 +225,7 @@ async function main() {
   await choose(page, dlg, 'Cliente', 0);
   const fileNumber = page.getByPlaceholder('EXP-2026-0042');
   await press(page, fileNumber);
-  await fileNumber.pressSequentially('EXP-2026-3001', { delay: 70 });
+  await fileNumber.pressSequentially(FILE_NUMBER, { delay: 70 });
   await choose(page, dlg, 'Estado inicial', 'En Proceso');
   await choose(page, dlg, 'Tipo', 'Mercantil');
   await choose(page, dlg, 'Juzgado', 1);
@@ -234,7 +237,7 @@ async function main() {
   await page.goto(`${BASE}/expedientes`);
   const find = page.getByPlaceholder(/buscar por número/i);
   await press(page, find);
-  await find.pressSequentially('3001', { delay: 90 });
+  await find.pressSequentially(FILE_NUMBER.slice(-4), { delay: 90 });
   await pause(page, 1200);
   await press(page, page.getByRole('button', { name: /^abrir/i }).first());
   await caption(page, 'Quien abre un expediente queda como Responsable de su equipo, así que no lo pierde de vista. Desde aquí suma a un asociado.', 6500);
