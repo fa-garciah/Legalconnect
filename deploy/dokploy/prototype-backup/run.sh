@@ -12,7 +12,8 @@
 #   BACKUP_BUCKET         bucket name; objects go to backups/legalconnect-<UTC>.dump.gz
 #   AWS_DEFAULT_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY   read by the AWS CLI by name
 #   BACKUP_AT_UTC         HH:MM, default 09:15 (03:15 in Mexico City)
-#   RUN_ONCE=1            take one backup now and exit (used to test it)
+#   RUN_ONCE=1            take one backup now and exit (used to test it). Otherwise: one backup
+#                         on start, then one every night.
 set -euo pipefail
 
 : "${DATABASE_URL_BACKUP:?}"
@@ -36,6 +37,9 @@ if [ "${RUN_ONCE:-}" = "1" ]; then
   exit 0
 fi
 
+# One backup on start as well: every deploy leaves a fresh backup behind, and the first object in the
+# bucket proves the service runs on the host without anyone opening Dokploy's logs.
+backup_once || echo "backup FAILED at $(date -u +%FT%TZ)" >&2
 echo "nightly backup at ${AT} UTC"
 while true; do
   now="$(date -u +%s)"
