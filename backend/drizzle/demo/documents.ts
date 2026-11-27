@@ -348,16 +348,70 @@ const LAW_BY_TYPE: Readonly<Record<string, string>> = {
   Penal: 'los artículos 109, 110 y demás aplicables del Código Nacional de Procedimientos Penales',
 };
 
-const COUNTERPARTIES = [
+/**
+ * Who the firm is up against, ONE PER MATTER — a matter whose filings each named a different
+ * opponent was the clearest tell that the documents were generated one at a time.
+ *
+ * Chosen by matter type, because the opponent's kind follows from it: a labour claim is between a
+ * worker and an employer, a family matter between people, an amparo against an authority.
+ */
+const COMPANY_OPPONENTS = [
   'Arrendadora Monte Albán, S.A. de C.V.',
   'Grupo Financiero Lerma, S.A.',
   'Logística Integral del Centro, S.A. de C.V.',
-  'Roberto Carlos Íñiguez Salas',
   'Desarrollos Habitacionales Tepeyac, S.A. de C.V.',
-  'Patricia Elena Robles Cárdenas',
   'Servicios Corporativos Anáhuac, S.C.',
   'Importadora Bahía Dorada, S.A. de C.V.',
 ];
+const PERSON_OPPONENTS = [
+  'Roberto Carlos Íñiguez Salas',
+  'Patricia Elena Robles Cárdenas',
+  'Fernando Javier Olvera Mena',
+  'Claudia Ivette Barrón Quintero',
+  'Marco Antonio Lozano Treviño',
+  'Diana Laura Echeverría Cruz',
+];
+const AUTHORITY_OPPONENTS = [
+  'Administración Desconcentrada de Auditoría Fiscal de la Ciudad de México',
+  'Dirección General de Licencias de Funcionamiento de la Ciudad de México',
+  'Instituto de Seguridad Social del Estado, Delegación Ciudad de México',
+];
+
+type Side = 'actor' | 'demandado';
+
+interface DemoClientLike {
+  readonly legalName: string;
+  readonly kind: 'organization' | 'person';
+}
+
+interface MatterParties {
+  readonly side: Side;
+  readonly client: string;
+  readonly other: string;
+  readonly amount: string;
+}
+
+/** Fixed per matter, from its date-free slot: the same opponent, side and sum on every page. */
+function partiesFor(matter: DemoMatter, client: DemoClientLike): MatterParties {
+  const digest = createHash('sha256').update(`demo-parties-${matter.slot}`).digest();
+  // Two matters in three for the plaintiff, as a litigation boutique's docket tends to run. An
+  // amparo is always brought by the firm's client.
+  const side: Side =
+    matter.matterTypeName !== 'Amparo' && (digest[0] as number) % 3 === 2 ? 'demandado' : 'actor';
+  const pool =
+    matter.matterTypeName === 'Amparo'
+      ? AUTHORITY_OPPONENTS
+      : matter.matterTypeName === 'Familiar' || matter.matterTypeName === 'Penal'
+        ? PERSON_OPPONENTS
+        : matter.matterTypeName === 'Laboral'
+          ? client.kind === 'organization'
+            ? PERSON_OPPONENTS
+            : COMPANY_OPPONENTS
+          : [...COMPANY_OPPONENTS, ...PERSON_OPPONENTS];
+  const other = pool[(digest[1] as number) % pool.length] as string;
+  const amount = `$${(150_000 + (digest.readUInt32BE(2) % 4_850_000)).toLocaleString('en-US')}.00 M.N.`;
+  return { side, client: client.legalName, other, amount };
+}
 
 const MONTHS = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -370,16 +424,47 @@ function longDate(isoDay: string): string {
 }
 
 interface FilingContext {
-  readonly client: string;
-  readonly other: string;
+  readonly parties: MatterParties;
+  readonly firm: string;
   readonly type: string;
   readonly law: string;
-  readonly amount: string;
+  readonly outcome: DemoMatter['outcome'];
 }
 
-/** The paragraphs a document of this kind would carry. Generic enough to be true of any matter. */
+/** The resolutive points of a judgment, from how the matter actually ended and which side we were. */
+function judgmentFor(ctx: FilingContext, actor: string, defendant: string): string {
+  const { parties, outcome, type } = ctx;
+  if (type === 'Amparo') {
+    return outcome === 'favorable'
+      ? `RESUELVE. Único. La Justicia de la Unión AMPARA Y PROTEGE a ${actor} contra el acto reclamado. NOTIFÍQUESE.`
+      : outcome === 'desfavorable'
+        ? `RESUELVE. Único. La Justicia de la Unión NO AMPARA NI PROTEGE a ${actor}. NOTIFÍQUESE.`
+        : 'RESUELVE. Único. Se SOBRESEE en el presente juicio de amparo. NOTIFÍQUESE.';
+  }
+  if (outcome === 'convenio') {
+    return 'RESUELVE. Primero. Se aprueba el convenio celebrado por las partes y se eleva a la categoría de cosa juzgada. Segundo. Archívese el expediente como asunto concluido. NOTIFÍQUESE.';
+  }
+  if (outcome === 'sin_resolucion') {
+    return 'RESUELVE. Primero. Se sobresee el presente asunto por desistimiento de la parte promovente. Segundo. Archívese el expediente. NOTIFÍQUESE.';
+  }
+  // Our client won if the outcome is favorable; the judgment then goes the way of our side.
+  const actorWins = (outcome === 'favorable') === (parties.side === 'actor');
+  if (type === 'Penal') {
+    return actorWins
+      ? `RESUELVE. Primero. Se dicta SENTENCIA CONDENATORIA en contra de ${defendant}. Segundo. Se condena a la reparación del daño. NOTIFÍQUESE.`
+      : `RESUELVE. Primero. Se dicta SENTENCIA ABSOLUTORIA a favor de ${defendant}. Segundo. Se ordena su libertad absoluta. NOTIFÍQUESE.`;
+  }
+  return actorWins
+    ? `RESUELVE. Primero. Ha procedido la vía intentada. Segundo. Se condena a ${defendant} al cumplimiento de las prestaciones reclamadas. Tercero. NOTIFÍQUESE PERSONALMENTE.`
+    : `RESUELVE. Primero. La parte actora no acreditó su acción. Segundo. Se absuelve a ${defendant} de las prestaciones reclamadas. Tercero. NOTIFÍQUESE PERSONALMENTE.`;
+}
+
+/** The paragraphs a document of this kind would carry, written from the side the firm is on. */
 function bodyFor(kind: string, ctx: FilingContext): string[] {
-  const { client, other, law, amount } = ctx;
+  const { parties, law, firm } = ctx;
+  const { client, other, amount } = parties;
+  const actor = parties.side === 'actor' ? client : other;
+  const defendant = parties.side === 'actor' ? other : client;
   const type = ctx.type.toLowerCase();
   switch (kind) {
     case 'Escrito inicial de demanda':
@@ -389,24 +474,52 @@ function bodyFor(kind: string, ctx: FilingContext): string[] {
         `A. El pago de la cantidad de ${amount} por concepto de suerte principal. B. El pago de los intereses moratorios generados y que se sigan generando hasta la total solución del adeudo. C. El pago de los gastos y costas que el presente juicio origine.`,
         'Fundo la presente demanda en los hechos y consideraciones de derecho que a continuación se exponen, y ofrezco desde este momento las pruebas que se relacionan en el capítulo correspondiente.',
       ];
+    case 'Demanda de amparo':
+      return [
+        `${client}, por conducto de su apoderado legal, con fundamento en ${law}, solicito el amparo y protección de la Justicia Federal contra los actos de la autoridad que a continuación se señala.`,
+        `Autoridad responsable: ${other}. Acto reclamado: la resolución que afecta los derechos de la quejosa, emitida sin fundamentación ni motivación suficientes.`,
+        'Preceptos constitucionales violados: artículos 14 y 16 de la Constitución Política de los Estados Unidos Mexicanos. Solicito además la suspensión del acto reclamado.',
+      ];
+    case 'Denuncia':
+      return [
+        `${client}, por propio derecho, comparezco ante esta Representación Social para presentar formal denuncia por hechos posiblemente constitutivos de delito, cometidos en mi perjuicio por ${other}.`,
+        `Los hechos se narran en el capítulo correspondiente y se acompañan los documentos que acreditan el daño causado, cuyo monto se estima en ${amount}.`,
+        'Solicito se inicie la investigación correspondiente y se me reconozca la calidad de víctima, con todos los derechos que la ley me otorga.',
+      ];
+    case 'Escrito de defensa':
+      return [
+        `La defensa de ${client}, con la personalidad que tiene reconocida en la carpeta judicial al rubro indicado, comparece para exponer:`,
+        `Que niega la participación de su representado en los hechos que le atribuye ${other}, toda vez que los datos de prueba ofrecidos no acreditan los elementos del tipo penal.`,
+        'Ofrece desde este momento los medios de prueba que se relacionan y solicita se dicte auto de no vinculación a proceso.',
+      ];
     case 'Contestación de demanda':
       return [
-        `${client}, dentro del término concedido para tal efecto, vengo a dar contestación a la demanda instaurada en contra de mi representada por ${other}, en los siguientes términos:`,
+        `${client}, dentro del término concedido para tal efecto, vengo a dar contestación a la demanda instaurada en mi contra por ${other}, en los siguientes términos:`,
         'Niego que la parte actora tenga acción y derecho para reclamar las prestaciones señaladas en su escrito inicial, toda vez que los hechos en que las funda son falsos en la forma y términos en que se narran.',
         'Opongo desde este momento las excepciones de falta de acción y de derecho, de pago y la de prescripción, mismas que se acreditarán en el momento procesal oportuno.',
       ];
     case 'Auto admisorio':
-      return [
-        `Se tiene por presentado a ${client} por conducto de su apoderado legal, con su escrito y anexos que acompaña, promoviendo juicio en la vía ${type} en contra de ${other}.`,
-        `Con fundamento en ${law}, se admite la demanda en la vía y forma propuestas. Con las copias simples exhibidas, córrase traslado y emplácese a la parte demandada para que dentro del término de quince días produzca su contestación.`,
-        'Se tiene por señalado domicilio para oír y recibir notificaciones y por autorizadas a las personas que se indican. NOTIFÍQUESE.',
-      ];
+      return ctx.type === 'Amparo'
+        ? [
+            `Vista la demanda de amparo promovida por ${client} contra actos de ${other}, con fundamento en ${law}, se admite a trámite.`,
+            'Pídase a la autoridad responsable su informe justificado dentro del término de quince días. Fórmese por separado el incidente de suspensión. NOTIFÍQUESE.',
+          ]
+        : [
+            `Se tiene por presentado a ${actor} por conducto de su apoderado legal, con su escrito y anexos que acompaña, promoviendo juicio en la vía ${type} en contra de ${defendant}.`,
+            `Con fundamento en ${law}, se admite la demanda en la vía y forma propuestas. Con las copias simples exhibidas, córrase traslado y emplácese a la parte demandada para que dentro del término de quince días produzca su contestación.`,
+            'Se tiene por señalado domicilio para oír y recibir notificaciones y por autorizadas a las personas que se indican. NOTIFÍQUESE.',
+          ];
     case 'Sentencia de primera instancia':
+    case 'Sentencia de amparo':
       return [
-        `VISTOS para resolver en definitiva los autos del juicio ${type} promovido por ${client} en contra de ${other}, y`,
-        'RESULTANDO. Primero. Mediante escrito presentado ante la Oficialía de Partes Común, la parte actora demandó las prestaciones que quedaron precisadas en el auto admisorio. Segundo. Emplazada la demandada, se desahogaron las pruebas ofrecidas y se formularon alegatos.',
-        'CONSIDERANDO. Este juzgado es competente para conocer y resolver el presente asunto. Del análisis de las constancias de autos se desprende que la parte actora acreditó los elementos de su acción.',
-        'RESUELVE. Primero. Ha procedido la vía intentada. Segundo. Se condena a la parte demandada al cumplimiento de las prestaciones reclamadas. Tercero. NOTIFÍQUESE PERSONALMENTE.',
+        ctx.type === 'Amparo'
+          ? `VISTOS para resolver los autos del juicio de amparo promovido por ${client} contra actos de ${other}, y`
+          : ctx.type === 'Penal'
+            ? `VISTOS para resolver en definitiva los autos de la causa penal en la que intervienen ${actor} como víctima y ${defendant} como acusado, y`
+            : `VISTOS para resolver en definitiva los autos del juicio ${type} promovido por ${actor} en contra de ${defendant}, y`,
+        'RESULTANDO. Primero. Se presentó el escrito inicial ante la Oficialía de Partes Común y se admitió a trámite. Segundo. Se desahogaron las pruebas ofrecidas y se formularon alegatos.',
+        'CONSIDERANDO. Este órgano jurisdiccional es competente para conocer y resolver el presente asunto, y procede al estudio de las constancias de autos.',
+        judgmentFor(ctx, actor, defendant),
       ];
     case 'Recurso de revocación':
       return [
@@ -417,74 +530,97 @@ function bodyFor(kind: string, ctx: FilingContext): string[] {
     case 'Dictamen pericial':
       return [
         `El suscrito perito, designado por la parte que representa a ${client}, rinde el presente dictamen en relación con los puntos sometidos a su consideración.`,
-        'Metodología. Se realizó el análisis de la documentación contable exhibida, así como la inspección de los registros correspondientes al periodo controvertido.',
-        `Conclusiones. Primera. De la revisión practicada se determina un saldo insoluto a cargo de ${other} por la cantidad de ${amount}. Segunda. Los registros examinados son consistentes con los estados de cuenta exhibidos.`,
+        'Metodología. Se realizó el análisis de la documentación exhibida por ambas partes, así como la inspección de los registros correspondientes al periodo controvertido.',
+        `Conclusiones. Primera. De la revisión practicada se determina que el monto controvertido asciende a ${amount}. Segunda. Los registros examinados son consistentes con la documentación exhibida por ${client}.`,
       ];
-    case 'Contrato de prestación de servicios':
+    case 'Contrato de prestación de servicios profesionales':
+      return [
+        `Que celebran por una parte ${client}, en lo sucesivo EL CLIENTE, y por la otra ${firm}, en lo sucesivo EL DESPACHO, al tenor de las siguientes declaraciones y cláusulas:`,
+        `DECLARACIONES. EL CLIENTE requiere asesoría y representación legal en el asunto ${type} relacionado con ${other}. EL DESPACHO cuenta con los abogados y la capacidad para prestarla.`,
+        'CLÁUSULAS. Primera. Objeto. EL DESPACHO representará a EL CLIENTE en el asunto descrito hasta su conclusión. Segunda. Honorarios. Se pactan conforme a la propuesta aceptada por EL CLIENTE, pagaderos mensualmente. Tercera. Confidencialidad. EL DESPACHO guardará reserva de la información recibida.',
+      ];
     case 'Convenio de pago':
       return [
-        `Que celebran por una parte ${client}, y por la otra ${other}, al tenor de las siguientes declaraciones y cláusulas:`,
-        'DECLARACIONES. Las partes declaran contar con la capacidad legal suficiente para obligarse en los términos del presente instrumento, y que es su voluntad celebrarlo.',
-        `CLÁUSULAS. Primera. Objeto. Las partes convienen en las obligaciones que se precisan en el presente instrumento. Segunda. Contraprestación. Se pacta la cantidad de ${amount}, pagadera en las fechas y forma convenidas. Tercera. Jurisdicción. Para la interpretación y cumplimiento del presente, las partes se someten a los tribunales de la Ciudad de México.`,
+        `Que celebran por una parte ${actor} y por la otra ${defendant}, con el propósito de dar por terminada la controversia ${type} que existe entre ellas, al tenor de las siguientes cláusulas:`,
+        `Primera. ${defendant} reconoce adeudar la cantidad de ${amount} y se obliga a cubrirla en seis pagos mensuales iguales.`,
+        'Segunda. Cumplido el pago, las partes se otorgan el más amplio finiquito y solicitarán al juzgado la aprobación del presente convenio. Tercera. Para su cumplimiento se someten a los tribunales de la Ciudad de México.',
       ];
     case 'Poder notarial':
       return [
-        `En la Ciudad de México, ante mí, Licenciado Arturo Benítez Mora, Notario Público número 214, comparece ${client} y otorga PODER GENERAL PARA PLEITOS Y COBRANZAS a favor de los abogados del despacho.`,
+        `En la Ciudad de México, ante mí, Licenciado Arturo Benítez Mora, Notario Público número 214, comparece ${client} y otorga PODER GENERAL PARA PLEITOS Y COBRANZAS a favor de los abogados de ${firm}.`,
         'El poder se otorga con todas las facultades generales y aun las especiales que requieran cláusula especial conforme a la ley, en los términos del artículo 2554 del Código Civil Federal y sus correlativos.',
       ];
     default:
       return [
         `${client}, con la personalidad que tengo reconocida en los autos del expediente al rubro indicado, ante Usted respetuosamente comparezco y expongo:`,
-        `Que por medio del presente escrito exhibo la documentación que se relaciona, a fin de que obre en autos y surta los efectos legales conducentes en el juicio seguido en contra de ${other}.`,
+        `Que por medio del presente escrito exhibo la documentación que se relaciona, a fin de que obre en autos y surta los efectos legales conducentes en el asunto que se sigue con ${other}.`,
         'Por lo expuesto, atentamente pido se me tenga por presentado en los términos de este escrito y se acuerde de conformidad lo solicitado.',
       ];
   }
 }
 
-/** The lines of a filing for one matter. Derived from the slot and kind, never from the RNG. */
+/** The lines of a filing for one matter. Derived from the matter and kind, never from the RNG. */
 function filingLines(
   kindName: string,
   matter: DemoMatter,
-  client: string,
+  parties: MatterParties,
+  firm: string,
   lawyer: string,
   day: string,
 ): PdfLine[] {
-  const digest = createHash('sha256').update(`demo-doc-${matter.slot}-${kindName}`).digest();
-  const other = COUNTERPARTIES[(digest[0] as number) % COUNTERPARTIES.length] as string;
-  const amount = `$${(150_000 + (digest.readUInt32BE(1) % 4_850_000)).toLocaleString('en-US')}.00 M.N.`;
   const law = LAW_BY_TYPE[matter.matterTypeName] ?? (LAW_BY_TYPE.Civil as string);
+  const { client, other } = parties;
+  const caption =
+    matter.matterTypeName === 'Amparo'
+      ? `Quejosa: ${client} · Autoridad responsable: ${other}`
+      : parties.side === 'actor'
+        ? `${client} vs. ${other}`
+        : `${other} vs. ${client}`;
+  const proceeding =
+    matter.matterTypeName === 'Amparo'
+      ? 'Juicio de amparo'
+      : matter.matterTypeName === 'Penal'
+        ? 'Causa penal'
+        : `Juicio ${matter.matterTypeName.toLowerCase()}`;
   const lines: PdfLine[] = [
     { text: matter.venueName.toUpperCase(), size: 9.5, bold: true, align: 'center' },
     { text: `Expediente: ${matter.venueCaseReference}`, size: 10, align: 'right', before: 14 },
-    { text: `Juicio ${matter.matterTypeName.toLowerCase()}`, size: 10, align: 'right' },
-    { text: `${client} vs. ${other}`, size: 10, align: 'right' },
+    { text: proceeding, size: 10, align: 'right' },
+    { text: caption, size: 10, align: 'right' },
     { text: `Control interno: ${matter.fileNumber}`, size: 9, align: 'right' },
     { text: kindName.toUpperCase(), size: 12, bold: true, align: 'center', before: 22 },
   ];
-  const paragraphs = bodyFor(kindName, { client, other, type: matter.matterTypeName, law, amount });
+  const paragraphs = bodyFor(kindName, {
+    parties,
+    firm,
+    type: matter.matterTypeName,
+    law,
+    outcome: matter.outcome,
+  });
   for (const [index, paragraph] of paragraphs.entries()) {
     for (const [i, text] of wrap(paragraph, 100).entries()) {
       lines.push({ text, size: 10.5, before: i === 0 ? (index === 0 ? 16 : 8) : 0 });
     }
   }
   lines.push({ text: `Ciudad de México, a ${longDate(day)}.`, size: 10.5, before: 22 });
-  // Who signs depends on who issues it: the court its own resolutions, both parties a
-  // contract, the notary a power of attorney, and the matter's lawyer everything filed.
+  // Who signs depends on who issues it: the court its own resolutions, the parties their
+  // agreements, the notary a power of attorney, and the matter's lawyer everything filed.
   const signature = SIGNED_BY_COURT.has(kindName)
     ? { heading: 'Así lo proveyó y firma el C. Juez, ante el C. Secretario de Acuerdos que autoriza y da fe.', signer: 'C. Juez' }
-    : SIGNED_BY_PARTIES.has(kindName)
-      ? { heading: 'Leído que fue por las partes, lo firman de conformidad.', signer: `${client} · ${other}` }
-      : kindName === 'Poder notarial'
-        ? { heading: 'DOY FE.', signer: 'Lic. Arturo Benítez Mora, Notario Público 214' }
-        : { heading: 'PROTESTO LO NECESARIO', signer: `Lic. ${lawyer}` };
+    : kindName === 'Contrato de prestación de servicios profesionales'
+      ? { heading: 'Leído que fue por las partes, lo firman de conformidad.', signer: `${client} · ${firm}` }
+      : kindName === 'Convenio de pago'
+        ? { heading: 'Leído que fue por las partes, lo firman de conformidad.', signer: `${client} · ${other}` }
+        : kindName === 'Poder notarial'
+          ? { heading: 'DOY FE.', signer: 'Lic. Arturo Benítez Mora, Notario Público 214' }
+          : { heading: 'PROTESTO LO NECESARIO', signer: `Lic. ${lawyer}` };
   lines.push({ text: signature.heading, size: 10.5, bold: true, align: 'center', before: 34 });
   lines.push({ text: '______________________________', size: 10.5, align: 'center', before: 40 });
   lines.push({ text: signature.signer, size: 10.5, align: 'center' });
   return lines;
 }
 
-const SIGNED_BY_COURT = new Set(['Auto admisorio', 'Sentencia de primera instancia']);
-const SIGNED_BY_PARTIES = new Set(['Contrato de prestación de servicios', 'Convenio de pago']);
+const SIGNED_BY_COURT = new Set(['Auto admisorio', 'Sentencia de primera instancia', 'Sentencia de amparo']);
 
 const shortDate = (isoDay: string): string => {
   const [y, m, d] = isoDay.split('-');
@@ -495,21 +631,61 @@ const shortDate = (isoDay: string): string => {
  * The set
  * ----------------------------------------------------------------------- */
 
-/** Spanish document names, paired with the category a firm would file them under. */
-const PDF_KINDS: readonly { readonly name: string; readonly category: string }[] = [
-  { name: 'Escrito inicial de demanda', category: 'Demanda' },
-  { name: 'Contestación de demanda', category: 'Contestación' },
-  { name: 'Auto admisorio', category: 'Resolución' },
-  { name: 'Sentencia de primera instancia', category: 'Resolución' },
-  { name: 'Recurso de revocación', category: 'Recurso' },
-  { name: 'Dictamen pericial', category: 'Dictamen' },
-  { name: 'Contrato de prestación de servicios', category: 'Contrato' },
-  { name: 'Convenio de pago', category: 'Contrato' },
-  { name: 'Oficio al juzgado', category: 'Correspondencia' },
-  { name: 'Anexo de documentación soporte', category: 'Anexo' },
-  { name: 'Poder notarial', category: 'Anexo' },
-  { name: 'Acuse de recibo', category: 'Correspondencia' },
-];
+interface DocumentKind {
+  readonly name: string;
+  readonly category: string;
+}
+
+/**
+ * The filings a matter can hold, given its type, its state and the side the firm is on.
+ *
+ * The first version drew from one list for every matter, so a matter could carry both the
+ * demand and the answer to it, a judgment while still open, or a payment agreement in a
+ * criminal case — each of which a lawyer spots at a glance. `pick` consumes one number
+ * whatever the list's length, so narrowing the list moves no other generated value.
+ */
+export function pdfKindsFor(matter: DemoMatter, side: Side): readonly DocumentKind[] {
+  const type = matter.matterTypeName;
+  const closed = matter.closedOn !== null;
+  const kinds: DocumentKind[] = [
+    { name: 'Contrato de prestación de servicios profesionales', category: 'Contrato' },
+    { name: 'Poder notarial', category: 'Anexo' },
+    { name: 'Anexo de documentación soporte', category: 'Anexo' },
+    { name: 'Acuse de recibo', category: 'Correspondencia' },
+    { name: 'Oficio al juzgado', category: 'Correspondencia' },
+  ];
+  if (type === 'Amparo') {
+    kinds.push({ name: 'Demanda de amparo', category: 'Demanda' }, { name: 'Auto admisorio', category: 'Resolución' });
+    if (closed) kinds.push({ name: 'Sentencia de amparo', category: 'Resolución' });
+    return kinds;
+  }
+  if (type === 'Penal') {
+    kinds.push(
+      side === 'actor'
+        ? { name: 'Denuncia', category: 'Demanda' }
+        : { name: 'Escrito de defensa', category: 'Contestación' },
+      { name: 'Dictamen pericial', category: 'Dictamen' },
+    );
+    if (closed) kinds.push({ name: 'Sentencia de primera instancia', category: 'Resolución' });
+    return kinds;
+  }
+  kinds.push(
+    side === 'actor'
+      ? { name: 'Escrito inicial de demanda', category: 'Demanda' }
+      : { name: 'Contestación de demanda', category: 'Contestación' },
+    { name: 'Auto admisorio', category: 'Resolución' },
+    { name: 'Recurso de revocación', category: 'Recurso' },
+  );
+  if (type !== 'Familiar') kinds.push({ name: 'Dictamen pericial', category: 'Dictamen' });
+  if (!closed || matter.outcome === 'convenio') kinds.push({ name: 'Convenio de pago', category: 'Contrato' });
+  if (closed) kinds.push({ name: 'Sentencia de primera instancia', category: 'Resolución' });
+  return kinds;
+}
+
+/** Exported for the coherence test: the side a matter's filings are written from. */
+export function matterSide(matter: DemoMatter, client: DemoClientLike): Side {
+  return partiesFor(matter, client).side;
+}
 
 const PNG_KINDS: readonly { readonly name: string; readonly category: string }[] = [
   { name: 'Acuse sellado', category: 'Evidencia' },
@@ -583,7 +759,9 @@ export function demoDocuments(
 
     for (let i = 0; i < count; i += 1) {
       const isPdf = next() < 0.62;
-      const kind = isPdf ? pick(next, PDF_KINDS) : pick(next, PNG_KINDS);
+      const clientRow = clients[matter.clientIndex] ?? { legalName: firm.name, kind: 'organization' as const };
+      const parties = partiesFor(matter, clientRow);
+      const kind = isPdf ? pick(next, pdfKindsFor(matter, parties.side)) : pick(next, PNG_KINDS);
       const category = KNOWN_CATEGORIES.has(kind.category) ? kind.category : 'Sin clasificar';
 
       // Uploaded between the matter opening and today — never before it existed.
@@ -592,10 +770,13 @@ export function demoDocuments(
         0,
         Math.floor((asOf.getTime() - opened.getTime()) / (24 * 60 * 60 * 1000)),
       );
-      const uploadedOn = iso(
+      const drawnDay = iso(
         // Drawn even when the span is zero — a conditional draw made the stream depend on the day.
         new Date(opened.getTime() + intBetween(next, 0, span) * 24 * 60 * 60 * 1000),
       );
+      // A judgment is dated the day the matter closed; every other filing, any day it was open.
+      const uploadedOn =
+        kind.name.startsWith('Sentencia') && matter.closedOn !== null ? matter.closedOn : drawnDay;
 
       // A couple of withdrawn documents, so 021's withdrawn list and restore control have a
       // fixture at last — but only on the full firm, and only twice.
@@ -604,10 +785,9 @@ export function demoDocuments(
 
       // A filing that names its court, numbers and parties, signed by the matter's lead; a
       // scan that looks like a stamped page. Named the way a lawyer saves a file: kind and date.
-      const client = clients[matter.clientIndex]?.legalName ?? firm.name;
       const lawyer = nameOf.get(matter.leadSlug ?? '') ?? partnerName;
       const body = isPdf
-        ? legalPdf(filingLines(kind.name, matter, client, lawyer, uploadedOn))
+        ? legalPdf(filingLines(kind.name, matter, parties, firm.name, lawyer, uploadedOn))
         : scanPng(matterIndex * 7 + i);
 
       documents.push({

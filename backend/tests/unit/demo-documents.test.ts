@@ -256,3 +256,51 @@ describe('every matter is before a court', () => {
     }
   });
 });
+
+describe('documents are coherent with their matter', () => {
+  const byMatter = new Map<string, typeof documents[number][]>();
+  for (const d of documents) byMatter.set(d.matterFileNumber, [...(byMatter.get(d.matterFileNumber) ?? []), d]);
+  const kindOf = (d: (typeof documents)[number]) => d.originalFilename.replace(/ \d{2}-\d{2}-\d{4}\.(pdf|png)$/, '');
+
+  it('never files both the demand and the answer to it in one matter', () => {
+    for (const docs of byMatter.values()) {
+      const kinds = new Set(docs.map(kindOf));
+      expect(kinds.has('Escrito inicial de demanda') && kinds.has('Contestación de demanda')).toBe(false);
+      expect(kinds.has('Denuncia') && kinds.has('Escrito de defensa')).toBe(false);
+    }
+  });
+
+  it('holds a judgment only once the matter is closed, dated the day it closed', () => {
+    for (const d of documents) {
+      if (!kindOf(d).startsWith('Sentencia')) continue;
+      const matter = matters.find((m) => m.fileNumber === d.matterFileNumber)!;
+      expect(matter.closedOn).not.toBeNull();
+      expect(d.uploadedOn).toBe(matter.closedOn);
+    }
+  });
+
+  it('files only what the matter type allows', () => {
+    const civilOnly = ['Escrito inicial de demanda', 'Contestación de demanda', 'Convenio de pago', 'Recurso de revocación'];
+    for (const d of documents) {
+      const matter = matters.find((m) => m.fileNumber === d.matterFileNumber)!;
+      if (matter.matterTypeName === 'Penal' || matter.matterTypeName === 'Amparo') {
+        expect(civilOnly).not.toContain(kindOf(d));
+      }
+      if (matter.matterTypeName !== 'Amparo') {
+        expect(['Demanda de amparo', 'Sentencia de amparo']).not.toContain(kindOf(d));
+      }
+    }
+  });
+
+  it('names the same parties on every filing of a matter', () => {
+    for (const docs of byMatter.values()) {
+      const captions = new Set(
+        docs
+          .filter((d) => d.mimeType === 'application/pdf')
+          .map((d) => /\(([^()]*(?: vs\. |Autoridad responsable: )[^()]*)\) Tj/.exec(d.body.toString('latin1'))?.[1]),
+      );
+      expect(captions.has(undefined)).toBe(false);
+      expect(captions.size).toBeLessThanOrEqual(1);
+    }
+  });
+});
